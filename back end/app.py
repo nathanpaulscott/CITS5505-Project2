@@ -1,10 +1,12 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 import os
 
 
 # initialise app
-app = Flask(__name__)
+# flask expects static pages to be in \templates by default
+template_dir = os.path.abspath(r'..\Front End Testing')
+app = Flask(__name__, template_folder=template_dir)
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -53,25 +55,34 @@ def get():
     # replace with actual JSON data from database
     return jsonify({ 'msg': 'Hello World'})
 
-# navigate to register page
-@app.route('/register')
-def get_register():
-    return send_from_directory(r'..\Front End Testing', 'register.html')
 
-# add new user
-@app.route('/users', methods=['POST'])
-def new_user():
-    admin = int(request.args.get("admin"))
-    username = request.args.get("username")
-    password = request.args.get("password")
+@app.route('/register', methods=['GET','POST'])
+def register():
+    # navigate to register page
+    if request.method == 'GET':
+        return render_template('register.html')
 
-    new_user = User(admin, username, password)
+    # add new user
+    elif request.method == 'POST':
+        print(request.form)
+        admin = int(request.form["admin"])
+        username = request.form["username"]
+        password = request.form["password"]
 
-    # add new user to database
-    db.session.add(new_user)
-    db.session.commit()
+        new_user = User(admin, username, password)
 
-    return jsonify ({ 'status': 'success'})
+        # check if username taken
+        if db.engine.execute(
+            'SELECT user_id FROM user WHERE username = ?', (username,)
+        ).fetchone() is not None:
+            error = 'User {} is already registered.'.format(username)
+            return jsonify ({ "Status" : error})
+        else:
+            # add new user to database
+            db.session.add(new_user)
+            db.session.commit()
+
+            return jsonify ({ "Status" : "New User Created"})
 
 
 # runs server

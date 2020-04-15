@@ -85,8 +85,8 @@
                                 <input type="text" class="form-control" id="LastName" aria-describedby="Last Name">
                             </div> -->
                             <div class="form-group">
-                                <label for="Admin">Role</label><br>
-                                <select id = "roleList">
+                                <label for="admin">Role</label><br>
+                                <select id = "admin" name = "admin">
                                     <option value = "0">Student</option>
                                     <option value = "1">Teacher</option>
                                   </select>
@@ -97,13 +97,13 @@
                             </div> -->
                             <div class="form-group">
                                 <label for="Username">Username</label>
-                                <input type="text" class="form-control" id="Username">
+                                <input type="text" class="form-control" id="Username" name="username">
                             </div>
                             <div class="form-group">
                                 <label for="Password">Password</label>
-                                <input type="password" class="form-control" id="Password">
+                                <input type="password" class="form-control" id="Password" name="password">
                             </div>
-                            <button type="submit" class="btn btn-success" formaction="../Back End/users" formmethod="POST">Submit</button>
+                            <button type="submit" class="btn btn-success" formaction="/register" formmethod="POST">Submit</button>
                         </form>
                     </p>
                 </div> <!--end of content-->
