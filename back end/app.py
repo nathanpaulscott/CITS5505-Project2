@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 import os
 
@@ -16,26 +16,27 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # tables in database - move each to separate file
-class Users(db.Model):
+class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     admin = db.Column(db.Boolean)
     username = db.Column(db.String(10), unique=True )
     password = db.Column(db.String(10))
 
-    def __init__(self, name, permissions):
-        self.name = name
-        self.permissions = permissions
+    def __init__(self, admin, username, password):
+        self.admin = admin
+        self.username = username
+        self.password = password
 
-class Question_Sets(db.Model):
+class Question_Set(db.Model):
     qs_id = db.Column(db.Integer, primary_key=True)
 
-class Questions(db.Model):
+class Question(db.Model):
     q_id = db.Column(db.Integer, primary_key=True)
 
-class Answers(db.Model):
+class Answer(db.Model):
     a_id = db.Column(db.Integer, primary_key=True)
 
-class Submissions(db.Model):
+class Submission(db.Model):
     s_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer)
 
@@ -46,11 +47,31 @@ class Log(db.Model):
 
 
 # url routing
-@app.route('/', methods=['GET'])
 # get action performed when user navigates to that url
+@app.route('/', methods=['GET'])
 def get():
     # replace with actual JSON data from database
     return jsonify({ 'msg': 'Hello World'})
+
+# navigate to register page
+@app.route('/register')
+def get_register():
+    return send_from_directory(r'..\Front End Testing', 'register.html')
+
+# add new user
+@app.route('/users', methods=['POST'])
+def new_user():
+    admin = int(request.args.get("admin"))
+    username = request.args.get("username")
+    password = request.args.get("password")
+
+    new_user = User(admin, username, password)
+
+    # add new user to database
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify ({ 'status': 'success'})
 
 
 # runs server

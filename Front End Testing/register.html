@@ -76,28 +76,34 @@
                     </h5>
                     <p>
                         <form>
-                            <div class="form-group">
+                    <!--    <div class="form-group">
                                 <label for="FirstName">First Name</label>
                                 <input type="text" class="form-control" id="FirstName" aria-describedby="First Name">
                             </div>
                             <div class="form-group">
                                 <label for="LastName">Last Name</label>
                                 <input type="text" class="form-control" id="LastName" aria-describedby="Last Name">
-                            </div>
+                            </div> -->
                             <div class="form-group">
-                                <label for="Role">Role</label>
-                                <input type="text" class="form-control" id="Role" aria-describedby="Role">
-                                <small id="roleHelp" class="form-text text-muted">Student or Teacher</small>
+                                <label for="Admin">Role</label><br>
+                                <select id = "roleList">
+                                    <option value = "0">Student</option>
+                                    <option value = "1">Teacher</option>
+                                  </select>
                             </div>
-                            <div class="form-group">
+                    <!--    <div class="form-group">
                                 <label for="Email">Email</label>
                                 <input type="email" class="form-control" id="Email" aria-describedby="Email Address">
+                            </div> -->
+                            <div class="form-group">
+                                <label for="Username">Username</label>
+                                <input type="text" class="form-control" id="Username">
                             </div>
                             <div class="form-group">
                                 <label for="Password">Password</label>
                                 <input type="password" class="form-control" id="Password">
                             </div>
-                            <button type="submit" class="btn btn-success" formaction="./login.html">Submit</button>
+                            <button type="submit" class="btn btn-success" formaction="../Back End/users" formmethod="POST">Submit</button>
                         </form>
                     </p>
                 </div> <!--end of content-->
