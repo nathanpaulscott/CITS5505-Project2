@@ -75,7 +75,7 @@ def get_Take_quiz():
     return render_template('take_quiz.html')
 
 
-@app.route('/register', methods=['GET','POST'])
+@app.route('/register.html', methods=['GET','POST'])
 def register():
     # navigate to register page
     if request.method == 'GET':
