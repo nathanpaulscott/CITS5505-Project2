@@ -51,9 +51,28 @@ class Log(db.Model):
 # url routing
 # get action performed when user navigates to that url
 @app.route('/', methods=['GET'])
-def get():
-    # replace with actual JSON data from database
-    return jsonify({ 'msg': 'Hello World'})
+def get_home():
+    return render_template('landing.html')
+
+@app.route('/forgot-password.html', methods=['GET'])
+def get_forgot_password():
+    return render_template('forgot-password.html')
+
+@app.route('/landing.html', methods=['GET'])
+def get_landing():
+    return render_template('landing.html')
+
+@app.route('/login.html', methods=['GET', 'POST'])
+def get_login():
+    return render_template('login.html')
+
+@app.route('/quiz.html', methods=['GET'])
+def get_quiz():
+    return render_template('quiz.html')
+
+@app.route('/take_quiz.html', methods=['GET'])
+def get_Take_quiz():
+    return render_template('take_quiz.html')
 
 
 @app.route('/register', methods=['GET','POST'])
