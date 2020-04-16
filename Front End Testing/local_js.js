@@ -106,6 +106,18 @@ $(document).ready(function() {
 			//append to the DOM
 			$("#q_data").append(html_text);
 		}
+	
+
+		//assigns a click listener to the question selection links so they hide on question selection when in smalll screen mode
+		$("#q_nav li.nav-item").click(
+			function() {
+				var x = document.getElementById("q_nav");
+				if (x.classList.contains("show")){
+					x.classList.remove("show");
+				}
+			}
+		);
+
 	}
 });
 
