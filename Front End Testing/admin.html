@@ -21,14 +21,15 @@
 
     <body>
         <div class="container-fluid">
+            <!--header row-->
             <div class="row header">
                 <div class="col-sm-1 header_left align-self-start" id="user_id">u_id</div>
                 <div class="col-sm-10 header_main align-self-center">Quiz App</div>
                 <div class="col-sm-1 header_right align-self-start"><a href="./landing.html"><i class="fas fa-sign-out-alt"></i></a></div>
-            </div> <!--end of row-->
+            </div>
 
-
-            <div class="row sticky-top">
+            <!-- header nav row -->
+            <div class="row">
                 <div class="col-sm-12 header_nav">
                     <nav class="navbar navbar-dark navbar-expand-sm">
                         <div class="navbar-header">
@@ -38,20 +39,36 @@
                         </div>
                         <div class="collapse navbar-collapse" id="myNavbar">
                             <ul class="nav navbar-nav">
-                                <li><a href="./stats_student.html">Statistics</a></li>
-                                <!--<li><a href="./login-reg.html">Login/Register</a></li>
-                                <li class="active"><a href="./project1-js.html">JS</a></li>
-                                <li><a href="./project1-bio.html">Bio</a></li>-->
+                                <li><a href="./stats_admin.html">Statistics</a></li>
                             </ul>
                         </div>
                     </nav>
                 </div>
-            </div>
+            </div> 
 
+            <!-- main content row -->
             <div class="row">
-                <div class="col-sm-2 l_side">
-                </div> <!--end of l_side-->
+                <!-- left side section -->
+                <div class="col-sm-2 l_side sticky-top">
+                    <div class="row">
+                        <div class="col-sm-12" id="q_nav_main">
+                            <nav class="navbar navbar-dark navbar-expand-sm">
+                                <div class="navbar-header">
+                                    <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#q_nav">
+                                        <span class="navbar-toggler-icon"></span>
+                                    </button>
+                                </div>
+                                <div class="collapse navbar-collapse" id="q_nav">
+                                    <ul class="nav nav-pills flex-column">
+                                        <!--filled by js-->
+                                    </ul>
+                                </div>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- content section -->
                 <div class="col-sm-8 content">
                     <!--<div class="sticky-top">
                         <button id="collapse_text" class="btn btn-light rounded exp-col" type="button">
@@ -62,12 +79,12 @@
                         </button>
                     </div>-->
 
-                    <!--<img class="inline-float" src="./images/javascript.png" alt="JavaScript Logo"/>-->
-                    <h2>Quiz</h2>
+                    <h2>Quiz Administration</h2>
                     
                     <h5>
                         Quiz List
                     </h5>
+                    
                     <p>
                         <table class="table table-hover table-striped" id="quiz-selection-table">
                             <thead>
@@ -160,22 +177,23 @@
                     <i class="dev-comments">
                         -it will update on page load from the DB<br/>
                         -the user_id will be in the top left corner<br/>
-                        -only status = "no attempts" will link to taking the quiz<br/>
                         -change to a more exotic table type with sortable cols, scrolling and pagination
                     </i>
-                </div> <!--end of content-->
+                </div> 
 
+                <!-- right side section -->
                 <div class="col-sm-2 r_side">
-                </div> <!--end of r_side-->
+                </div>
 
-            </div>  <!--end of main row-->
+            </div>
 
+            <!-- footer row -->
             <div class="row">
                 <div class="col-sm-12 footer">
                 </div>
-            </div> <!--end of row-->
+            </div>
 
-        </div> <!--end of container-->
+        </div>
 
         <!--################################################################-->
         <!--js imports-->

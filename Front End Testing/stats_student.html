@@ -39,7 +39,7 @@
                         </div>
                         <div class="collapse navbar-collapse" id="myNavbar">
                             <ul class="nav navbar-nav">
-                                <li><a id="final-save" href="./quiz.html">Finish and Submit Answers</a></li>
+                                <li><a href="./quiz.html">Quiz</a></li>
                             </ul>
                         </div>
                     </nav>
@@ -79,33 +79,17 @@
                         </button>
                     </div>-->
 
-                    <h2>Take a Quiz</h2>
+                    <h2>Statistics</h2>
                     
                     <h5>
-                        quiz name (from the db)
+                        Some subtitle
                     </h5>
-
-                    <h6 data-toggle="collapse" data-target="#instructions" aria-expanded="false" aria-controls="instructions">
-                        Instructions
-                    </h6>
-                    <div class="collapse multicollapse" id="instructions">             
-                        <i class="instructions">Please go through each question in the left side menu, provide an answer, then click "Submit" to save your response.  You can still go back and edit a response, just click "Submit" again. Once you are done, click "Done" to do a final submit.</i>
-                        <i class="instructions"><br/><br/>NOTE: your work will be saved automatically to the server every minute.</i>
-                    </div>
                     <hr>
                     <p>
-                        <!-- Question Data -->
-                        <div class="tab-content" id="q_data">
-                            <!-- filled by JS -->
 
-                        </div>
                     </p>
 
                     <i class="dev-comments">
-                        -this loads the question set selected via HTTP get with params (qset_id, user_id)<br/>
-                        -the user_id will be in the top left corner<br/>
-                        -put in an auto save every minute or so where it ajax the current answers to the server, but not log the attempt as complete, so it can be continued<br/>
-                        -also put a submit button that will do a final upload and log the attempt
                     </i>
 
                 </div> 
