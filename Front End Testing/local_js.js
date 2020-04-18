@@ -2,15 +2,216 @@ $(document).ready(function() {
 	//##########################3
 	//Admin page
 	//This will go to the edit_quiz page with the parameter to fetch the selected question set for the particular user
-    //select on field text ....$("#quiz-selection-table tbody tr:contains('no attempts')").click(function() {
+    //select on field text ....$("#quiz-admin-table tbody tr:contains('no attempts')").click(function() {
 	if (window.location.pathname.search(/\/admin\.html$/i) != -1) {
-		$("#quiz-selection-table tbody tr").click(function() {
+
+		//this builds the table of quizes to administer
+
+		//this JSON info comes from the DB
+		var qset_summary = 
+		[["Quiz Id","Topic","Tot Qs","MC Qs","Time(mins)","Owner","Status","Img.Missing","Attempted","Completed","Marked","Score Mean","Score SD"],
+		 ["x453","Topic A",10,5,50,"u_id","Active",0,4,25,9,59.3,13.4],
+		 ["y987","Topic B",20,10,100,"u_id","Active",0,8,45,33,68.3,8.4],
+		 ["x365","Topic A",30,20,150,"u_id","Active",0,3,35,32,62.3,7.4],
+		 ["d13","Topic A",10,5,30,"u_id","Active",0,0,65,0,-1,-1],
+		 ["s4","Topic C",15,7,70,"u_id","Active",0,5,25,3,90.3,20.1],
+		 ["c476","Topic C",12,8,60,"u_id","Pending",4,0,0,0,-1,-1],
+		 ["x893","Topic A",20,10,80,"u_id","Active",0,2,35,22,70.3,12],
+		 ["f453","Topic D",20,15,90,"u_id","Closed",0,7,45,45,67.2,8.3],
+		 ["b323","Topic B",15,10,65,"u_id","Active",0,4,65,60,60.3,9.2],
+		 ["z43","Topic B",10,5,40,"u_id","Active",0,3,45,30,63.3,11.1],
+		 ["x443","Topic A",5,5,25,"u_id","Active",0,0,25,2,80.3,22.7]];
+				
+		//this does the html table building				
+		//does the table header
+		var html_text = ""; 
+		html_text = '<table class="table table-hover table-striped table-responsive" id="quiz-admin-table">' + '\n';
+		html_text +='	<thead>' + '\n';
+		html_text +='		<tr>' + '\n';
+		html_text +='          <th scope="col">#</th>' + '\n';
+		for (header_item of qset_summary[0]) {
+			html_text +='          <th scope="col">'+ header_item +'</th>' + '\n';
+		}
+		html_text +='     	</tr>' + '\n';
+		html_text +='   </thead>' + '\n';
+
+		//does the table body
+		html_text +='   <tbody>' + '\n';
+		for (x = 1; x < qset_summary.length; x++){
+			var ind = Number(x);
+			html_text +='       <tr class="click-enable">' + '\n';
+			html_text +='	       <td>' + ind + '</td>' + '\n';
+			html_text +='	       <td id="qset-id">' + qset_summary[ind][0] + '</td>' + '\n';
+			for (y = 1; y < qset_summary[ind].length; y++){
+				var ind_inner = Number(y);
+				html_text +='	       <td>' + qset_summary[ind][ind_inner] + '</td>' + '\n';
+			}
+			html_text +='       </tr>' + '\n';
+		}
+		html_text +='   </tbody>' + '\n';
+		html_text += '</table>' + '\n';
+		
+		//append to the DOM
+		$("#p-quiz-admin-table").append(html_text);
+
+	    //runs the datatable plugin on the table to make it sortable etc...
+	    $('#quiz-admin-table').DataTable({
+			//"paging":true,"ordering":true,columnDefs: [{"orderable": false,"targets":0}],"order": [] 
+		});
+	
+		//assigns a click listener to the table rows
+		$("#quiz-admin-table tbody tr.click-enable").click(function() {
 			var qset_id = $(this).find("td#qset-id").text();
 			var user_id = $("#user_id").text();
 			alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nuser_id: " + user_id);
 			window.location = "./take_quiz.html?qset_id="+qset_id+"&user_id="+user_id;
 		});
-	}
+
+
+
+		//###############################
+		//This controls the export and delete collapse areas so only one is showing at a time
+		//#################################################################################
+		$("#btn-delete").on("click", function() {
+			$('#export-config').collapse('hide');
+		});
+
+		$("#btn-export").on("click", function() {
+			$('#delete-config').collapse('hide');
+		});
+
+
+		//###############################
+		//Handles the delete button
+		//#################################################################################
+		$("#btn-delete-submit").on("click", function() {
+			// here you need to request that the server deletes the given quiz ids
+			//##############################################
+			var qs_id = $.trim($("#delete-config-text").val()).split(",");
+			//get the current set of qs_ids
+			var qs_id_db = [];
+			for (qs of qset_summary.slice(1,)) {
+				qs_id_db.push(qs[0]);
+			}
+			//get the clean set of requested qs_ids
+			var qs_id_req = [];
+			for (qs of qs_id) {
+				if (qs_id_db.includes(qs)){
+					qs_id_req.push(qs);
+				}
+			}
+
+			if (qs_id_req.length != 0) {
+				alert("ajax req to delete the given subset of the qs_ids from the DB");
+			}
+			else{
+				alert("no valid quiz ids were given")
+			}
+		});
+		
+
+		//###############################
+		//Handles the export button
+		//#################################################################################
+		$("#btn-export-submit").on("click", function() {
+			// here you need to request the quiz data in json format from the server
+			//##############################################33
+			var qs_id = $.trim($("#export-config-text").val()).split(",");
+			//get the current set of qs_ids
+			var qs_id_db = [];
+			for (qs of qset_summary.slice(1,)) {
+				qs_id_db.push(qs[0]);
+			}
+			//get the clean set of requested qs_ids
+			var qs_id_req = [];
+			for (qs of qs_id) {
+				if (qs_id_db.includes(qs)){
+					qs_id_req.push(qs);
+				}
+			}
+
+			if (qs_id_req.length != 0) {
+				alert("ajax req a subset of the qs_ids from the DB");
+			}
+			else if (qs_id[0].search(/all/i) != -1) {
+				alert("ajax req all qs_ids from the DB");
+			}
+			else {
+				alert("no valid quiz ids were given");
+			}
+			//then ajax request comes back as data from the server here
+			var data = ["text:some text","image:some image file.jpg","text:more text","text:and more shite"];
+
+			var el = document.getElementById('a-export');
+			var filename = "export.quiz";
+			var href_text = "data:application/xml;charset=utf-8,";
+			href_text += JSON.stringify(data, null, 2);
+			//write this to the DOM and trigger the download
+			el.setAttribute("href", href_text);
+			el.setAttribute("download", filename);
+			el.click();
+			el.setAttribute("href", "");
+			el.setAttribute("download", "");
+		});
+		
+
+
+
+		//###############################
+		//Handles the import button
+		//#################################################################################
+		//assign the onclick event listener to the import button whihc in turn triggers a click on the hidden input button to launch the file dialog
+		$("#btn-import").on("click", function() {
+			document.getElementById('input-import').click();
+		});
+		//this is the onchange evenet handler for the hidden input file selection dialog
+		$("#input-import").on("change", function() {
+			//this code accepts multiple files, the quiz files should be .quiz and just be a text file of a json object with the correct format specifying the quiz text, answer types and images.  So we validate these files.  Any non .quiz files, are assumed to be associated image files and are just uuploaded to the server, there is no crosschecking done locally, that can be done server-side later.  The quizes will still work with no image files, the images just will not render
+			
+			//NOTE: I can not find a way to return which file imports failed as they are all async, so I can only return if each one failed, but without the name of the file!?
+
+			var files = this.files;
+			for (f of files){
+				//alert('you selected: ' + f["name"]);
+				if (f["name"].search(/\.quiz/i) == -1) {
+					//need to write the ajax upload image file to ./static/image/ ont he server
+					//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+					console.log('sending ' + f["name"] + ' to the server');
+				}
+				else {
+					//this uses a closure to handle all the file read and to pass the filename in, I still do not understand how it works
+					//this is for .quiz text files which contain quiz data in the specified json format.  we validate each one and reject if it fails (informing the user why)
+					var reader = new FileReader();
+					reader.onload = (function(e1) {
+						return function(e2) {
+							var name = e1.name;
+							var file_data = e2.target.result;
+							//alert("file length is: " + file_data.length + " chars");
+							try{
+								var qs_data = JSON.parse(file_data);
+							}
+							catch(err) {
+								console.log('failed parsing ' + name);
+								return;
+							}
+							console.log('parsing ' + name + ', then sending to the server');
+			
+							//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+							//NEED TO WRITE THE VALIDATION and AJAX upload CODE HERE
+			
+							//Maybe we have to write the outcome to the DOM and then retrieve from there later  when a read flag is set, because I have no other way to inform the user
+						};
+					})(f);
+					reader.readAsText(f);
+				}
+			}
+		});
+
+
+
+	} //end of the admin code
+
+
 
 
 
@@ -19,13 +220,73 @@ $(document).ready(function() {
 	//This will go to the take_quiz page with the parameter to fetch the selected question set for the particular user
     //select on field text ....$("#quiz-selection-table tbody tr:contains('no attempts')").click(function() {
 	if (window.location.pathname.search(/\/quiz\.html$/i) != -1) {
-		$("#quiz-selection-table tbody tr").click(function() {
+		//this builds the table of quizes to take
+
+		//this JSON info comes from the DB
+		//NOTE: the status here is different to the admin status, here it can be : [not attempted, not complete, complete, marked]
+		var qset_summary = 
+		[["Quiz Id","Topic","Tot Qs","MC Qs","Time(mins)","Status","Score","Score Mean","Score SD"],
+		 ["x453","Topic A",10,5,50,"Not Attempted",-1,59.3,13.4],
+		 ["y987","Topic B",20,10,100,"Completed",-1,68.3,8.4],
+		 ["x365","Topic A",30,20,150,"Marked",85.7,62.3,7.4],
+		 ["d13","Topic A",10,5,30,"Attempted",-1,-1,-1],
+		 ["s4","Topic C",15,7,70,"Not Attempted",-1,90.3,20.1],
+		 ["c476","Topic C",12,8,60,"Marked",65.3,-1,-1],
+		 ["x893","Topic A",20,10,80,"Completed",-1,70.3,12],
+		 ["f453","Topic D",20,15,90,"Marked",88.1,67.2,8.3],
+		 ["b323","Topic B",15,10,65,"Not Atttempted",-1,60.3,9.2],
+		 ["z43","Topic B",10,5,40,"Marked",46.2,63.3,11.1],
+		 ["x443","Topic A",5,5,25,"Completed",-1,80.3,22.7]];
+				
+		//this does the html table building				
+		//does the table header
+		var html_text = ""; 
+		html_text = '<table class="table table-hover table-striped table-responsive" id="quiz-selection-table">' + '\n';
+		html_text +='	<thead>' + '\n';
+		html_text +='		<tr>' + '\n';
+		html_text +='          <th scope="col">#</th>' + '\n';
+		for (header_item of qset_summary[0]) {
+			html_text +='          <th scope="col">'+ header_item +'</th>' + '\n';
+		}
+		html_text +='     	</tr>' + '\n';
+		html_text +='   </thead>' + '\n';
+
+		//does the table body
+		html_text +='   <tbody>' + '\n';
+		for (x = 1; x < qset_summary.length; x++){
+			var ind = Number(x);
+			//enable selection only if the quiz has not been completed yet
+			if (qset_summary[ind][5].search(/^(completed|marked)$/i) == -1) {
+				html_text +='       <tr class="click-enable">' + '\n';
+			}
+			else {
+				html_text +='       <tr>' + '\n';
+			}
+			html_text +='	       <th scope="row">' + ind + '</th>' + '\n';
+			html_text +='	       <td id="qset-id">' + qset_summary[ind][0] + '</td>' + '\n';
+			for (y = 1; y < qset_summary[ind].length; y++){
+				var ind_inner = Number(y);
+				html_text +='	       <td>' + qset_summary[ind][ind_inner] + '</td>' + '\n';
+			}
+			html_text +='       </tr>' + '\n';
+		}
+		html_text +='   </tbody>' + '\n';
+		html_text += '</table>' + '\n';
+		
+		//append to the DOM
+		$("#p-quiz-selection-table").append(html_text);
+
+	    //runs the datatable plugin on the table to make it sortable etc...
+	    $('#quiz-selection-table').DataTable();
+
+		//assigns a click listener to the table rows
+		$("#quiz-selection-table tbody tr.click-enable").click(function() {
 			var qset_id = $(this).find("td#qset-id").text();
 			var user_id = $("#user_id").text();
 			alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nuser_id: " + user_id);
 			window.location = "./take_quiz.html?qset_id="+qset_id+"&user_id="+user_id;
 		});
-	}
+	} //end of the quiz code
 
 
 	//##########################3
@@ -45,7 +306,7 @@ $(document).ready(function() {
 		//q_data is a list of text and/or images, you can have as many as you like 
 		//a_data is a list of multichoice answer options, you can have as many as you like
 		//if the question requires a text answer, just do not specify a_data
-		var q_spec = {
+		var qset_data = {
 			1:{	"q_data":["text:question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here.",
 						"image:test_image4.jfif",
 						"text:question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here.",
@@ -96,7 +357,7 @@ $(document).ready(function() {
 			html_text += '<h5>' + q_seq + '</h5>' + '\n';
 			
 			//this goes through the q_data list and adds text or image tags as specified
-			for (y of q_spec[ind]["q_data"]) {
+			for (y of qset_data[ind]["q_data"]) {
 				if (y.search(/^text:/) != -1) {
 					html_text += '<p>' + y.slice(5,) + '</p>' + '\n';
 				}
@@ -113,16 +374,16 @@ $(document).ready(function() {
 			html_text += 	'<div class="form-group" id="form_group">' + '\n';
 
 			//add the mc choices or a textbox
-			if ("a_data" in q_spec[ind]) {
+			if ("a_data" in qset_data[ind]) {
 				var checked_text = "checked";
 				//goes through the mc items
-				for (y in q_spec[ind]["a_data"]) {
+				for (y in qset_data[ind]["a_data"]) {
 					choice_ind = Number(y) + 1;
 					var mc_id = 'mc_' + String(choice_ind);
 					if (choice_ind > 1) checked_text = "";
 					html_text += 		'<div class="form-check">' + '\n';
 					html_text += 			'<input class="form-check-input" type="radio" name="' + q_seq + '_mc" id="' + mc_id + '" value="' + String(choice_ind) + '" ' + checked_text + '>' + '\n';
-					html_text += 			'<label class="form-check-label" for="' + mc_id + '">' + q_spec[ind]["a_data"][y] + '</label>' + '\n';
+					html_text += 			'<label class="form-check-label" for="' + mc_id + '">' + qset_data[ind]["a_data"][y] + '</label>' + '\n';
 					html_text += 		'</div>' + '\n';
 				}
 			} else {  //the non-multichoice case
@@ -140,6 +401,8 @@ $(document).ready(function() {
 		}
 	
 		
+		//This assigns some listeners on the take_quiz page
+		//####################################################
 		//assigns a click listener to the submit button as well as the finish and submit nav choice
 		$("#save, #final-save").click(
 			function() {
@@ -174,7 +437,6 @@ $(document).ready(function() {
 		);
 
 
-		
 		//assigns a click listener to the question selection links so they hide on question selection when in smalll screen mode
 		$("#q_nav li.nav-item").click(
 			function() {
@@ -185,8 +447,9 @@ $(document).ready(function() {
 			}
 		);
 
-	}
-});
+	} //end of the take_quiz code
+
+}); //end of the on_load section
 
 
 

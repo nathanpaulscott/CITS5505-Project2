@@ -10,6 +10,9 @@
         <!-- bootstrap -->
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
+        <!--datatables-->
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css">
+        
         <!-- local css imports-->
         <link rel="stylesheet" type="text/css" href="./local_css.css"/>
 
@@ -68,93 +71,8 @@
                     <h5>
                         Quiz List
                     </h5>
-                    <p>
-                        <table class="table table-hover table-striped" id="quiz-selection-table">
-                            <thead>
-                              <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">Quiz Id</th>
-                                <th scope="col">Topic</th>
-                                <th scope="col">Questions</th>
-                                <th scope="col">Time (mins)</th>
-                                <th scope="col">Status</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <th scope="row">1</th>
-                                <td id="qset-id">Q410</td>
-                                <td>topic1</td>
-                                <td>10</td>
-                                <td>20</td>
-                                <td>no attempts</td>
-                              </tr>
-                              <tr>
-                                <th scope="row">2</th>
-                                <td id="qset-id">Q250</td>
-                                <td>topic2</td>
-                                <td>10</td>
-                                <td>20</td>
-                                <td>3 attempts</td>
-                              </tr>
-                              <tr>
-                                <th scope="row">3</th>
-                                <td id="qset-id">Q333</td>
-                                <td>topic3</td>
-                                <td>10</td>
-                                <td>20</td>
-                                <td>no attempts</td>
-                              </tr>
-                              <tr>
-                                <th scope="row">1</th>
-                                <td id="qset-id">Q400</td>
-                                <td>topic1</td>
-                                <td>10</td>
-                                <td>20</td>
-                                <td>1 attempt</td>
-                              </tr>
-                              <tr>
-                                <th scope="row">2</th>
-                                <td id="qset-id">Q200</td>
-                                <td>topic2</td>
-                                <td>10</td>
-                                <td>20</td>
-                                <td>5 attempts</td>
-                              </tr>
-                              <tr>
-                                <th scope="row">3</th>
-                                <td id="qset-id">Q365</td>
-                                <td>topic3</td>
-                                <td>10</td>
-                                <td>20</td>
-                                <td>no attempts</td>
-                              </tr>
-                              <tr>
-                                <th scope="row">1</th>
-                                <td id="qset-id">Q632</td>
-                                <td>topic1</td>
-                                <td>10</td>
-                                <td>20</td>
-                                <td>no attempts</td>
-                              </tr>
-                              <tr>
-                                <th scope="row">2</th>
-                                <td id="qset-id">Q25</td>
-                                <td>topic2</td>
-                                <td>10</td>
-                                <td>20</td>
-                                <td>no attempts</td>
-                              </tr>
-                              <tr>
-                                <th scope="row">3</th>
-                                <td id="qset-id">Q31</td>
-                                <td>topic3</td>
-                                <td>10</td>
-                                <td>20</td>
-                                <td>no attempts</td>
-                              </tr>
-                            </tbody>
-                        </table>                    
+                    <p id="p-quiz-selection-table">
+                        <!-- filled by js -->
                     </p>
 
                     <i class="dev-comments">
@@ -197,6 +115,14 @@
         
         <script 
             src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
+        </script>
+
+        <!-- DataTables -->
+        <script 
+            src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js">
+        </script>
+        <script 
+            src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js">
         </script>
 
         <!-- fontawsome icons-->
