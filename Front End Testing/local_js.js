@@ -138,7 +138,9 @@ $(document).ready(function() {
 			}
 			else {
 				alert("no valid quiz ids were given");
+				return;
 			}
+
 			//then ajax request comes back as data from the server here
 			var data = ["text:some text","image:some image file.jpg","text:more text","text:and more shite"];
 
