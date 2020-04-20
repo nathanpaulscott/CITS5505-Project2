@@ -1,9 +1,19 @@
 $(document).ready(function() {
+	//GENERAL NOTES ON DYNAMIC CONTENT LOADING STRATEGY...
+	//all the db sourced data is either:
+	//1) sent in a hidden tag (faster as only need to send data once),
+	//2) on page load we do a synchronous ajax request and recieve json, the page will bloack and will have to show some loading icon while it loads,
+	//3) can build the page at the server and send it
+
+	//I am leaning towards option 2 or 1
+
+
+
 	//##########################3
-	//Admin page
-	//This will go to the edit_quiz page with the parameter to fetch the selected question set for the particular user
-    //select on field text ....$("#quiz-admin-table tbody tr:contains('no attempts')").click(function() {
-	if (window.location.pathname.search(/\/admin\.html$/i) != -1) {
+	//Admin summary page
+	//This will go to the admin_summary page which shows a summary table of all quizes
+    //this page allows the admin to click on a quiz to edit it, or use the bulk import/export/delete buttons
+	if (window.location.pathname.search(/\/admin_summary\.html$/i) != -1) {
 
 		//this builds the table of quizes to administer
 
@@ -64,7 +74,7 @@ $(document).ready(function() {
 			var qset_id = $(this).find("td#qset-id").text();
 			var user_id = $("#user_id").text();
 			alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nuser_id: " + user_id);
-			window.location = "./take_quiz.html?qset_id="+qset_id+"&user_id="+user_id;
+			window.location = "./edit_quiz.html?qset_id="+qset_id+"&user_id="+user_id;
 		});
 
 
@@ -168,10 +178,8 @@ $(document).ready(function() {
 		});
 		//this is the onchange evenet handler for the hidden input file selection dialog
 		$("#input-import").on("change", function() {
-			//this code accepts multiple files, the quiz files should be .quiz and just be a text file of a json object with the correct format specifying the quiz text, answer types and images.  So we validate these files.  Any non .quiz files, are assumed to be associated image files and are just uuploaded to the server, there is no crosschecking done locally, that can be done server-side later.  The quizes will still work with no image files, the images just will not render
+			//this code accepts multiple files, the quiz files should be .quiz and just be a text file of a json object with the correct format specifying the quiz text, answer types and images.  So we validate these files.  Any non .quiz files, are assumed to be associated image files and are just uploaded to the server, there is no crosschecking done locally, that can be done server-side later.  The quizes will still work with no image files, the images just will not render
 			
-			//NOTE: I can not find a way to return which file imports failed as they are all async, so I can only return if each one failed, but without the name of the file!?
-
 			var files = this.files;
 			for (f of files){
 				//alert('you selected: ' + f["name"]);
@@ -208,20 +216,344 @@ $(document).ready(function() {
 				}
 			}
 		});
-
-
-
-	} //end of the admin code
-
-
+	} //end of the admin_summary code
 
 
 
 	//##########################3
-	//Quiz page
-	//This will go to the take_quiz page with the parameter to fetch the selected question set for the particular user
-    //select on field text ....$("#quiz-selection-table tbody tr:contains('no attempts')").click(function() {
-	if (window.location.pathname.search(/\/quiz\.html$/i) != -1) {
+	//edit_quiz page
+	//This allows the admin to edit a quiz: adjust the order of text/image elements, set the answer type, add/delete text/image elements, import new .quiz spec to overwrite
+	if (window.location.pathname.search(/\/edit_quiz\.html$/i) != -1) {
+		//this is required for jquery-ui sortable to work
+		//note I have to use the class selector first so it selects the multiple instances of #sortable
+		//if I use #sortable only, it only selects the first one (you are not meant to duplicate ids)
+		$(function() {
+			$(".tab-pane ul#sortable").sortable();
+			$(".tab-pane ul#sortable").disableSelection();
+		});
+	
+		//user_id
+		u_id = "admin123";
+		// qset_id, that was chosen
+		var qset_id = "QS435";
+		// qset_id, that was chosen
+		var qset_name = "Some Quiz Name";
+		//q_ids in the selected qset, the index + 1 is the sequence of the question 
+		var q_id = ["x243","y22","z43","x534","z115"];
+		//the question specification has 2 possible fields per question, q_data and a_data if it is an multi-choice
+		//q_data is a list of text and/or images, you can have as many as you like 
+		//a_data is a list of multichoice answer options, you can have as many as you like
+		//if the question requires a text answer, just do not specify a_data
+		var qset_data = {
+			1:{	"q_data":["text:question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here.",
+						"image:test_image4.jfif",
+						"text:question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here.",
+						"image:test_image3.jfif",
+						"image:test_image.jpg"]},
+			2:{	"q_data":["text:question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here,",
+						"image:test_image1.jfif",
+						"text:question 2 text here, question 2 text here, question 2 text here."],
+				"a_data":["option1",
+						"option2",
+						"option3",
+						"option4"]},
+			3:{	"q_data":["text:question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here."]},
+			4:{	"q_data":["text:question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here."],
+				"a_data":["option1",
+						"option2",
+						"option3",
+						"option4",
+						"option5"]},
+			5:{	"q_data":["text:question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here,",
+						"image:test_image2.jfif"]}
+			};
+				
+				
+		//this does the html building				
+		//do the title
+		html_text = qset_name + ' (qset_id: ' + qset_id + ')';
+		//append to the DOM
+		$("h5#title").append(html_text);
+
+		var active_text = "active";
+		var showactive_text = "show active";
+		for (x in q_id) {
+			var ind = Number(x)+1;
+			//this is the actual question sequence, i.e. "Q1", "Q2", "Q3" etc... you need to build this list locally, it is basically "Q" + index+1
+			var q_seq = "Q" + String(ind); 
+			var html_text = ""; 
+			
+			//sets the first question to be selected initially and also the first of any multi-choices to be selected initially
+			if (x > 0) {
+				active_text = "";
+				showactive_text = "";
+			}
+			
+			//do the menu items
+			html_text = '<li class="nav-item"><a class="nav-link ' + active_text + '" id="' + q_seq + '" data-toggle="pill" href="#' + q_seq + '-data" role="tab" aria-controls="' + q_seq + '-data" aria-selected="false">' + q_seq + '(' + q_id[x] + ')</a></li>';
+			//append to the DOM
+			$("#q_nav ul.nav").append(html_text);
+
+			//question data
+			//#######################################
+			html_text = '<div class="tab-pane fade ' + showactive_text + '" id="' + q_seq + '-data" role="tabpanel" aria-labelledby="' + q_seq + '">' + '\n';
+			html_text += '<h5>' + q_seq + ' (' + q_id[x] + ')</h5>' + '\n';
+			html_text += '<button type="button" class="btn btn-success add-text-btn">Add Text</button>' + '\n';
+			html_text += '<button type="button" class="btn btn-success add-image-btn">Add Image</button>' + '\n';
+			//hidden input button to open the file selection dialog
+			html_text += '<input type="file" id="select-image" hidden/>' + '\n';
+			
+			//this goes through the q_data list and adds text or image tags as specified
+			//NOTE: im an using the textbox with class = "im" for images and "txt" for text sections.  I am hiding the textbox for images loaded from the server
+			//I need the textboxes as I will use those on exit to determine the structure to upload to the server.
+			html_text += '<ul id="sortable">' + '\n';
+			for (y of qset_data[ind]["q_data"]) {
+				html_text += '<li><p>' + '\n';
+				html_text += '    <button type="button" class="btn btn-danger delete-btn">X</button>' + '\n';
+				if (y.search(/^text:/) != -1) {
+					html_text += '    <textarea class="form-control txt" rows="3">' + y.slice(5,) + '</textarea>' + '\n';
+				}
+				else if (y.search(/^image:/) != -1) {
+					html_text += '    <img class="inline" src="./' + y.slice(6,) + '"/>' + '\n';
+				}
+				html_text += '</p></li>' + '\n';
+			}
+			html_text += '</ul>' + '\n';
+
+			html_text += '<hr>' + '\n';
+
+			//#######################################
+			//answer data
+			html_text += '<form>' + '\n';
+			html_text += 	'<label for="form_group">Answer</label>' + '\n';
+			html_text += 	'<div class="form-group" id="form_group">' + '\n';
+
+			//add the mc choices or a textbox
+			var data = "";
+			if ("a_data" in qset_data[ind]) {
+				data = "mc:\n";
+				//goes through the mc items
+				for (y in qset_data[ind]["a_data"]) {
+					data += qset_data[ind]["a_data"][y] + '\n';
+				}
+				html_text += 		'<textarea class="form-control" id="' + q_seq + '_A" rows="3">' + data + '</textarea>' + '\n';
+			} else {  //the non-multichoice case
+				data = "text";
+				html_text += 		'<textarea class="form-control" id="' + q_seq + '_A" rows="3">text</textarea>' + '\n';
+			}
+			
+			html_text += 	'</div>' + '\n';
+			html_text += '</form>' + '\n';
+			//#######################################
+			html_text += '</div>';
+
+			//append to the DOM
+			$("#q_data").append(html_text);
+		}
+	
+		
+		//This assigns some listeners on the edit_quiz page
+		//####################################################
+		//add the handlers to the delete and add buttons
+		//#######################################
+		$(".add-image-btn").click(function (e) {
+			add_image(e);
+			$(e.target.parentNode).find("#select-image").trigger("click");
+		});
+
+		$(".add-text-btn").click(function (e) {
+			add_text(e);
+		});
+
+		$(".delete-btn").click(function (e) {
+			del_item(e);
+		});
+
+		function del_item(e) {
+			//this deletes an element from the question
+			var ul_parent = e.target.parentNode.parentNode.parentNode;
+			var li_parent = e.target.parentNode.parentNode;
+			ul_parent.removeChild(li_parent);
+			$(ul_parent).sortable('refresh');	
+		};
+
+		function add_text(e) {
+			//this adds an element to the question, either text or an image
+			//build the html li object to add
+			var data = "add text here";
+			var html_text = "";
+			html_text += '<p>' + '\n';
+			html_text += '    <button type="button" class="btn btn-danger delete-btn">X</button>' + '\n';
+			html_text += '    <textarea class="form-control txt" rows="3">' + data + '</textarea>' + '\n';
+			html_text += '</p>' + '\n';
+			var li_new = document.createElement("li");
+			li_new.setAttribute('class','ui-sortable-handle');
+			$(li_new).append(html_text);
+			//add to DOM
+			var parent = e.target.parentNode;
+			$(parent).children("#sortable").prepend(li_new);
+			$(parent).children("#sortable").sortable('refresh');	
+			//add delete button listener
+			$(li_new).find(".delete-btn").click(function (e) {
+				del_item(e);
+			});
+		}
+
+		function add_image(e) {
+			//this adds an image element to the question
+			//build the html li object to add
+			var data = "";
+			var filename = "";   //this is a locally loaded file object
+
+			var html_text = "";
+			html_text += '<p>' + '\n';
+			html_text += '    <button type="button" class="btn btn-danger delete-btn">X</button>' + '\n';
+			//add the image textbox as hidden for the case we have the file 
+			//html_text += '    <textarea class="form-control im" rows="3" hidden>' + filename + '</textarea>' + '\n';
+			html_text += '    <img class="inline" src="./' + filename + '"/>' + '\n';
+			html_text += '</p>' + '\n';
+
+			var li_new = document.createElement("li");
+			li_new.setAttribute('class','ui-sortable-handle');
+			$(li_new).append(html_text);
+
+			//add to DOM
+			var parent = e.target.parentNode;
+			$(parent).children("#sortable").prepend(li_new);
+			$(parent).children("#sortable").sortable('refresh');	
+
+			//add delete button listener
+			$(li_new).find(".delete-btn").click(function (e) {
+				del_item(e);
+			});
+		}
+
+		//this is the onchange evenet handler for the hidden input file selection dialog
+		$(".tab-pane #select-image").on("change", function() {			
+			//selects the freshly added <img> tag for editing
+			if (!(this.files && this.files[0])) return;   //if no files were selected
+			//get the selected file object 
+			var f = this.files[0];
+			//############################################
+			//do som evalidation here if you want t avoid non-image files etc...
+			if ( f["size"] > 1000000) {
+				alert("Your file is > 1MB, you should try to reduce it for usability fo the web app.");
+				var target = $($(this.parentNode).find("ul").children()[0]).find(".delete-btn")[0];
+				target.dispatchEvent(ev);
+				del_item(ev);
+				return;
+			}
+			var img_allowed = ['image/gif', 'image/jpeg', 'image/png'];
+			if (! img_allowed.includes(f["type"])) {
+				alert('File needs to be an image file (jpg, png, gif)');
+				var ev = new Event('build');
+				var target = $($(this.parentNode).find("ul").children()[0]).find(".delete-btn")[0];
+				target.dispatchEvent(ev);
+				del_item(ev);
+				return;
+			}
+			//############################################
+			//get the target DOM <img> element and update the src part
+			var img_target = $($(this.parentNode).find("ul").children()[0]).find("img");
+			//add some meta to the blob string
+			var blob_str = URL.createObjectURL(f);
+			blob_str.lastModifiedDate = new Date();
+			blob_str.name = f["name"];
+			//update DOM
+			$(img_target).attr("src", blob_str);			
+		});
+		
+		//#######################################
+
+
+
+		//assigns a click listener to the submit button as well as the finish and submit nav choice
+		/*
+		qset_data is a json object of the follwing format:
+		qset_data = 
+		{"qset_id":"XXXX",
+		 "u_id":"XXXX,
+		 1:{q_data:["text:some text","image:some_image.jpg","text:some text"...], 
+		 	a_data=["option1","option2","option3"...]},
+		 2:{q_data:["text:some text","image:some_image.jpg","text:some text"...]}
+		 3:{q_data:["text:some text","image:some_image.jpg"...]},
+		 4:{q_data:["text:some text","image:some_image.jpg","text:some text"...], 
+		 	a_data=["option1","option2","option3"...]}}
+		*/
+		$("#final-save").click(
+			function() {
+				var text_data = "";
+				var qset_data = {"qset_id":qset_id,"u_id":u_id};
+				//parses the quiz after edits
+				//go through each q
+				for (var i=0;i<q_id.length;i++) {
+					var ind = Number(i)+1;
+					//this is the actual question sequence, i.e. "Q1", "Q2", "Q3" etc... you need to build this list locally, it is basically "Q" + index+1
+					var q_seq = "Q" + String(ind); 
+					qset_data[ind]={"q_data":[]};
+					var q_items = $("#" + q_seq + "-data ul").children();
+					//go through each element of the q
+
+
+
+
+//need to fix this to read the filename from the src of the image?!?!?!?!?
+
+
+					for (q_item of q_items) {
+						text_data = $.trim($(q_item).find("textarea").val());
+						if ($(q_item).find("textarea.txt").val() != undefined) {
+							qset_data[ind]["q_data"].push("text:" + text_data);
+						} else {
+							qset_data[ind]["q_data"].push("image:" + text_data);
+						}
+					}
+					
+					//reads the data from the answer textbox
+					//do nothing if it is not "mc:...."
+					text_data = $.trim($("#" + q_seq + "_A").val());
+					if (text_data.slice(0,3) == "mc:") {
+						qset_data[ind]["a_data"] = [];
+						text_data = text_data.slice(3,).trim();
+						for (mc_item of text_data.split(",")) {
+							qset_data[ind]["a_data"].push(mc_item.trim());
+						}
+					}
+				}
+
+				//at this point qset_data holds all the data required for the particular quiz(question set), to stringify it => JSON.stringify(qset_data);
+
+				//temp for debugging
+				text_data = "";
+				text_data += "ajax update the server with the edited quiz data for qset_id: " + qset_id + "\n"; 
+				text_data += JSON.stringify(qset_data, null, 2);
+				//alert(text_data);
+				console.log(text_data);
+			}
+		);
+
+
+		//assigns a click listener to the question selection links so they hide on question selection when in smalll screen mode
+		$("#q_nav li.nav-item").click(
+			function() {
+				var x = document.getElementById("q_nav");
+				if (x.classList.contains("show")){
+					x.classList.remove("show");
+				}
+			}
+		);
+
+	} //end of the edit_quiz code
+
+
+
+	//###########################################################################
+	//###########################################################################
+	//###########################################################################
+	//###########################################################################
+	//student_summary page
+	//This will go to the student quiz summary page, the student can see the staus of the quizes and select a quiz t take
+	if (window.location.pathname.search(/\/student_summary\.html$/i) != -1) {
 		//this builds the table of quizes to take
 
 		//this JSON info comes from the DB
@@ -288,20 +620,18 @@ $(document).ready(function() {
 			alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nuser_id: " + user_id);
 			window.location = "./take_quiz.html?qset_id="+qset_id+"&user_id="+user_id;
 		});
-	} //end of the quiz code
+	} //end of the student_summary code
 
 
 	//##########################3
 	//Take Quiz page
-	//This will build the left question nav and the panels with the questions and answers
+	//This loads the selected quiz and allows the student to answer the questions, the student can save as they go, the link for final commit is the top left nav bar
 	if (window.location.pathname.search(/\/take_quiz\.html$/i) != -1) {
-		//all the db sourced data is sent in json somehow, maybe in a hidden tag eg.  
-		//Otherwise, we can just build the page at the server and send it, but it is not hard to build it locally. 
-		
 		//user_id
 		u_id = "fred123";
 		// qset_id, that was chosen
 		var qset_id = "QS435";
+		var qset_name = "Some Quiz Name";
 		//q_ids in the selected qset, the index + 1 is the sequence of the question 
 		var q_id = ["x243","y22","z43","x534","z115"];
 		//the question specification has 2 possible fields per question, q_data and a_data if it is an multi-choice
@@ -334,6 +664,11 @@ $(document).ready(function() {
 				
 				
 		//this does the html building				
+		//do the title
+		html_text = qset_name;
+		//append to the DOM
+		$("h5#title").append(html_text);
+
 		var active_text = "active";
 		var showactive_text = "show active";
 		for (x in q_id) {

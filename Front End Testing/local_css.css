@@ -219,6 +219,7 @@ div.content {
 div.content p {
 	margin:0;
 	padding-bottom: 8px;
+	text-align:left;
 }
 
 
@@ -391,7 +392,7 @@ i.ref {
 /*ajax example text
 ###########################################################*/
 span.ajax_text {
-	color=black;
+	color:black;
 	font-weight: 700;
 	font-size:1.5em;
 	background: rgb(240,240,240);
@@ -399,9 +400,20 @@ span.ajax_text {
 	padding:5px;
 }
 
+
 /*jquery-ui sortable vertical list
 ###########################################################*/
+#sortable {
+	padding-left:0;
+	list-style-type:none;
+}
+
 #sortable li {
+	/*background-color:rgb(240,240,240);*/
+	cursor:grab;
+}
+
+/*#sortable li {
 	text-align:left;
 	background-color: rgb(240,240,240);
 	color: darkred;
@@ -412,11 +424,11 @@ span.ajax_text {
 	padding-right:5px;
 	border-radius:5px;
 	letter-spacing:2px;
-}
+}*/
 
 /*jquery-ui sortable horizontal list
 ###########################################################*/
-#list {
+/*#list {
 	text-align:left;
 	background-color: rgb(240,240,240);
 	color: darkred;
@@ -427,7 +439,7 @@ span.ajax_text {
 	margin-bottom:10px;
 	border-radius:5px;
 	letter-spacing:2px;
-}
+}*/
 
 
 /*hyperlink on the css page to the no css version
@@ -510,7 +522,7 @@ span.ajax_text {
 
 
 
-/*take quiz page
+/*take/edit quiz page
 ###########################################################*/
 /*question menu bar
 ###########################################################*/
@@ -537,8 +549,9 @@ span.ajax_text {
 	list-style-type: none;
 	margin: 0px;
 	padding: 0px;
-	overflow: hidden;
 	width:100%;
+	overflow: hidden;
+	/*white-space: nowrap;*/
 }
 
 
@@ -593,4 +606,25 @@ i.dev-comments {
 hr {
 	margin-top:5px;
 	margin-bottom:5px;
+}
+
+
+
+.add-image-btn, .add-text-btn {
+	padding: 0px 4px 0px 4px;
+	margin-top:5px;
+	margin-bottom:5px;
+}
+
+
+.delete-btn {
+	font-size:0.8em;
+	padding: 0px 4px 0px 4px;
+	vertical-align:top;
+}
+
+
+textarea.txt, textarea.im {
+	max-width: 90%;
+	display:inline;
 }

@@ -10,6 +10,9 @@
         <!-- bootstrap -->
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
+        <!--datatables-->
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css">
+        
         <!-- local css imports-->
         <link rel="stylesheet" type="text/css" href="./local_css.css"/>
 
@@ -21,15 +24,14 @@
 
     <body>
         <div class="container-fluid">
-            <!--header row-->
             <div class="row header">
                 <div class="col-sm-1 header_left align-self-start" id="user_id">u_id</div>
                 <div class="col-sm-10 header_main align-self-center">Quiz App</div>
                 <div class="col-sm-1 header_right align-self-start"><a href="./landing.html"><i class="fas fa-sign-out-alt"></i></a></div>
-            </div>
+            </div> <!--end of row-->
 
-            <!-- header nav row -->
-            <div class="row">
+
+            <div class="row sticky-top">
                 <div class="col-sm-12 header_nav">
                     <nav class="navbar navbar-dark navbar-expand-sm">
                         <div class="navbar-header">
@@ -39,36 +41,20 @@
                         </div>
                         <div class="collapse navbar-collapse" id="myNavbar">
                             <ul class="nav navbar-nav">
-                                <li><a href="./quiz.html">Quiz</a></li>
+                                <li><a href="./student_stats.html">Statistics</a></li>
+                                <!--<li><a href="./login-reg.html">Login/Register</a></li>
+                                <li class="active"><a href="./project1-js.html">JS</a></li>
+                                <li><a href="./project1-bio.html">Bio</a></li>-->
                             </ul>
                         </div>
                     </nav>
                 </div>
-            </div> 
+            </div>
 
-            <!-- main content row -->
             <div class="row">
-                <!-- left side section -->
-                <div class="col-sm-2 l_side sticky-top">
-                    <div class="row">
-                        <div class="col-sm-12" id="q_nav_main">
-                            <nav class="navbar navbar-dark navbar-expand-sm">
-                                <div class="navbar-header">
-                                    <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#q_nav">
-                                        <span class="navbar-toggler-icon"></span>
-                                    </button>
-                                </div>
-                                <div class="collapse navbar-collapse" id="q_nav">
-                                    <ul class="nav nav-pills flex-column">
-                                        <!--filled by js-->
-                                    </ul>
-                                </div>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
+                <div class="col-sm-2 l_side">
+                </div> <!--end of l_side-->
 
-                <!-- content section -->
                 <div class="col-sm-8 content">
                     <!--<div class="sticky-top">
                         <button id="collapse_text" class="btn btn-light rounded exp-col" type="button">
@@ -79,34 +65,35 @@
                         </button>
                     </div>-->
 
-                    <h2>Statistics</h2>
+                    <!--<img class="inline-float" src="./images/javascript.png" alt="JavaScript Logo"/>-->
+                    <h2>Quiz Selection</h2>
                     
                     <h5>
-                        Some subtitle
+                        Quiz List
                     </h5>
-                    <hr>
-                    <p>
-
+                    <p id="p-quiz-selection-table">
+                        <!-- filled by js -->
                     </p>
 
                     <i class="dev-comments">
+                        -it will update on page load from the DB<br/>
+                        -the user_id will be in the top left corner<br/>
+                        -only status = "no attempts" will link to taking the quiz<br/>
+                        -change to a more exotic table type with sortable cols, scrolling and pagination
                     </i>
+                </div> <!--end of content-->
 
-                </div> 
-
-                <!-- right side section -->
                 <div class="col-sm-2 r_side">
-                </div>
+                </div> <!--end of r_side-->
 
-            </div>
+            </div>  <!--end of main row-->
 
-            <!-- footer row -->
             <div class="row">
                 <div class="col-sm-12 footer">
                 </div>
-            </div>
+            </div> <!--end of row-->
 
-        </div>
+        </div> <!--end of container-->
 
         <!--################################################################-->
         <!--js imports-->
@@ -128,6 +115,14 @@
         
         <script 
             src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
+        </script>
+
+        <!-- DataTables -->
+        <script 
+            src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js">
+        </script>
+        <script 
+            src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js">
         </script>
 
         <!-- fontawsome icons-->
