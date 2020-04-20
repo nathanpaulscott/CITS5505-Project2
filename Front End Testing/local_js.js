@@ -112,7 +112,7 @@ $(document).ready(function() {
 			}
 
 			if (qs_id_req.length != 0) {
-				alert("ajax req to delete the given subset of the qs_ids from the DB");
+				alert("ajax req to delete the given subset of the qs_ids from the DB:\n" + JSON.stringify(qs_id_req,null,2));
 			}
 			else{
 				alert("no valid quiz ids were given")
@@ -140,11 +140,11 @@ $(document).ready(function() {
 				}
 			}
 
-			if (qs_id_req.length != 0) {
-				alert("ajax req a subset of the qs_ids from the DB");
+			if (qs_id[0].search(/all/i) != -1) {
+				alert("ajax req to export all quizes:\n" + JSON.stringify(qs_id_db,null,2));
 			}
-			else if (qs_id[0].search(/all/i) != -1) {
-				alert("ajax req all qs_ids from the DB");
+			else if (qs_id_req.length != 0) {
+				alert("ajax req to export the given subset of the qs_ids:\n" + JSON.stringify(qs_id_req,null,2));
 			}
 			else {
 				alert("no valid quiz ids were given");
@@ -184,11 +184,22 @@ $(document).ready(function() {
 			for (f of files){
 				//alert('you selected: ' + f["name"]);
 				if (f["name"].search(/\.quiz/i) == -1) {
-					//need to write the ajax upload image file to ./static/image/ ont he server
-					//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+					//this is for images, upload them 
+
+					//do som evalidation here if you want t avoid non-image files etc...
+					if ( f["size"] > 1000000) {
+						alert("Your file " + f["name"] + " is > 1MB, you should try to reduce it for usability fo the web app.  Not uploading it....");
+						continue;
+					}
+					var img_allowed = ['image/gif', 'image/jpeg', 'image/png'];
+					if (! img_allowed.includes(f["type"])) {
+						alert("Your file " + f["name"] + " needs to be an image file (jpg, png, gif).  Not uploading it....");
+						continue;
+					}
 					console.log('sending ' + f["name"] + ' to the server');
 				}
 				else {
+					//this is for the .quiz files
 					//this uses a closure to handle all the file read and to pass the filename in, I still do not understand how it works
 					//this is for .quiz text files which contain quiz data in the specified json format.  we validate each one and reject if it fails (informing the user why)
 					var reader = new FileReader();
@@ -201,7 +212,7 @@ $(document).ready(function() {
 								var qs_data = JSON.parse(file_data);
 							}
 							catch(err) {
-								console.log('failed parsing ' + name);
+								alert('failed parsing ' + name);
 								return;
 							}
 							console.log('parsing ' + name + ', then sending to the server');
@@ -357,8 +368,7 @@ $(document).ready(function() {
 		//add the handlers to the delete and add buttons
 		//#######################################
 		$(".add-image-btn").click(function (e) {
-			add_image(e);
-			$(e.target.parentNode).find("#select-image").trigger("click");
+			$(e.target.parentNode).find("#select-image").trigger("click",e);
 		});
 
 		$(".add-text-btn").click(function (e) {
@@ -399,6 +409,40 @@ $(document).ready(function() {
 			});
 		}
 
+		//this is the onchange evenet handler for the hidden input file selection dialog
+		$(".tab-pane #select-image").on("change", function(e) {			
+			//selects the freshly added <img> tag for editing
+			if (!(this.files && this.files[0])) {
+				return;   //if no files were selected
+			}
+			//get the selected file object 
+			var f = this.files[0];
+			//############################################
+			//do som evalidation here if you want t avoid non-image files etc...
+			if ( f["size"] > 1000000) {
+				alert("Your file is > 1MB, you should try to reduce it for usability fo the web app.");
+				return;
+			}
+			var img_allowed = ['image/gif', 'image/jpeg', 'image/png'];
+			if (! img_allowed.includes(f["type"])) {
+				alert('File needs to be an image file (jpg, png, gif)');
+				return;
+			}
+			//############################################
+
+			//add the DOM element here
+			add_image(e);
+
+			//get the target DOM <img> element and update the src part
+			var img_target = $($(this.parentNode).find("ul").children()[0]).find("img");
+			//add some meta to the blob string
+			var blob_str = URL.createObjectURL(f);
+			//update DOM
+			$(img_target).attr("src", blob_str);
+			$(img_target).text("./" + f["name"]);
+		});
+		
+
 		function add_image(e) {
 			//this adds an image element to the question
 			//build the html li object to add
@@ -427,42 +471,6 @@ $(document).ready(function() {
 				del_item(e);
 			});
 		}
-
-		//this is the onchange evenet handler for the hidden input file selection dialog
-		$(".tab-pane #select-image").on("change", function() {			
-			//selects the freshly added <img> tag for editing
-			if (!(this.files && this.files[0])) return;   //if no files were selected
-			//get the selected file object 
-			var f = this.files[0];
-			//############################################
-			//do som evalidation here if you want t avoid non-image files etc...
-			if ( f["size"] > 1000000) {
-				alert("Your file is > 1MB, you should try to reduce it for usability fo the web app.");
-				var target = $($(this.parentNode).find("ul").children()[0]).find(".delete-btn")[0];
-				target.dispatchEvent(ev);
-				del_item(ev);
-				return;
-			}
-			var img_allowed = ['image/gif', 'image/jpeg', 'image/png'];
-			if (! img_allowed.includes(f["type"])) {
-				alert('File needs to be an image file (jpg, png, gif)');
-				var ev = new Event('build');
-				var target = $($(this.parentNode).find("ul").children()[0]).find(".delete-btn")[0];
-				target.dispatchEvent(ev);
-				del_item(ev);
-				return;
-			}
-			//############################################
-			//get the target DOM <img> element and update the src part
-			var img_target = $($(this.parentNode).find("ul").children()[0]).find("img");
-			//add some meta to the blob string
-			var blob_str = URL.createObjectURL(f);
-			blob_str.lastModifiedDate = new Date();
-			blob_str.name = f["name"];
-			//update DOM
-			$(img_target).attr("src", blob_str);			
-		});
-		
 		//#######################################
 
 
@@ -479,11 +487,15 @@ $(document).ready(function() {
 		 3:{q_data:["text:some text","image:some_image.jpg"...]},
 		 4:{q_data:["text:some text","image:some_image.jpg","text:some text"...], 
 		 	a_data=["option1","option2","option3"...]}}
+		
+		The blobs object just holds any details of added images
+		blobs = {"blob string":"filename", "blob string":"filename"}
 		*/
 		$("#final-save").click(
-			function() {
+				function() {
 				var text_data = "";
 				var qset_data = {"qset_id":qset_id,"u_id":u_id};
+				var blobs = {};   // will hold the DOMstrings and filenames for any added images to upload
 				//parses the quiz after edits
 				//go through each q
 				for (var i=0;i<q_id.length;i++) {
@@ -492,19 +504,21 @@ $(document).ready(function() {
 					var q_seq = "Q" + String(ind); 
 					qset_data[ind]={"q_data":[]};
 					var q_items = $("#" + q_seq + "-data ul").children();
-					//go through each element of the q
-
-
-
-
-//need to fix this to read the filename from the src of the image?!?!?!?!?
-
-
-					for (q_item of q_items) {
-						text_data = $.trim($(q_item).find("textarea").val());
-						if ($(q_item).find("textarea.txt").val() != undefined) {
-							qset_data[ind]["q_data"].push("text:" + text_data);
+					//go through each element of the question
+					for (item of q_items) {
+						text_data = $(item).find("textarea").val();
+						if (text_data != undefined) {
+							//the item is a textbox
+							qset_data[ind]["q_data"].push("text:" + $.trim(text_data));
 						} else {
+							//the item is an image
+							var target = $(item).find("img");
+							if (target.attr("src").slice(0,5) == "blob:") {
+								text_data = target.text();
+								blobs[target.attr("src")] = text_data;
+							} else {
+								text_data = target.attr("src");
+							}
 							qset_data[ind]["q_data"].push("image:" + text_data);
 						}
 					}
@@ -522,13 +536,15 @@ $(document).ready(function() {
 				}
 
 				//at this point qset_data holds all the data required for the particular quiz(question set), to stringify it => JSON.stringify(qset_data);
+				//we also need to upload the images added.  We reference them by the DOMstrings in the blobs object.
 
 				//temp for debugging
 				text_data = "";
 				text_data += "ajax update the server with the edited quiz data for qset_id: " + qset_id + "\n"; 
 				text_data += JSON.stringify(qset_data, null, 2);
-				//alert(text_data);
 				console.log(text_data);
+				console.log("the DOMstrings for added images are:\n" + JSON.stringify(blobs,null,2));
+				alert("the DOMstrings for added images are:\n" + JSON.stringify(blobs,null,2) + "\n\n The question data is:\n" + text_data);
 			}
 		);
 
