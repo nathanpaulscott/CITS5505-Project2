@@ -11,12 +11,13 @@
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
         <!-- local css imports-->
-        <link rel="stylesheet" type="text/css" href="./local_css.css"/>
+        <link rel="stylesheet" type="text/css" href="./static/local_css.css"/>
 
         <!--################################################################-->
         <!--start of head-->
         <title>Quiz App</title>
     </head>
+
 
     <body>
         <div class="container-fluid">
@@ -38,9 +39,7 @@
                         </div>
                         <div class="collapse navbar-collapse" id="myNavbar">
                             <ul class="nav navbar-nav">
-                                <!--this sends the request with the admin user id and the qs_id, so a link back to here is given too-->
-                                <li><a id="preview" href="./preview_quiz.html">Preview Edits</a></li>
-                                <li><a id="final-save" href="./admin_summary.html">Finish and Submit Edits</a></li>
+                                <li><a href="./student_summary.html">Back to Quiz Selection</a></li>
                             </ul>
                         </div>
                     </nav>
@@ -71,35 +70,26 @@
 
                 <!-- content section -->
                 <div class="col-sm-8 content">
-                    <h2>Edit Quiz</h2>
-                    
-                    <h5 id="title">
-                        <!-- filled by js -->
-                    </h5>
+                    <!--<div class="sticky-top">
+                        <button id="collapse_text" class="btn btn-light rounded exp-col" type="button">
+                            <i class="fas fa-caret-up"></i>
+                        </button>
+                        <button id="expand_text" class="btn btn-light rounded exp-col" type="button">
+                            <i class="fas fa-caret-down"></i>
+                        </button>
+                    </div>-->
 
-                    <h6 data-toggle="collapse" data-target="#instructions" aria-expanded="false" aria-controls="instructions">
-                        Instructions
-                    </h6>
-                    <div class="collapse multicollapse" id="instructions">             
-                        <i class="instructions">
-                            Choose the question to edit on the left manu bar<br/>
-                            Click and drag the text/image elements of the quesiton to change the order<br/>
-                            Click the red X to delete an element<br/>
-                            Click the add text/add image buttons to add a new text or image element<br/>
-                            Answer section: if the question requires a text answer, leave the Answer box empty, if it requires multichoice, then type 'mc:' followed by the multichoice options as a comma separated list
-                        </i>
-                    </div>
+                    <h2>Statistics</h2>
+                    
+                    <h5>
+                        Some subtitle
+                    </h5>
                     <hr>
                     <p>
-                        <!-- Question Data -->
-                        <div class="tab-content" id="q_data">
-                            <!-- filled by JS -->
 
-                        </div>
                     </p>
 
                     <i class="dev-comments">
-                        -this loads the question set selected via HTTP get with params (qset_id, user_id)<br/>
                     </i>
 
                 </div> 
@@ -131,10 +121,7 @@
             integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
             crossorigin="anonymous">
         </script>
-
-        <!--This fix hosted on the website locally fixes the jquery-ui sortable with touch devices issue-->
-        <script src="jquery.ui.touch-punch.min.js"></script>
-
+        
         <script 
             src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous">
         </script>
@@ -147,7 +134,7 @@
         <script src="https://kit.fontawesome.com/029e93a038.js" crossorigin="anonymous"></script>
 
         <!-- local js imports-->
-        <script src="./local_js.js"></script>
+        <script src="./static/local_js.js"></script>
 
     </body>
 </html>

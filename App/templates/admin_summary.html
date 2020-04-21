@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!--meta-->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!--################################################################-->
+        <!-- css imports-->
+        <!-- bootstrap -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        
+        <!--datatables (https://datatables.net/examples/styling/bootstrap4.html)-->
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css">
+
+        <!-- local css imports-->
+        <link rel="stylesheet" type="text/css" href="./static/local_css.css"/>
+        <!--<link rel="stylesheet" href="./fontawesome/css/all.min.css">-->
+
+        <!--################################################################-->
+        <!--start of head-->
+        <title>Quiz App</title>
+    </head>
+
+
+    <body>
+        <div class="container-fluid">
+            <!--header row-->
+            <div class="row header">
+                <div class="col-sm-1 header_left align-self-start" id="user_id">u_id</div>
+                <div class="col-sm-10 header_main align-self-center">Quiz App</div>
+                <div class="col-sm-1 header_right align-self-start"><a href="./landing.html"><i class="fas fa-sign-out-alt"></i></a></div>
+            </div>
+
+            <!-- header nav row -->
+            <div class="row">
+                <div class="col-sm-12 header_nav">
+                    <nav class="navbar navbar-dark navbar-expand-sm">
+                        <div class="navbar-header">
+                            <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#myNavbar">
+                                <span class="navbar-toggler-icon"></span>
+                            </button>
+                        </div>
+                        <div class="collapse navbar-collapse" id="myNavbar">
+                            <ul class="nav navbar-nav">
+                                <li><a href="./admin_stats.html">Statistics</a></li>
+                            </ul>
+                        </div>
+                    </nav>
+                </div>
+            </div> 
+
+            <!-- main content row -->
+            <div class="row">
+                <!-- left side section -->
+                <div class="col-sm-2 l_side sticky-top">
+                    <div class="row">
+                        <div class="col-sm-12" id="q_nav_main">
+                            <nav class="navbar navbar-dark navbar-expand-sm">
+                                <div class="navbar-header">
+                                    <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#q_nav">
+                                        <span class="navbar-toggler-icon"></span>
+                                    </button>
+                                </div>
+                                <div class="collapse navbar-collapse" id="q_nav">
+                                    <ul class="nav nav-pills flex-column">
+                                        <!--filled by js-->
+                                    </ul>
+                                </div>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- content section -->
+                <div class="col-sm-8 content">
+                    <h2>Quiz Administration</h2>
+                    
+                    <h5>
+                        Quiz List
+                    </h5>
+
+                    <h6 data-toggle="collapse" data-target="#instructions" aria-expanded="false" aria-controls="instructions">
+                        Instructions
+                    </h6>
+                    <div class="collapse multicollapse" id="instructions">             
+                        <i class="instructions">Click on a Quiz row to edit it.<br/>
+                            Use the import button to import one or more quizes and/or images.<br/>
+                            Use the export button to export one or more quizes.<br/>
+                            Use the delete button to enter a list of quiz ids for deletion.<br/>
+                            NOTE: export a quiz to get the format required for import.<br/>
+                            NOTE: quiz should use .quiz extension, images can use any extension.<br/>
+                            NOTE: if you import a quiz with and existing name, it will overwrite that quiz in the DB.<br/>
+                            NOTE: you can see in the missing images column the number of missing images for a quiz, edit the quiz to see which images.<br/>
+                            NOTE: when selecting files for import, non .quiz files are assumed to be images and are deleted if not required by any quiz.
+                        </i>
+                    </div>
+                    <hr>
+                   
+                    <p>
+                        <button type="button" id="btn-import" class="btn btn-primary">Import</button>
+                        <input type="file" id="input-import" multiple="multiple" hidden/>
+                        <button type="button" id="btn-export" class="btn btn-success" data-toggle="collapse" data-target="#export-config" aria-expanded="false" aria-controls="export-config">Export</button>
+                        <a id="a-export" href="" download="" hidden></a>
+                        <button type="button" id="btn-delete" class="btn btn-danger"  data-toggle="collapse" data-target="#delete-config" aria-expanded="false" aria-controls="delete-config">Delete</button>
+                    </p>
+                    <div class="collapse multicollapse" id="export-config" >             
+                        Give the comma delimited list of Quiz Ids to Export or 'all' to export all Quizes
+                        <br/>
+                        <textarea class="form-control" id="export-config-text" rows="3"></textarea>
+                        <br/>
+                        <button type="button" id="btn-export-submit" class="btn btn-success">Export Submit</button>
+                        <br/>
+                        <br/>
+                    </div>
+                    <div class="collapse multicollapse" id="delete-config" >             
+                        Give the comma delimited list of Quiz Ids to Delete them from the Database
+                        <br/>
+                        <textarea class="form-control" id="delete-config-text" rows="3"></textarea>
+                        <br/>
+                        <button type="button" id="btn-delete-submit" class="btn btn-danger">Delete Submit</button>
+                        <br/>
+                        <br/>
+                    </div>
+                    
+                    <p id="p-quiz-admin-table">                   
+                        <!-- filled by js-->
+                    </p>
+
+                    <i class="dev-comments">
+                        -it will update on page load from the DB<br/>
+                        -the user_id will be in the top left corner<br/>
+                        -change to a more exotic table type with sortable cols, scrolling and pagination
+                    </i>
+                </div> 
+
+                <!-- right side section -->
+                <div class="col-sm-2 r_side">
+                </div>
+
+            </div>
+
+            <!-- footer row -->
+            <div class="row">
+                <div class="col-sm-12 footer">
+                </div>
+            </div>
+
+        </div>
+
+        <!--################################################################-->
+        <!--js imports-->
+        <script
+            src="https://code.jquery.com/jquery-3.4.1.min.js"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+            crossorigin="anonymous">
+        </script>
+
+        <script
+            src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+            integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+            crossorigin="anonymous">
+        </script>
+        
+        <script 
+            src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous">
+        </script>
+        
+        <script 
+            src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
+        </script>
+
+        <!-- DataTables -->
+        <script 
+            src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js">
+        </script>
+        <script 
+            src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js">
+        </script>
+        
+        <!-- fontawsome icons-->
+        <script 
+            src="https://kit.fontawesome.com/029e93a038.js" crossorigin="anonymous">
+        </script>
+
+        <!-- local js imports-->
+        <script src="./static/local_js.js"></script>
+
+    </body>
+</html>
+
+
