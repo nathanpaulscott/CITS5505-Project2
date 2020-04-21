@@ -196,14 +196,14 @@ $(document).ready(function() {
 						alert("Your file " + f["name"] + " needs to be an image file (jpg, png, gif).  Not uploading it....");
 						continue;
 					}
-					console.log('sending ' + f["name"] + ' to the server');
+					alert(f["name"] + ' was accepted');
 				}
 				else {
 					//this is for the .quiz files
 					//this uses a closure to handle all the file read and to pass the filename in, I still do not understand how it works
 					//this is for .quiz text files which contain quiz data in the specified json format.  we validate each one and reject if it fails (informing the user why)
 					var reader = new FileReader();
-					reader.onload = (function(e1) {
+					reader.onload = (function(e1,files_accept) {
 						return function(e2) {
 							var name = e1.name;
 							var file_data = e2.target.result;
@@ -215,8 +215,8 @@ $(document).ready(function() {
 								alert('failed parsing ' + name);
 								return;
 							}
-							console.log('parsing ' + name + ', then sending to the server');
-			
+							alert('parsing ' + name + ', then sending to the server');
+
 							//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 							//NEED TO WRITE THE VALIDATION and AJAX upload CODE HERE
 			
@@ -325,7 +325,7 @@ $(document).ready(function() {
 					html_text += '    <textarea class="form-control txt" rows="3">' + y.slice(5,) + '</textarea>' + '\n';
 				}
 				else if (y.search(/^image:/) != -1) {
-					html_text += '    <img class="inline" src="./' + y.slice(6,) + '"/>' + '\n';
+					html_text += '    <img class="inline" src="./static/images/' + y.slice(6,) + '"/>' + '\n';
 				}
 				html_text += '</p></li>' + '\n';
 			}
@@ -439,7 +439,7 @@ $(document).ready(function() {
 			var blob_str = URL.createObjectURL(f);
 			//update DOM
 			$(img_target).attr("src", blob_str);
-			$(img_target).text("./" + f["name"]);
+			$(img_target).text("./static/images/" + f["name"]);
 		});
 		
 
@@ -454,7 +454,7 @@ $(document).ready(function() {
 			html_text += '    <button type="button" class="btn btn-danger delete-btn">X</button>' + '\n';
 			//add the image textbox as hidden for the case we have the file 
 			//html_text += '    <textarea class="form-control im" rows="3" hidden>' + filename + '</textarea>' + '\n';
-			html_text += '    <img class="inline" src="./' + filename + '"/>' + '\n';
+			html_text += '    <img class="inline" src="./static/images/' + filename + '"/>' + '\n';
 			html_text += '</p>' + '\n';
 
 			var li_new = document.createElement("li");
@@ -639,7 +639,11 @@ $(document).ready(function() {
 	} //end of the student_summary code
 
 
-	//##########################3
+	//#######################################################
+	//#######################################################
+	//#######################################################
+	//#######################################################
+	//#######################################################
 	//Take Quiz page
 	//This loads the selected quiz and allows the student to answer the questions, the student can save as they go, the link for final commit is the top left nav bar
 	if (window.location.pathname.search(/\/take_quiz\.html$/i) != -1) {
@@ -715,7 +719,7 @@ $(document).ready(function() {
 					html_text += '<p>' + y.slice(5,) + '</p>' + '\n';
 				}
 				else if (y.search(/^image:/) != -1) {
-	    			html_text += '<p><img class="inline" src="./' + y.slice(6,) + '"/></p>' + '\n';
+					html_text += '<p><img class="inline" src="./static/images/' + y.slice(6,) + '"/></p>' + '\n';
 				}
     		}
 			html_text += '<hr>' + '\n';
