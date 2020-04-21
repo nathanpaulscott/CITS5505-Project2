@@ -1,10 +1,12 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, send_from_directory, url_for
+from werkzeug.utils import secure_filename
 from flask_sqlalchemy import SQLAlchemy
 import os
 
 
 # initialise app
 basedir = os.path.abspath(os.path.dirname(__file__))
+upload_folder = '/static/images'
 app = Flask(__name__)
 
 
@@ -106,6 +108,35 @@ def register():
             db.session.commit()
 
             return jsonify ({ "Status" : "New User Created"})
+
+
+
+
+
+
+#nathan...testing
+##########################################################
+#code to handle the upload function of the admin summary
+@app.route('/upload_image', methods=['POST'])
+def upload_image():
+    if request.method == 'POST':
+        file = request.files['file']
+        filename = secure_filename(file.filename)
+        file.save(basedir + '/' + upload_folder + '/' + filename)
+        #for testing
+        return 'Server recieved:\n' + filename
+        #FYI for later, how to redirect, this sends the user to this page with these params
+        #return redirect(url_for('get_admin_summary', filename=filename))
+
+
+@app.route('/upload_quiz', methods=['POST'])
+def upload_quiz():
+    if request.method == 'POST':
+        qs_data = request.get_json()
+        #so qs_data is the json object, need to put it in the DB now
+        #for testing
+        return qs_data
+#########################################################
 
 
 

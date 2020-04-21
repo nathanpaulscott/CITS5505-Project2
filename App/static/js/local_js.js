@@ -196,7 +196,24 @@ $(document).ready(function() {
 						alert("Your file " + f["name"] + " needs to be an image file (jpg, png, gif).  Not uploading it....");
 						continue;
 					}
-					alert(f["name"] + ' was accepted');
+					//alert(f["name"] + ' was accepted');
+
+					//send to server
+					var form_data = new FormData();
+					form_data.append("file", f);
+					$.ajax({
+						type: 'POST',
+						url: '/upload_image',
+						data: form_data,
+						async: true,
+						contentType: false,
+						cache: false,
+						processData: false,
+						success: function(status) {
+							alert(status);
+						},
+					});
+
 				}
 				else {
 					//this is for the .quiz files
@@ -212,15 +229,32 @@ $(document).ready(function() {
 								var qs_data = JSON.parse(file_data);
 							}
 							catch(err) {
-								alert('failed parsing ' + name);
+								alert('failed parsing ' + name + ' not uploading....');
 								return;
 							}
-							alert('parsing ' + name + ', then sending to the server');
+							//alert('parsing ' + name + ', then sending to the server');
 
 							//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-							//NEED TO WRITE THE VALIDATION and AJAX upload CODE HERE
+							//NEED TO WRITE THE VALIDATION 
 			
 							//Maybe we have to write the outcome to the DOM and then retrieve from there later  when a read flag is set, because I have no other way to inform the user
+
+							//send to server
+							$.ajax({
+								type: 'POST',
+								url: '/upload_quiz',
+								data: JSON.stringify(qs_data),
+								contentType: "application/json",
+								dadta_type: "json",
+								cache: false,
+								processData: false,
+								async: true,
+								success: function(status) {
+									//for testing
+									alert(JSON.stringify(status,null,2));
+								},
+							});
+
 						};
 					})(f);
 					reader.readAsText(f);
