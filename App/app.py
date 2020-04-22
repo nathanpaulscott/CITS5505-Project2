@@ -171,8 +171,10 @@ def upload_quiz():
 
 """ 
 The format for the .quiz files for the question set specification is:
+NOTE: I am not validating this format right now, the JS just passes wahtever JSON you give to the server as long as it is JSON
 ///////////////////////////////////////////////
-{"qset_id":"some alpha-numeric string" (optional),
+{
+    "qset_id":"some alpha-numeric string" (optional),
     1:{"question":{1:{"type":"text","data":"some text for Q1"},
             2:{"type":"image","data":"some_image.jpg"},
             3:{"type":"text","data":"some text"}}, 
@@ -186,7 +188,8 @@ The format for the .quiz files for the question set specification is:
     "answer":{"type":"mc","data":["ans1","ans2","ans3","ans4","ans5"]}},
     4:{"question":{1:{"type":"text","data":"some text for Q4"}},
     5:{"question":{1:{"type":"text","data":"some text for Q5"}},
-    6:{"question":{1:{"type":"text","data":"some text for Q6"}}}
+    6:{"question":{1:{"type":"text","data":"some text for Q6"}}
+}
 ////////////////////////////////////////
 NOTE: The browser will add object["user_id"]="the user id" to the incoming json object before upg to the server
 NOTE: if the qset_id is missing, then the browser adds this field to the json object using the next available qset_id (say qset_ids are "qs" + a number)
