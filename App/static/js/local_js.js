@@ -14,368 +14,304 @@ $(document).ready(function() {
 	//This will go to the admin_summary page which shows a summary table of all quizes
     //this page allows the admin to click on a quiz to edit it, or use the bulk import/export/delete buttons
 	if (window.location.pathname.search(/\/admin_summary\.html$/i) != -1) {
-
 		//this builds the table of quizes to administer
 
-		//this JSON info comes from the DB
-		var qset_summary = 
-		[["Quiz Id","Topic","Tot Qs","MC Qs","Time(mins)","Owner","Status","Img.Missing","Attempted","Completed","Marked","Score Mean","Score SD"],
-		 ["x453","Topic A",10,5,50,"u_id","Active",0,4,25,9,59.3,13.4],
-		 ["y987","Topic B",20,10,100,"u_id","Active",0,8,45,33,68.3,8.4],
-		 ["x365","Topic A",30,20,150,"u_id","Active",0,3,35,32,62.3,7.4],
-		 ["d13","Topic A",10,5,30,"u_id","Active",0,0,65,0,-1,-1],
-		 ["s4","Topic C",15,7,70,"u_id","Active",0,5,25,3,90.3,20.1],
-		 ["c476","Topic C",12,8,60,"u_id","Pending",4,0,0,0,-1,-1],
-		 ["x893","Topic A",20,10,80,"u_id","Active",0,2,35,22,70.3,12],
-		 ["f453","Topic D",20,15,90,"u_id","Closed",0,7,45,45,67.2,8.3],
-		 ["b323","Topic B",15,10,65,"u_id","Active",0,4,65,60,60.3,9.2],
-		 ["z43","Topic B",10,5,40,"u_id","Active",0,3,45,30,63.3,11.1],
-		 ["x443","Topic A",5,5,25,"u_id","Active",0,0,25,2,80.3,22.7]];
-				
-		//this does the html table building				
-		//does the table header
-		var html_text = ""; 
-		html_text = '<table class="table table-hover table-striped table-responsive" id="quiz-admin-table">' + '\n';
-		html_text +='	<thead>' + '\n';
-		html_text +='		<tr>' + '\n';
-		html_text +='          <th scope="col">#</th>' + '\n';
-		for (header_item of qset_summary[0]) {
-			html_text +='          <th scope="col">'+ header_item +'</th>' + '\n';
-		}
-		html_text +='     	</tr>' + '\n';
-		html_text +='   </thead>' + '\n';
+		//the user id comes form the previous page
+		u_id = "some user_id";
 
-		//does the table body
-		html_text +='   <tbody>' + '\n';
-		for (x = 1; x < qset_summary.length; x++){
-			var ind = Number(x);
-			html_text +='       <tr class="click-enable">' + '\n';
-			html_text +='	       <td>' + ind + '</td>' + '\n';
-			html_text +='	       <td id="qset-id">' + qset_summary[ind][0] + '</td>' + '\n';
-			for (y = 1; y < qset_summary[ind].length; y++){
-				var ind_inner = Number(y);
-				html_text +='	       <td>' + qset_summary[ind][ind_inner] + '</td>' + '\n';
+		//Do the Ajax Request here to fetch the admin summary table data (qset_summary)
+		$.ajax({
+			type: 'POST',
+			url: '/admin_summary_json',
+			data: JSON.stringify(u_id),
+			contentType: "application/json",
+			data_type: "json",
+			cache: false,
+			processData: false,
+			async: true,
+			success: function(data) {
+				//write this to the DOM and trigger the download, then delete from the DOM
+				build_admin_summary(data["data"]);
+			},
+		});
+
+		function build_admin_summary(qset_summary) {
+			//this does the html table building				
+			//does the table header
+			var html_text = ""; 
+			html_text = '<table class="table table-hover table-striped table-responsive" id="quiz-admin-table">' + '\n';
+			html_text +='	<thead>' + '\n';
+			html_text +='		<tr>' + '\n';
+			html_text +='          <th scope="col">#</th>' + '\n';
+			for (header_item of qset_summary[0]) {
+				html_text +='          <th scope="col">'+ header_item +'</th>' + '\n';
 			}
-			html_text +='       </tr>' + '\n';
-		}
-		html_text +='   </tbody>' + '\n';
-		html_text += '</table>' + '\n';
-		
-		//append to the DOM
-		$("#p-quiz-admin-table").append(html_text);
+			html_text +='     	</tr>' + '\n';
+			html_text +='   </thead>' + '\n';
 
-	    //runs the datatable plugin on the table to make it sortable etc...
-	    $('#quiz-admin-table').DataTable({
-			//"paging":true,"ordering":true,columnDefs: [{"orderable": false,"targets":0}],"order": [] 
-		});
-	
-		//assigns a click listener to the table rows
-		$("#quiz-admin-table tbody tr.click-enable").click(function() {
-			var qset_id = $(this).find("td#qset-id").text();
-			var user_id = $("#user_id").text();
-			alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nuser_id: " + user_id);
-			window.location = "./edit_quiz.html?qset_id="+qset_id+"&user_id="+user_id;
-		});
-
-
-
-		//###############################
-		//This controls the export and delete collapse areas so only one is showing at a time
-		//#################################################################################
-		$("#btn-delete").on("click", function() {
-			$('#import-config').collapse('hide');
-			$('#export-config').collapse('hide');
-		});
-
-		$("#btn-export").on("click", function() {
-			$('#import-config').collapse('hide');
-			$('#delete-config').collapse('hide');
-		});
-
-
-		//###############################
-		//Handles the delete button
-		//#################################################################################
-		$("#btn-delete-submit").on("click", function() {
-			// here you need to request that the server deletes the given quiz ids
-			//##############################################
-			var qs_id = $.trim($("#delete-config-text").val()).split(",");
-			//get the current set of qs_ids
-			var qs_id_db = [];
-			for (qs of qset_summary.slice(1,)) {
-				qs_id_db.push(qs[0]);
-			}
-			//get the clean set of requested qs_ids
-			var qs_id_req = [];
-			for (qs of qs_id) {
-				if (qs_id_db.includes(qs)){
-					qs_id_req.push(qs);
+			//does the table body
+			html_text +='   <tbody>' + '\n';
+			for (x = 1; x < qset_summary.length; x++){
+				var ind = Number(x);
+				html_text +='       <tr class="click-enable">' + '\n';
+				html_text +='	       <td>' + ind + '</td>' + '\n';
+				html_text +='	       <td id="qset-id">' + qset_summary[ind][0] + '</td>' + '\n';
+				for (y = 1; y < qset_summary[ind].length; y++){
+					var ind_inner = Number(y);
+					html_text +='	       <td>' + qset_summary[ind][ind_inner] + '</td>' + '\n';
 				}
+				html_text +='       </tr>' + '\n';
 			}
-
-			if (qs_id_req.length != 0) {
-				alert("ajax req to delete the given subset of the qs_ids from the DB:\n" + JSON.stringify(qs_id_req,null,2));
-			}
-			else{
-				alert("no valid quiz ids were given")
-			}
-		});
-		
-
-		//###############################
-		//Handles the export button
-		//#################################################################################
-		$("#btn-export-submit").on("click", function() {
-			// here you need to request the quiz data in json format from the server
-			//##############################################33
-			var qs_id = $.trim($("#export-config-text").val()).split(",");
-			//get the current set of qs_ids
-			var qs_id_db = [];
-			for (qs of qset_summary.slice(1,)) {
-				qs_id_db.push(qs[0]);
-			}
-			//get the clean set of requested qs_ids
-			var qs_id_req = [];
-			for (qs of qs_id) {
-				if (qs_id_db.includes(qs)){
-					qs_id_req.push(qs);
-				}
-			}
-
-			if (qs_id[0].search(/all/i) != -1) {
-				alert("ajax req to export all quizes:\n" + JSON.stringify(qs_id_db,null,2));
-			}
-			else if (qs_id_req.length != 0) {
-				alert("ajax req to export the given subset of the qs_ids:\n" + JSON.stringify(qs_id_req,null,2));
-			}
-			else {
-				alert("no valid quiz ids were given");
-				return;
-			}
-
-			//then ajax request comes back as data from the server here
-			var data = ["text:some text","image:some image file.jpg","text:more text","text:and more shite"];
-
-			var el = document.getElementById('a-export');
-			var filename = "export.quiz";
-			var href_text = "data:application/xml;charset=utf-8,";
-			href_text += JSON.stringify(data, null, 2);
-			//write this to the DOM and trigger the download
-			el.setAttribute("href", href_text);
-			el.setAttribute("download", filename);
-			el.click();
-			el.setAttribute("href", "");
-			el.setAttribute("download", "");
-		});
-		
-
-
-
-		//###############################
-		//Handles the import button
-		//#################################################################################
-		//assign the onclick event listener to the import button whihc in turn triggers a click on the hidden input button to launch the file dialog
-
-		/*
-		The format for the .quiz files for the question set specification is:
-		///////////////////////////////////////////////
-		{"qset_id":"some alpha-numeric string" (optional),
-		 1:{"question":{1:{"type":"text","data":"some text for Q1"},
-			 		2:{"type":"image","data":"some_image.jpg"},
-			 		3:{"type":"text","data":"some text"}}, 
-		 	"answer":{"type":"mc","data":["ans1","ans2","ans3","ans4"]}},
-		 2:{"question":{1:{"type":"text","data":"some text for Q2"}},
-		 3:{"question":{1:{"type":"text","data":"some text for Q3"},
-			 		2:{"type":"image","data":"some_image.jpg"},
-			 		3:{"type":"image","data":"some_image.jpg"},
-			 		4:{"type":"text","data":"some text"}, 
-			 		5:{"type":"image","data":"some_image.jpg"}},
-		 	"answer":{"type":"mc","data":["ans1","ans2","ans3","ans4","ans5"]}},
-		 4:{"question":{1:{"type":"text","data":"some text for Q4"}},
-		 5:{"question":{1:{"type":"text","data":"some text for Q5"}},
-		 6:{"question":{1:{"type":"text","data":"some text for Q6"}}}
-		////////////////////////////////////////
-		NOTE: The browser will add object["user_id"]="the user id" to the incoming json object before upg to the server
-		NOTE: if the qset_id is missing, then the browser adds this field to the json object using the next available qset_id (say qset_ids are "qs" + a number)
-		NOTE: the browser will also add the q_id parameter to object[q_seq]["q_id"]="some question id".  Where maybe question id = qset_id + "_" + q_seq, eg. qs456_3
-		//////////////////////////////////////////////////////
-		So what gets sent to the server is:
-		//////////////////////////////////////////////////////
-		{"qset_id":"some alpha-numeric string",
-		"u_id": "the id of the current admin user",
-		 1:{"q_id":qset_id + "_1",
-		 	"question":{1:{"type":"text","data":"some text for Q1"},
-			 		2:{"type":"image","data":"some_image.jpg"},
-			 		3:{"type":"text","data":"some text"}}, 
-		 	"answer":{"type":"mc","data":["ans1","ans2","ans3","ans4"]}},
-		 2:{"q_id":qset_id + "_2",
-		 	"question":{1:{"type":"text","data":"some text for Q2"}},
-		 3:{"q_id":qset_id + "_3",
-		 	"question":{1:{"type":"text","data":"some text for Q3"},
-			 		2:{"type":"image","data":"some_image.jpg"},
-			 		3:{"type":"image","data":"some_image.jpg"},
-			 		4:{"type":"text","data":"some text"}, 
-			 		5:{"type":"image","data":"some_image.jpg"}},
-		 	"answer":{"type":"mc","data":["ans1","ans2","ans3","ans4","ans5"]}},
-		 4:{"q_id":qset_id + "_4",
-		 	"question":{1:{"type":"text","data":"some text for Q4"}},
-		 5:{"q_id":qset_id + "_5",
-		 	"question":{1:{"type":"text","data":"some text for Q5"}},
-		 6:{"q_id":qset_id + "_6",
-			"question":{1:{"type":"text","data":"some text for Q6"}}}
-		//////////////////////////////////////////////////////
-		
-
-		to access one question:
-		--------------------------------
-			object_name[3]
-
-		to access the mc answer options:
-		--------------------------------
-			object_name[3]["answer"]["data"]
-
-		to test if it is text or mc:
-		--------------------------------
-			if ("answer" in object_name[3]) {}
-
-		to access the question data of a question:
-		--------------------------------
-			var q_data = object_name[3]["question"]; 
-			for (i in q_data) {
-				if (q_data["type" == "text"]) {
-					//do somehting with the string: q_data["data"]
-				} else if (q_data["type" == "image"]) {
-					//do something with the filename string: q_data["data"]
-				}
-			}
-		
-		/////////////////////////////////////////////////////
-		Then at the server this json object needs to go in the question_set table and the question table as so:
-		/////////////////////////////////////////////////////
-		table: question_set, one row per question set
-		col(PK): qset_id => gets the object["qset_id"]
-		col: qset_name => dunno, maybe add a name field to the import for text names, object["qset_name"]
-		col: owner => object["u_id"]
-		col: status => give it an initial status of "not active"
-		col: q_list => write a list of the q_ids, 
-			i.e. something like..... json.dump([object[x]["q_id"] for x in object.keys() if (x != "qset_id" and x != "u_id")])
-
-		table: questions, one row per question
-		for q_seq in [x for x in object.keys() if (x != "qset_id" and x != "u_id")]:
-			col(PK): q_id => object[q_seq]["q_id"]
-			col: q_seq => q_seq (numeric)
-			col: a_type: object[q_seq]["answer"]["type"]
-			col: a_data: json.dumps(object[q_seq]["answer"]["data"])
-			col: q_data: [object[q_seq]["question"][x] for x in object[q_seq]["question"].keys()]
-
-
-
-
-
-		*/
-
-
-
-
-
-		$("#btn-import").on("click", function() {
-			$('#export-config').collapse('hide');
-			$('#delete-config').collapse('hide');
-			$("#import-config").text("");
-			document.getElementById("input-import").value = "";
-			$('#import-config').collapse('show');
-			document.getElementById('input-import').click();
-		});
-		//this is the onchange evenet handler for the hidden input file selection dialog
-		$("#input-import").on("change", function() {
-			//this code accepts multiple files, the quiz files should be .quiz and just be a text file of a json object with the correct format specifying the quiz text, answer types and images.  So we validate these files.  Any non .quiz files, are assumed to be associated image files and are just uploaded to the server, there is no crosschecking done locally, that can be done server-side later.  The quizes will still work with no image files, the images just will not render
+			html_text +='   </tbody>' + '\n';
+			html_text += '</table>' + '\n';
 			
-			var files = this.files;
-			for (f of files){
-				//alert('you selected: ' + f["name"]);
-				if (f["name"].search(/\.quiz/i) == -1) {
-					//this is for images, upload them 
+			//append to the DOM
+			$("#p-quiz-admin-table").append(html_text);
 
-					//do som evalidation here if you want t avoid non-image files etc...
-					if ( f["size"] > 1000000) {
-						$("#import-config").append("Your file '" + f["name"] + "' is > 1MB, you should try to reduce it for usability fo the web app.  Not uploading it....<br/>");
-						continue;
+			//runs the datatable plugin on the table to make it sortable etc...
+			$('#quiz-admin-table').DataTable({
+				//"paging":true,"ordering":true,columnDefs: [{"orderable": false,"targets":0}],"order": [] 
+			});
+		
+			//assigns a click listener to the table rows
+			$("#quiz-admin-table tbody tr.click-enable").click(function() {
+				var qset_id = $(this).find("td#qset-id").text();
+				var user_id = $("#user_id").text();
+				alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nuser_id: " + user_id);
+				window.location = "./edit_quiz.html?qset_id="+qset_id+"&user_id="+user_id;
+			});
+
+
+
+			//###############################
+			//This controls the export and delete collapse areas so only one is showing at a time
+			//#################################################################################
+			$("#btn-delete").on("click", function() {
+				$('#import-config').collapse('hide');
+				$('#export-config').collapse('hide');
+			});
+
+			$("#btn-export").on("click", function() {
+				$('#import-config').collapse('hide');
+				$('#delete-config').collapse('hide');
+			});
+
+
+			//###############################
+			//Handles the delete button
+			//#################################################################################
+			$("#btn-delete-submit").on("click", function() {
+				// here you need to request that the server deletes the given quiz ids
+				//##############################################
+				var qset_id = $.trim($("#delete-config-text").val()).split(",");
+				//get the current set of qs_ids
+				var qset_id_db = [];
+				for (qset of qset_summary.slice(1,)) {
+					qset_id_db.push(qset[0]);
+				}
+				//get the clean set of requested qs_ids
+				var qset_id_req = [];
+				for (qset of qset_id) {
+					if (qset_id_db.includes(qset)){
+						qset_id_req.push(qset);
 					}
-					var img_allowed = ['image/gif', 'image/jpeg', 'image/png'];
-					if (! img_allowed.includes(f["type"])) {
-						$("#import-config").append("Your file '" + f["name"] + "' needs to be an image file (jpg, png, gif).  Not uploading it....<br/>");
-						continue;
+				}
+
+				if (qset_id_req.length != 0) {
+					//alert("ajax req to delete the given subset of the qs_ids from the DB:\n" + JSON.stringify(qs_id_req,null,2));
+				}
+				else{
+					alert("no valid quiz ids were given")
+					return
+				}
+
+				//Do the Ajax Request here to send the delte list to the server
+				$.ajax({
+					type: 'POST',
+					url: '/delete_quiz',
+					data: JSON.stringify(qset_id_req),
+					contentType: "application/json",
+					data_type: "json",
+					cache: false,
+					processData: false,
+					async: true,
+					success: function(data) {
+						//for testing
+						//alert(JSON.stringify(data,null,2));
+						//give a status msg
+						//$("#btn-delete-submit").after("<span>&nbsp&nbspStatus: " + JSON.stringify(data) + "</span>");
+						$("#span-delete-submit").text("Status: " + data["Status"] + ", msg: " + data["msg"]);
+					},
+				});
+				
+			});
+			
+
+			//###############################
+			//Handles the export button
+			//#################################################################################
+			$("#btn-export-submit").on("click", function() {
+				// here you need to request the quiz data in json format from the server
+				//it is using qset_summary whihc is the json object coming in to populate the table in this page
+				//##############################################33
+				var qset_id = $.trim($("#export-config-text").val()).split(",");
+				//get the current set of qs_ids
+				var qset_id_db = [];
+				for (qset of qset_summary.slice(1,)) {
+					qset_id_db.push(qset[0]);
+				}
+				//get the clean set of requested qs_ids
+				var qset_id_req = [];
+				for (qset of qset_id) {
+					if (qset_id_db.includes(qset)){
+						qset_id_req.push(qset);
 					}
-					//alert(f["name"] + ' was accepted');
+				}
 
-					//send to server
-					var form_data = new FormData();
-					form_data.append("file", f);
-					$.ajax({
-						type: 'POST',
-						url: '/upload_image',
-						data: form_data,
-						async: true,
-						contentType: false,
-						cache: false,
-						processData: false,
-						success: function(status) {
-							//testing
-							//alert(JSON.stringify(status));
-							$("#import-config").append(JSON.stringify(status,null,2) + "<br/>");
-						}
-					});
-
+				if (qset_id[0].search(/all/i) != -1) {
+					//alert("ajax req to export all quizes:\n" + JSON.stringify(qset_id_db,null,2));
+					qset_id_req = qset_id_db;
+				}
+				else if (qset_id_req.length != 0) {
+					//alert("ajax req to export the given subset of the qs_ids:\n" + JSON.stringify(qset_id_req,null,2));
 				}
 				else {
-					//this is for the .quiz files
-					//this uses a closure to handle all the file read and to pass the filename in, I still do not understand how it works
-					//this is for .quiz text files which contain quiz data in the specified json format.  we validate each one and reject if it fails (informing the user why)
-					var reader = new FileReader();
-					reader.onload = (function(e1,files_accept) {
-						return function(e2) {
-							var name = e1.name;
-							var file_data = e2.target.result;
-							//alert("file length is: " + file_data.length + " chars");
-							try{
-								var qs_data = JSON.parse(file_data);
-							}
-							catch(err) {
-								$("#import-config").append("failed parsing '" + name + "' not uploading....<br/>");
-								//alert('failed parsing ' + name + ' not uploading....');
-								return;
-							}
-							//alert('parsing ' + name + ', then sending to the server');
-
-							//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-							//NEED TO WRITE THE VALIDATION 
-			
-							//Maybe we have to write the outcome to the DOM and then retrieve from there later  when a read flag is set, because I have no other way to inform the user
-
-							//send to server
-							$.ajax({
-								type: 'POST',
-								url: '/upload_quiz',
-								data: JSON.stringify(qs_data),
-								contentType: "application/json",
-								dadta_type: "json",
-								cache: false,
-								processData: false,
-								async: true,
-								success: function(status) {
-									//for testing
-									//alert(JSON.stringify(status,null,2));
-									status["msg"] = "Server received: '" + name + "'";
-									$("#import-config").append(JSON.stringify(status,null,2) + "<br/>");
-								},
-							});
-
-						};
-					})(f);
-					reader.readAsText(f);
+					alert("no valid quiz ids were given");
+					return;
 				}
-			}
-		});
+
+				//Do the Ajax Request here to fetch the desired question sets
+				$.ajax({
+					type: 'POST',
+					url: '/download_quiz',
+					data: JSON.stringify(qset_id_req),
+					contentType: "application/json",
+					data_type: "json",
+					cache: false,
+					processData: false,
+					async: true,
+					success: function(data) {
+						//for testing
+						//give a status msg
+						$("#span-export-submit").text("Status: " + data["Status"] + ", msg: " + data["msg"]);
+						//write this to the DOM and trigger the download, then delete from the DOM
+						var el = document.getElementById('a-export');
+						var filename = "export.quiz";
+						var href_text = "data:application/xml;charset=utf-8,";
+						href_text += JSON.stringify(data["data"], null, 2);
+						el.setAttribute("href", href_text);
+						el.setAttribute("download", filename);
+						el.click();
+						el.setAttribute("href", "");
+						el.setAttribute("download", "");
+					},
+				});
+			});
+			
+
+
+
+			//###############################
+			//Handles the import button
+			//#################################################################################
+			//assign the onclick event listener to the import button whihc in turn triggers a click on the hidden input button to launch the file dialog
+			$("#btn-import").on("click", function() {
+				$('#export-config').collapse('hide');
+				$('#delete-config').collapse('hide');
+				$("#import-config").text("");
+				document.getElementById("input-import").value = "";
+				$('#import-config').collapse('show');
+				document.getElementById('input-import').click();
+			});
+			//this is the onchange evenet handler for the hidden input file selection dialog
+			$("#input-import").on("change", function() {
+				//this code accepts multiple files, the quiz files should be .quiz and just be a text file of a json object with the correct format specifying the quiz text, answer types and images.  So we validate these files.  Any non .quiz files, are assumed to be associated image files and are just uploaded to the server, there is no crosschecking done locally, that can be done server-side later.  The quizes will still work with no image files, the images just will not render
+				
+				var files = this.files;
+				for (f of files){
+					//alert('you selected: ' + f["name"]);
+					if (f["name"].search(/\.quiz/i) == -1) {
+						//this is for images, upload them 
+
+						//do som evalidation here if you want t avoid non-image files etc...
+						if ( f["size"] > 1000000) {
+							$("#import-config").append("Your file '" + f["name"] + "' is > 1MB, you should try to reduce it for usability fo the web app.  Not uploading it....<br/>");
+							continue;
+						}
+						var img_allowed = ['image/gif', 'image/jpeg', 'image/png'];
+						if (! img_allowed.includes(f["type"])) {
+							$("#import-config").append("Your file '" + f["name"] + "' needs to be an image file (jpg, png, gif).  Not uploading it....<br/>");
+							continue;
+						}
+						//alert(f["name"] + ' was accepted');
+
+						//send to server
+						var form_data = new FormData();
+						form_data.append("file", f);
+						$.ajax({
+							type: 'POST',
+							url: '/upload_image',
+							data: form_data,
+							async: true,
+							contentType: false,
+							cache: false,
+							processData: false,
+							success: function(data) {
+								//testing
+								//alert(JSON.stringify(status));
+								$("#import-config").append(JSON.stringify(data,null,2) + "<br/>");
+							}
+						});
+
+					}
+					else {
+						//this is for the .quiz files
+						//this uses a closure to handle all the file read and to pass the filename in, I still do not understand how it works
+						//this is for .quiz text files which contain quiz data in the specified json format.  we validate each one and reject if it fails (informing the user why)
+						var reader = new FileReader();
+						reader.onload = (function(e1,files_accept) {
+							return function(e2) {
+								var name = e1.name;
+								var file_data = e2.target.result;
+								//alert("file length is: " + file_data.length + " chars");
+								try{
+									var qs_data = JSON.parse(file_data);
+								}
+								catch(err) {
+									$("#import-config").append("failed parsing '" + name + "' not uploading....<br/>");
+									//alert('failed parsing ' + name + ' not uploading....');
+									return;
+								}
+								//alert('parsing ' + name + ', then sending to the server');
+
+								//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+								//NEED TO WRITE THE VALIDATION 
+
+								//send to server
+								$.ajax({
+									type: 'POST',
+									url: '/upload_quiz',
+									data: JSON.stringify(qs_data),
+									contentType: "application/json",
+									data_type: "json",
+									cache: false,
+									processData: false,
+									async: true,
+									success: function(data) {
+										//for testing
+										//alert(JSON.stringify(status,null,2));
+										data["msg"] = "Server received: '" + name + "'";
+										$("#import-config").append(JSON.stringify(data,null,2) + "<br/>");
+									},
+								});
+
+							};
+						})(f);
+						reader.readAsText(f);
+					}
+				}
+			});
+		} //end of the build_admin_summary function
 	} //end of the admin_summary code
 
 
