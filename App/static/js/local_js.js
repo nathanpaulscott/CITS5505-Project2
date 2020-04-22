@@ -284,8 +284,15 @@ $(document).ready(function() {
 								}
 								//alert('parsing ' + name + ', then sending to the server');
 
-								//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+								////////////////////////////////////////////////
+								////////////////////////////////////////////////
+								////////////////////////////////////////////////
+								////////////////////////////////////////////////
 								//NEED TO WRITE THE VALIDATION 
+								////////////////////////////////////////////////
+								////////////////////////////////////////////////
+								////////////////////////////////////////////////
+								////////////////////////////////////////////////
 
 								//send to server
 								$.ajax({
@@ -657,70 +664,75 @@ $(document).ready(function() {
 	if (window.location.pathname.search(/\/student_summary\.html$/i) != -1) {
 		//this builds the table of quizes to take
 
-		//this JSON info comes from the DB
-		//NOTE: the status here is different to the admin status, here it can be : [not attempted, not complete, complete, marked]
-		var qset_summary = 
-		[["Quiz Id","Topic","Tot Qs","MC Qs","Time(mins)","Status","Score","Score Mean","Score SD"],
-		 ["x453","Topic A",10,5,50,"Not Attempted",-1,59.3,13.4],
-		 ["y987","Topic B",20,10,100,"Completed",-1,68.3,8.4],
-		 ["x365","Topic A",30,20,150,"Marked",85.7,62.3,7.4],
-		 ["d13","Topic A",10,5,30,"Attempted",-1,-1,-1],
-		 ["s4","Topic C",15,7,70,"Not Attempted",-1,90.3,20.1],
-		 ["c476","Topic C",12,8,60,"Marked",65.3,-1,-1],
-		 ["x893","Topic A",20,10,80,"Completed",-1,70.3,12],
-		 ["f453","Topic D",20,15,90,"Marked",88.1,67.2,8.3],
-		 ["b323","Topic B",15,10,65,"Not Atttempted",-1,60.3,9.2],
-		 ["z43","Topic B",10,5,40,"Marked",46.2,63.3,11.1],
-		 ["x443","Topic A",5,5,25,"Completed",-1,80.3,22.7]];
-				
-		//this does the html table building				
-		//does the table header
-		var html_text = ""; 
-		html_text = '<table class="table table-hover table-striped table-responsive" id="quiz-selection-table">' + '\n';
-		html_text +='	<thead>' + '\n';
-		html_text +='		<tr>' + '\n';
-		html_text +='          <th scope="col">#</th>' + '\n';
-		for (header_item of qset_summary[0]) {
-			html_text +='          <th scope="col">'+ header_item +'</th>' + '\n';
-		}
-		html_text +='     	</tr>' + '\n';
-		html_text +='   </thead>' + '\n';
+		//the user id comes form the previous page
+		u_id = "some user_id";
 
-		//does the table body
-		html_text +='   <tbody>' + '\n';
-		for (x = 1; x < qset_summary.length; x++){
-			var ind = Number(x);
-			//enable selection only if the quiz has not been completed yet
-			if (qset_summary[ind][5].search(/^(completed|marked)$/i) == -1) {
-				html_text +='       <tr class="click-enable">' + '\n';
-			}
-			else {
-				html_text +='       <tr>' + '\n';
-			}
-			html_text +='	       <th scope="row">' + ind + '</th>' + '\n';
-			html_text +='	       <td id="qset-id">' + qset_summary[ind][0] + '</td>' + '\n';
-			for (y = 1; y < qset_summary[ind].length; y++){
-				var ind_inner = Number(y);
-				html_text +='	       <td>' + qset_summary[ind][ind_inner] + '</td>' + '\n';
-			}
-			html_text +='       </tr>' + '\n';
-		}
-		html_text +='   </tbody>' + '\n';
-		html_text += '</table>' + '\n';
-		
-		//append to the DOM
-		$("#p-quiz-selection-table").append(html_text);
-
-	    //runs the datatable plugin on the table to make it sortable etc...
-	    $('#quiz-selection-table').DataTable();
-
-		//assigns a click listener to the table rows
-		$("#quiz-selection-table tbody tr.click-enable").click(function() {
-			var qset_id = $(this).find("td#qset-id").text();
-			var user_id = $("#user_id").text();
-			alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nuser_id: " + user_id);
-			window.location = "./take_quiz.html?qset_id="+qset_id+"&user_id="+user_id;
+		//Do the Ajax Request here to fetch the student summary table data (qset_summary)
+		$.ajax({
+			type: 'POST',
+			url: '/student_summary_json',
+			data: JSON.stringify(u_id),
+			contentType: "application/json",
+			data_type: "json",
+			cache: false,
+			processData: false,
+			async: true,
+			success: function(data) {
+				//write this to the DOM and trigger the download, then delete from the DOM
+				build_student_summary(data["data"]);
+			},
 		});
+
+		function build_student_summary(qset_summary) {
+			//this does the html table building				
+			//does the table header
+			var html_text = ""; 
+			html_text = '<table class="table table-hover table-striped table-responsive" id="quiz-selection-table">' + '\n';
+			html_text +='	<thead>' + '\n';
+			html_text +='		<tr>' + '\n';
+			html_text +='          <th scope="col">#</th>' + '\n';
+			for (header_item of qset_summary[0]) {
+				html_text +='          <th scope="col">'+ header_item +'</th>' + '\n';
+			}
+			html_text +='     	</tr>' + '\n';
+			html_text +='   </thead>' + '\n';
+
+			//does the table body
+			html_text +='   <tbody>' + '\n';
+			for (x = 1; x < qset_summary.length; x++){
+				var ind = Number(x);
+				//enable selection only if the quiz has not been completed yet
+				if (qset_summary[ind][5].search(/^(completed|marked)$/i) == -1) {
+					html_text +='       <tr class="click-enable">' + '\n';
+				}
+				else {
+					html_text +='       <tr>' + '\n';
+				}
+				html_text +='	       <th scope="row">' + ind + '</th>' + '\n';
+				html_text +='	       <td id="qset-id">' + qset_summary[ind][0] + '</td>' + '\n';
+				for (y = 1; y < qset_summary[ind].length; y++){
+					var ind_inner = Number(y);
+					html_text +='	       <td>' + qset_summary[ind][ind_inner] + '</td>' + '\n';
+				}
+				html_text +='       </tr>' + '\n';
+			}
+			html_text +='   </tbody>' + '\n';
+			html_text += '</table>' + '\n';
+			
+			//append to the DOM
+			$("#p-quiz-selection-table").append(html_text);
+
+			//runs the datatable plugin on the table to make it sortable etc...
+			$('#quiz-selection-table').DataTable();
+
+			//assigns a click listener to the table rows
+			$("#quiz-selection-table tbody tr.click-enable").click(function() {
+				var qset_id = $(this).find("td#qset-id").text();
+				var user_id = $("#user_id").text();
+				alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nuser_id: " + user_id);
+				window.location = "./take_quiz.html?qset_id="+qset_id+"&user_id="+user_id;
+			});
+		}//end of the build_student_summary function
 	} //end of the student_summary code
 
 

@@ -45,9 +45,6 @@
                         <div class="collapse navbar-collapse" id="myNavbar">
                             <ul class="nav navbar-nav">
                                 <li><a href="./landing.html">Home</a></li>
-                                <!--<li><a href="./login-reg.html">Login/Register</a></li>
-                                <li class="active"><a href="./project1-js.html">JS</a></li>
-                                <li><a href="./project1-bio.html">Bio</a></li>-->
                             </ul>
                         </div>
                     </nav>
@@ -59,16 +56,6 @@
                 </div> <!--end of l_side-->
 
                 <div class="col-sm-8 content">
-                    <!--<div class="sticky-top">
-                        <button id="collapse_text" class="btn btn-light rounded exp-col" type="button">
-                            <i class="fas fa-caret-up"></i>
-                        </button>
-                        <button id="expand_text" class="btn btn-light rounded exp-col" type="button">
-                            <i class="fas fa-caret-down"></i>
-                        </button>
-                    </div>-->
-
-                    <!--<img class="inline-float" src="./images/javascript.png" alt="JavaScript Logo"/>-->
                     <h2>Sign In</h2>
                     
                     <h5>
@@ -77,17 +64,14 @@
                     <p>
                         <form>
                             <div class="form-group">
-                                <label for="exampleInputEmail1">Email address</label>
-                                <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
-                                <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+                                <label for="username">Username</label>
+                                <input type="text" class="form-control" id="username" name="username">
                             </div>
                             <div class="form-group">
-                                <label for="exampleInputPassword1">Password</label>
-                                <input type="password" class="form-control" id="exampleInputPassword1">
+                                <label for="password">Password</label>
+                                <input type="password" class="form-control" id="password" name="password">
                             </div>
-                            <button type="submit" class="btn btn-success" formaction="./student_summary.html">Submit_quiz</button>
-                            <button type="submit" class="btn btn-success" formaction="./admin_summary.html">Submit_admin</button>
-                            <p><i class="dev-comments">NOTE: this is temp, will only have one button and target will depend on the user type</i></p>
+                            <button type="submit" class="btn btn-success" formaction="./verify" formmethod="POST">Submit</button>
                         </form>
                     </p>
                     <div>
