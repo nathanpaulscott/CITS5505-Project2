@@ -175,6 +175,109 @@ $(document).ready(function() {
 		//Handles the import button
 		//#################################################################################
 		//assign the onclick event listener to the import button whihc in turn triggers a click on the hidden input button to launch the file dialog
+
+		/*
+		The format for the .quiz files for the question set specification is:
+		///////////////////////////////////////////////
+		{"qset_id":"some alpha-numeric string" (optional),
+		 1:{"question":{1:{"type":"text","data":"some text for Q1"},
+			 		2:{"type":"image","data":"some_image.jpg"},
+			 		3:{"type":"text","data":"some text"}}, 
+		 	"answer":{"type":"mc","data":["ans1","ans2","ans3","ans4"]}},
+		 2:{"question":{1:{"type":"text","data":"some text for Q2"}},
+		 3:{"question":{1:{"type":"text","data":"some text for Q3"},
+			 		2:{"type":"image","data":"some_image.jpg"},
+			 		3:{"type":"image","data":"some_image.jpg"},
+			 		4:{"type":"text","data":"some text"}, 
+			 		5:{"type":"image","data":"some_image.jpg"}},
+		 	"answer":{"type":"mc","data":["ans1","ans2","ans3","ans4","ans5"]}},
+		 4:{"question":{1:{"type":"text","data":"some text for Q4"}},
+		 5:{"question":{1:{"type":"text","data":"some text for Q5"}},
+		 6:{"question":{1:{"type":"text","data":"some text for Q6"}}}
+		////////////////////////////////////////
+		NOTE: The browser will add object["user_id"]="the user id" to the incoming json object before upg to the server
+		NOTE: if the qset_id is missing, then the browser adds this field to the json object using the next available qset_id (say qset_ids are "qs" + a number)
+		NOTE: the browser will also add the q_id parameter to object[q_seq]["q_id"]="some question id".  Where maybe question id = qset_id + "_" + q_seq, eg. qs456_3
+		//////////////////////////////////////////////////////
+		So what gets sent to the server is:
+		//////////////////////////////////////////////////////
+		{"qset_id":"some alpha-numeric string",
+		"u_id": "the id of the current admin user",
+		 1:{"q_id":qset_id + "_1",
+		 	"question":{1:{"type":"text","data":"some text for Q1"},
+			 		2:{"type":"image","data":"some_image.jpg"},
+			 		3:{"type":"text","data":"some text"}}, 
+		 	"answer":{"type":"mc","data":["ans1","ans2","ans3","ans4"]}},
+		 2:{"q_id":qset_id + "_2",
+		 	"question":{1:{"type":"text","data":"some text for Q2"}},
+		 3:{"q_id":qset_id + "_3",
+		 	"question":{1:{"type":"text","data":"some text for Q3"},
+			 		2:{"type":"image","data":"some_image.jpg"},
+			 		3:{"type":"image","data":"some_image.jpg"},
+			 		4:{"type":"text","data":"some text"}, 
+			 		5:{"type":"image","data":"some_image.jpg"}},
+		 	"answer":{"type":"mc","data":["ans1","ans2","ans3","ans4","ans5"]}},
+		 4:{"q_id":qset_id + "_4",
+		 	"question":{1:{"type":"text","data":"some text for Q4"}},
+		 5:{"q_id":qset_id + "_5",
+		 	"question":{1:{"type":"text","data":"some text for Q5"}},
+		 6:{"q_id":qset_id + "_6",
+			"question":{1:{"type":"text","data":"some text for Q6"}}}
+		//////////////////////////////////////////////////////
+		
+
+		to access one question:
+		--------------------------------
+			object_name[3]
+
+		to access the mc answer options:
+		--------------------------------
+			object_name[3]["answer"]["data"]
+
+		to test if it is text or mc:
+		--------------------------------
+			if ("answer" in object_name[3]) {}
+
+		to access the question data of a question:
+		--------------------------------
+			var q_data = object_name[3]["question"]; 
+			for (i in q_data) {
+				if (q_data["type" == "text"]) {
+					//do somehting with the string: q_data["data"]
+				} else if (q_data["type" == "image"]) {
+					//do something with the filename string: q_data["data"]
+				}
+			}
+		
+		/////////////////////////////////////////////////////
+		Then at the server this json object needs to go in the question_set table and the question table as so:
+		/////////////////////////////////////////////////////
+		table: question_set, one row per question set
+		col(PK): qset_id => gets the object["qset_id"]
+		col: qset_name => dunno, maybe add a name field to the import for text names, object["qset_name"]
+		col: owner => object["u_id"]
+		col: status => give it an initial status of "not active"
+		col: q_list => write a list of the q_ids, 
+			i.e. something like..... json.dump([object[x]["q_id"] for x in object.keys() if (x != "qset_id" and x != "u_id")])
+
+		table: questions, one row per question
+		for q_seq in [x for x in object.keys() if (x != "qset_id" and x != "u_id")]:
+			col(PK): q_id => object[q_seq]["q_id"]
+			col: q_seq => q_seq (numeric)
+			col: a_type: object[q_seq]["answer"]["type"]
+			col: a_data: json.dumps(object[q_seq]["answer"]["data"])
+			col: q_data: [object[q_seq]["question"][x] for x in object[q_seq]["question"].keys()]
+
+
+
+
+
+		*/
+
+
+
+
+
 		$("#btn-import").on("click", function() {
 			$('#export-config').collapse('hide');
 			$('#delete-config').collapse('hide');
