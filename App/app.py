@@ -32,12 +32,33 @@ class User(db.Model):
 
 class Question_Set(db.Model):
     qs_id = db.Column(db.Integer, primary_key=True)
+    author = db.Column(db.String(20))
+    enabled = db.Column(db.Boolean)
 
 class Question(db.Model):
     q_id = db.Column(db.Integer, primary_key=True)
 
-class Answer(db.Model):
-    a_id = db.Column(db.Integer, primary_key=True)
+    # id of the question set the question belongs to
+    qs_id = db.Column(db.Integer)
+
+    # the quiz question text
+    text = db.Column(db.String(50))
+
+    # id of the quiz_option that is the correct answer to this question
+    answer_id = db.Column(db.Integer)
+
+    topic = db.Column(db.String(10))
+    time = db.Column(db.Integer)
+
+# provded possible answer for multiple choice questions
+class Quiz_Option(db.Model):
+    qo_id = db.Column(db.Integer, primary_key=True)
+
+    # id of the question the answer option belongs to
+    q_id = db.Column(db.Integer)
+
+    # the quiz option text
+    text = db.Column(db.String(50))
 
 class Submission(db.Model):
     s_id = db.Column(db.Integer, primary_key=True)
