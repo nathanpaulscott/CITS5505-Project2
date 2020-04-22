@@ -6,8 +6,10 @@ import os
 
 # initialise app
 basedir = os.path.abspath(os.path.dirname(__file__))
-upload_folder = '/static/images'
+image_folder = '/static/images'
+
 app = Flask(__name__)
+
 
 
 # Database
@@ -119,14 +121,19 @@ def register():
 #code to handle the upload function of the admin summary
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
-    if request.method == 'POST':
-        file = request.files['file']
-        filename = secure_filename(file.filename)
-        file.save(basedir + '/' + upload_folder + '/' + filename)
-        #for testing
-        return 'Server recieved:\n' + filename
-        #FYI for later, how to redirect, this sends the user to this page with these params
-        #return redirect(url_for('get_admin_summary', filename=filename))
+    if 'file' not in request.files:
+        return jsonify ({ 'Status' : 'error', 'msg':'bad form format'})
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify ({ 'Status' : 'error', 'msg':'no file selected'})
+    file = request.files['file']
+    filename = secure_filename(file.filename)
+    file.save(basedir + '/' + image_folder + '/' + filename)
+    #for testing
+    return jsonify ({ 'Status' : 'ok', 'msg':'Server recieved: ' + filename})
+    #return jsonify ({ 'Status' : 'ok'})
+    #FYI for later, how to redirect, this sends the user to this page with these params
+    #return redirect(url_for('get_admin_summary', filename=filename))
 
 
 @app.route('/upload_quiz', methods=['POST'])
@@ -135,7 +142,8 @@ def upload_quiz():
         qs_data = request.get_json()
         #so qs_data is the json object, need to put it in the DB now
         #for testing
-        return qs_data
+        return jsonify ({ 'Status' : 'ok'})
+        #return qs_data
 #########################################################
 
 

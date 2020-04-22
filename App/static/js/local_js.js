@@ -83,10 +83,12 @@ $(document).ready(function() {
 		//This controls the export and delete collapse areas so only one is showing at a time
 		//#################################################################################
 		$("#btn-delete").on("click", function() {
+			$('#import-config').collapse('hide');
 			$('#export-config').collapse('hide');
 		});
 
 		$("#btn-export").on("click", function() {
+			$('#import-config').collapse('hide');
 			$('#delete-config').collapse('hide');
 		});
 
@@ -174,6 +176,11 @@ $(document).ready(function() {
 		//#################################################################################
 		//assign the onclick event listener to the import button whihc in turn triggers a click on the hidden input button to launch the file dialog
 		$("#btn-import").on("click", function() {
+			$('#export-config').collapse('hide');
+			$('#delete-config').collapse('hide');
+			$("#import-config").text("");
+			document.getElementById("input-import").value = "";
+			$('#import-config').collapse('show');
 			document.getElementById('input-import').click();
 		});
 		//this is the onchange evenet handler for the hidden input file selection dialog
@@ -188,12 +195,12 @@ $(document).ready(function() {
 
 					//do som evalidation here if you want t avoid non-image files etc...
 					if ( f["size"] > 1000000) {
-						alert("Your file " + f["name"] + " is > 1MB, you should try to reduce it for usability fo the web app.  Not uploading it....");
+						$("#import-config").append("Your file '" + f["name"] + "' is > 1MB, you should try to reduce it for usability fo the web app.  Not uploading it....<br/>");
 						continue;
 					}
 					var img_allowed = ['image/gif', 'image/jpeg', 'image/png'];
 					if (! img_allowed.includes(f["type"])) {
-						alert("Your file " + f["name"] + " needs to be an image file (jpg, png, gif).  Not uploading it....");
+						$("#import-config").append("Your file '" + f["name"] + "' needs to be an image file (jpg, png, gif).  Not uploading it....<br/>");
 						continue;
 					}
 					//alert(f["name"] + ' was accepted');
@@ -210,8 +217,10 @@ $(document).ready(function() {
 						cache: false,
 						processData: false,
 						success: function(status) {
-							alert(status);
-						},
+							//testing
+							//alert(JSON.stringify(status));
+							$("#import-config").append(JSON.stringify(status,null,2) + "<br/>");
+						}
 					});
 
 				}
@@ -229,7 +238,8 @@ $(document).ready(function() {
 								var qs_data = JSON.parse(file_data);
 							}
 							catch(err) {
-								alert('failed parsing ' + name + ' not uploading....');
+								$("#import-config").append("failed parsing '" + name + "' not uploading....<br/>");
+								//alert('failed parsing ' + name + ' not uploading....');
 								return;
 							}
 							//alert('parsing ' + name + ', then sending to the server');
@@ -251,7 +261,9 @@ $(document).ready(function() {
 								async: true,
 								success: function(status) {
 									//for testing
-									alert(JSON.stringify(status,null,2));
+									//alert(JSON.stringify(status,null,2));
+									status["msg"] = "Server received: '" + name + "'";
+									$("#import-config").append(JSON.stringify(status,null,2) + "<br/>");
 								},
 							});
 

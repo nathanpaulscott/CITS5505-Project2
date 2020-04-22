@@ -98,12 +98,16 @@
                     <hr>
                    
                     <p>
-                        <button type="button" id="btn-import" class="btn btn-primary">Import</button>
+                        <button type="button" id="btn-import" class="btn btn-primary" data-target="#import-config" aria-expanded="false" aria-controls="import-config">Import</button>
                         <input type="file" id="input-import" multiple="multiple" hidden/>
+
                         <button type="button" id="btn-export" class="btn btn-success" data-toggle="collapse" data-target="#export-config" aria-expanded="false" aria-controls="export-config">Export</button>
                         <a id="a-export" href="" download="" hidden></a>
+
                         <button type="button" id="btn-delete" class="btn btn-danger"  data-toggle="collapse" data-target="#delete-config" aria-expanded="false" aria-controls="delete-config">Delete</button>
                     </p>
+                    <div class="collapse multicollapse" id="import-config" >             
+                    </div>
                     <div class="collapse multicollapse" id="export-config" >             
                         Give the comma delimited list of Quiz Ids to Export or 'all' to export all Quizes
                         <br/>
@@ -122,6 +126,8 @@
                         <br/>
                         <br/>
                     </div>
+                    
+                    <hr>
                     
                     <p id="p-quiz-admin-table">                   
                         <!-- filled by js-->
