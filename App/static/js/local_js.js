@@ -2,26 +2,18 @@ function encodeQueryData(data) {
 	//encodes a dict to an HTTP GET string
 	const ret = [];
 	for (let d in data)
-	  ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(data[d]));
+		ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(data[d]));
 	return ret.join('&');
  }
 
 
-
- function findGetParameter(parameterName) {
-    var result = null,
-        tmp = [];
-    location.search
-        .substr(1)
-        .split("&")
-        .forEach(function (item) {
-          tmp = item.split("=");
-          if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
-        });
+//this is messing up, giving + for a space!!!
+ function findGetParameter(param) {
+	var url = new URL(window.location.href);
+	var result = url.searchParams.get(param);
     return result;
 }
  
-
 
  $(document).ready(function() {
 	

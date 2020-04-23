@@ -159,6 +159,8 @@ div.header_main {
 	font-size:2em;
 	color:white;
 	background-color:rgb(60,60,60);
+	z-index:1;
+	white-space:nowrap;
 }
 
 div.header_left {
@@ -166,6 +168,8 @@ div.header_left {
 	color:grey;
 	background-color:rgb(60,60,60);
 	padding-top:2px;
+	z-index:2;
+	white-space:nowrap;
 }
 
 
@@ -175,6 +179,7 @@ div.header_right, div.header_right i {
 	background-color:rgb(60,60,60);
 	text-align:center;
 	padding-top:2px;
+	z-index:1;
 }
 
 div.header_right i:hover {
