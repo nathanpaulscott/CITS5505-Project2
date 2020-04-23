@@ -1,23 +1,72 @@
-$(document).ready(function() {
-	//GENERAL NOTES ON DYNAMIC CONTENT LOADING STRATEGY...
-	//all the db sourced data is either:
-	//1) sent in a hidden tag (faster as only need to send data once),
-	//2) on page load we do a synchronous ajax request and recieve json, the page will bloack and will have to show some loading icon while it loads,
-	//3) can build the page at the server and send it
-
-	//I am leaning towards option 2 or 1
-
+function encodeQueryData(data) {
+	//encodes a dict to an HTTP GET string
+	const ret = [];
+	for (let d in data)
+	  ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(data[d]));
+	return ret.join('&');
+ }
 
 
+
+ function findGetParameter(parameterName) {
+    var result = null,
+        tmp = [];
+    location.search
+        .substr(1)
+        .split("&")
+        .forEach(function (item) {
+          tmp = item.split("=");
+          if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
+        });
+    return result;
+}
+ 
+
+
+ $(document).ready(function() {
+	
+	//these are the regex page selectors to isolate js code to specific pages
+	var regex = {};
+	//regex["admin_summary"] = /\/admin_summary\.html\/\?/i;
+	regex["admin_summary"] = /\/admin_summary\.html/i;
+	regex["edit_quiz"] = /\/edit_quiz\.html/i;
+	regex["student_summary"] = /\/student_summary\.html/i;
+	regex["take_quiz"] = /\/take_quiz\.html/i;
+	regex["admin_stats"] = /\/admin_stats\.html/i;
+	regex["student_stats"] = /\/student_stats\.html/i;
+		
+
+	if (window.location.pathname.search(regex["admin_stats"]) != -1) {
+		//the user id comes form the previous page
+		var u_id = findGetParameter('u_id');
+		var username = findGetParameter('username');
+
+		//update the username in the header
+		$("#username").text(username);
+	}
+	if (window.location.pathname.search(regex["student_stats"]) != -1) {
+		//the user id comes form the previous page
+		var u_id = findGetParameter('u_id');
+		var username = findGetParameter('username');
+
+		//update the username in the header
+		$("#username").text(username);
+	}
+	
+	
 	//##########################3
 	//Admin summary page
 	//This will go to the admin_summary page which shows a summary table of all quizes
     //this page allows the admin to click on a quiz to edit it, or use the bulk import/export/delete buttons
-	if (window.location.pathname.search(/\/admin_summary\.html$/i) != -1) {
+	if (window.location.pathname.search(regex["admin_summary"]) != -1) {
 		//this builds the table of quizes to administer
 
 		//the user id comes form the previous page
-		u_id = "some user_id";
+		var u_id = findGetParameter('u_id');
+		var username = findGetParameter('username');
+
+		//update the username in the header
+		$("#username").text(username);
 
 		//Do the Ajax Request here to fetch the admin summary table data (qset_summary)
 		$.ajax({
@@ -75,10 +124,16 @@ $(document).ready(function() {
 		
 			//assigns a click listener to the table rows
 			$("#quiz-admin-table tbody tr.click-enable").click(function() {
+				//This is temporary for now
 				var qset_id = $(this).find("td#qset-id").text();
-				var user_id = $("#user_id").text();
-				alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nuser_id: " + user_id);
-				window.location = "./edit_quiz.html?qset_id="+qset_id+"&user_id="+user_id;
+				
+				alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nu_id: " + u_id + "\nusername: " + username);
+
+				//build the target url
+				var query_data = encodeQueryData({"qset_id":qset_id,
+												"u_id":u_id,
+												"username":username});
+				window.location = "./edit_quiz.html" + "?" + query_data;
 			});
 
 
@@ -103,7 +158,8 @@ $(document).ready(function() {
 			$("#btn-delete-submit").on("click", function() {
 				// here you need to request that the server deletes the given quiz ids
 				//##############################################
-				var qset_id = $.trim($("#delete-config-text").val()).split(",");
+				var qset_id_text = $.trim($("#delete-config-text").val()).split(",");
+				
 				//get the current set of qs_ids
 				var qset_id_db = [];
 				for (qset of qset_summary.slice(1,)) {
@@ -111,7 +167,7 @@ $(document).ready(function() {
 				}
 				//get the clean set of requested qs_ids
 				var qset_id_req = [];
-				for (qset of qset_id) {
+				for (qset of qset_id_text) {
 					if (qset_id_db.includes(qset)){
 						qset_id_req.push(qset);
 					}
@@ -154,7 +210,8 @@ $(document).ready(function() {
 				// here you need to request the quiz data in json format from the server
 				//it is using qset_summary whihc is the json object coming in to populate the table in this page
 				//##############################################33
-				var qset_id = $.trim($("#export-config-text").val()).split(",");
+				var qset_id_text = $.trim($("#export-config-text").val()).split(",");
+				
 				//get the current set of qs_ids
 				var qset_id_db = [];
 				for (qset of qset_summary.slice(1,)) {
@@ -162,7 +219,7 @@ $(document).ready(function() {
 				}
 				//get the clean set of requested qs_ids
 				var qset_id_req = [];
-				for (qset of qset_id) {
+				for (qset of qset_id_text) {
 					if (qset_id_db.includes(qset)){
 						qset_id_req.push(qset);
 					}
@@ -326,7 +383,7 @@ $(document).ready(function() {
 	//##########################3
 	//edit_quiz page
 	//This allows the admin to edit a quiz: adjust the order of text/image elements, set the answer type, add/delete text/image elements, import new .quiz spec to overwrite
-	if (window.location.pathname.search(/\/edit_quiz\.html$/i) != -1) {
+	if (window.location.pathname.search(regex["edit_quiz"]) != -1) {
 		//this is required for jquery-ui sortable to work
 		//note I have to use the class selector first so it selects the multiple instances of #sortable
 		//if I use #sortable only, it only selects the first one (you are not meant to duplicate ids)
@@ -335,10 +392,20 @@ $(document).ready(function() {
 			$(".tab-pane ul#sortable").disableSelection();
 		});
 	
-		//user_id
-		u_id = "admin123";
-		// qset_id, that was chosen
-		var qset_id = "QS435";
+		//the user id comes form the previous page
+		var u_id = findGetParameter('u_id');
+		var username = findGetParameter('username');
+		var qset_id = findGetParameter('qset_id');
+		
+		//update the final save link
+		var query_data = encodeQueryData({"u_id":u_id,
+										"username":username});
+		$("#final-save").attr("href","./admin_summary.html" + "?" + query_data); 
+		
+		//update the username in the header
+		$("#username").text(username);
+
+		//this all comes from an ajax request now
 		// qset_id, that was chosen
 		var qset_name = "Some Quiz Name";
 		//q_ids in the selected qset, the index + 1 is the sequence of the question 
@@ -661,11 +728,15 @@ $(document).ready(function() {
 	//###########################################################################
 	//student_summary page
 	//This will go to the student quiz summary page, the student can see the staus of the quizes and select a quiz t take
-	if (window.location.pathname.search(/\/student_summary\.html$/i) != -1) {
+	if (window.location.pathname.search(regex["student_summary"]) != -1) {
 		//this builds the table of quizes to take
 
 		//the user id comes form the previous page
-		u_id = "some user_id";
+		var u_id = findGetParameter('u_id');
+		var username = findGetParameter('username');
+
+		//update the username in the header
+		$("#username").text(username);
 
 		//Do the Ajax Request here to fetch the student summary table data (qset_summary)
 		$.ajax({
@@ -728,9 +799,14 @@ $(document).ready(function() {
 			//assigns a click listener to the table rows
 			$("#quiz-selection-table tbody tr.click-enable").click(function() {
 				var qset_id = $(this).find("td#qset-id").text();
-				var user_id = $("#user_id").text();
-				alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nuser_id: " + user_id);
-				window.location = "./take_quiz.html?qset_id="+qset_id+"&user_id="+user_id;
+
+				alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nu_id: " + u_id);
+
+				//build the target url
+				var query_data = encodeQueryData({"qset_id":qset_id,
+												"u_id":u_id,
+												"username":username});
+				window.location = "./take_quiz.html" + "?" + query_data;
 			});
 		}//end of the build_student_summary function
 	} //end of the student_summary code
@@ -743,11 +819,21 @@ $(document).ready(function() {
 	//#######################################################
 	//Take Quiz page
 	//This loads the selected quiz and allows the student to answer the questions, the student can save as they go, the link for final commit is the top left nav bar
-	if (window.location.pathname.search(/\/take_quiz\.html$/i) != -1) {
-		//user_id
-		u_id = "fred123";
-		// qset_id, that was chosen
-		var qset_id = "QS435";
+	if (window.location.pathname.search(regex["take_quiz"]) != -1) {
+		//the user id comes form the previous page
+		var u_id = findGetParameter('u_id');
+		var username = findGetParameter('username');
+		var qset_id = findGetParameter('qset_id');
+
+		//edit the final save link
+		var query_data = encodeQueryData({"u_id":u_id,
+										"username":username});
+		$("#final-save").attr("href","./student_summary.html" + "?" + query_data); 
+
+		//update the username in the header
+		$("#username").text(username);
+
+		//this all comes from the ajax request now
 		var qset_name = "Some Quiz Name";
 		//q_ids in the selected qset, the index + 1 is the sequence of the question 
 		var q_id = ["x243","y22","z43","x534","z115"];

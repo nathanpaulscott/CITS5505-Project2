@@ -7,7 +7,6 @@ import os
 # initialise app
 basedir = os.path.abspath(os.path.dirname(__file__))
 image_folder = '/static/images'
-
 app = Flask(__name__)
 
 
@@ -86,41 +85,66 @@ def get_landing():
 
 @app.route('/login.html', methods=['GET', 'POST'])
 def get_login():
-    return render_template('login.html')
+    #NOTE: I made these temporary changes so I could get rid of the 2 login buttons, I will leave it to you to implement it properly...Nathan
+    #basically when the login is page is GET reuqested, it is before it has been filled, once the user presses the submit button, it loads login as a POST request with the username and password, which gets verified and redirected to the correct page.  Again, this is just temporary
+    if request.method == 'GET':
+        return render_template('login.html')
+    
+    elif request.method == 'POST':
+        username = request.form["username"]
+        password = request.form["password"]
+        #verify the user exists and the password is correct 
+        # and log them in with a login flag in the DB
+        #also get the admin status and u_id from the DB
+
+        #temp for testing => if username=="admin" login as admin
+        #######################
+        u_id = "u1234"
+        admin_flag = False
+        if username == "admin":
+            admin_flag = True
+        #######################
+        if admin_flag:
+            return redirect(url_for('get_admin_summary',
+                                    username=username,
+                                    u_id=u_id))  
+            #307 forces it to be POST and send the login form data
+        else:
+            return redirect(url_for('get_student_summary',
+                                    username=username,
+                                    u_id=u_id))
+
+
+
+@app.route('/student_summary.html', methods=['GET'])
+def get_student_summary():
+    return render_template('student_summary.html',
+                            username=request.args['username'], 
+                            u_id=request.args['u_id'])
+
+
+
+@app.route('/admin_summary.html', methods=['GET'])
+def get_admin_summary():
+    return render_template('admin_summary.html',
+                            username=request.args['username'], 
+                            u_id=request.args['u_id'])
+
 
 @app.route('/take_quiz.html', methods=['GET'])
 def get_take_quiz():
-    return render_template('take_quiz.html')
-
-
-
-@app.route('/student_summary.html', methods=['POST'])
-def get_student_summary():
-  
-    #again this is temp
-    username = request.form["username"]
-    password = request.form["password"]
-    #verify the user exists and the password is correct 
-  
-    return render_template('student_summary.html')
-
-
-
-@app.route('/admin_summary.html', methods=['POST'])
-def get_admin_summary():
-  
-    #again this is temp, there has to be a better way
-    username = request.form["username"]
-    password = request.form["password"]
-    #verify the user exists and is logged in
-  
-    return render_template('admin_summary.html')
-
+    return render_template('take_quiz.html',
+                            username=request.args['username'], 
+                            u_id=request.args['u_id'],
+                            qset_id=request.args['qset_id'])
 
 
 @app.route('/edit_quiz.html', methods=['GET'])
 def get_edit_quiz():
-    return render_template('edit_quiz.html')
+    return render_template('edit_quiz.html',
+                            username=request.args['username'], 
+                            u_id=request.args['u_id'],
+                            qset_id=request.args['qset_id'])
 
 
 
