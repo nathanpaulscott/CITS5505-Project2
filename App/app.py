@@ -294,31 +294,6 @@ def upload_quiz():
 
 #nathan...testing
 ##########################################################
-#this is temporary, I do not know how to make the login work properly, 
-# this just goes to the admin pages if the username is admin
-@app.route('/verify', methods=['POST'])
-def verify():
-    if request.method != 'POST':
-        return jsonify ({"Status":"error","msg":""})
-    
-    username = request.form["username"]
-    password = request.form["password"]
-    #verify the user exists and the password is correct 
-    # and log them in with a login flag in the DB
-    #also get the admin status from the DB
-
-    #temp for testing
-    #######################
-    admin_flag = False
-    if username == "admin":
-        admin_flag = True
-    #######################
-    if admin_flag:
-        return redirect(url_for('get_admin_summary'),307)  #307 forces it to be POST and send the login form data
-    else:
-        return redirect(url_for('get_student_summary'),307)  #307 forces it to be POST and send the login form data
-
-
 #this is for the import image function in the admin_summary page
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
