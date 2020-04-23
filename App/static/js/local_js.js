@@ -800,7 +800,7 @@ function encodeQueryData(data) {
 			$("#quiz-selection-table tbody tr.click-enable").click(function() {
 				var qset_id = $(this).find("td#qset-id").text();
 
-				alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nu_id: " + u_id);
+				alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nu_id: " + u_id + ",\nusername: " + username);
 
 				//build the target url
 				var query_data = encodeQueryData({"qset_id":qset_id,
