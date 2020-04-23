@@ -25,6 +25,7 @@ class User(db.Model):
     username = db.Column(db.String(10), unique=True )
     password = db.Column(db.String(10))
 
+    # creates a user
     def __init__(self, admin, username, password):
         self.admin = admin
         self.username = username
@@ -34,6 +35,16 @@ class Question_Set(db.Model):
     qs_id = db.Column(db.Integer, primary_key=True)
     author = db.Column(db.String(20))
     enabled = db.Column(db.Boolean)
+    topic = db.Column(db.String(10))
+    time = db.Column(db.Integer)
+
+    # creates a question set
+    def __init__(self, qs_id, author, enabled, topic, time):
+        self.qs_id = qs_id
+        self.author = author
+        self.enabled = enabled
+        self.topic = topic
+        self.time = time
 
 class Question(db.Model):
     q_id = db.Column(db.Integer, primary_key=True)
@@ -41,24 +52,42 @@ class Question(db.Model):
     # id of the question set the question belongs to
     qs_id = db.Column(db.Integer)
 
+    # index within the question set
+    qs_index = db.Column(db.Integer)
+
     # the quiz question text
     text = db.Column(db.String(50))
 
     # id of the quiz_option that is the correct answer to this question
     answer_id = db.Column(db.Integer)
 
-    topic = db.Column(db.String(10))
-    time = db.Column(db.Integer)
+    # creates a question
+    def __init__(self, q_id, qs_id, qs_index, text, answer_id):
+        self.q_id = q_id
+        self.qs_id = qs_id
+        self.qs_index = qs_index
+        self.text = text
+        self.answer_id = answer_id
 
-# provded possible answer for multiple choice questions
+# possible answer for multiple choice questions
 class Quiz_Option(db.Model):
     qo_id = db.Column(db.Integer, primary_key=True)
 
     # id of the question the answer option belongs to
     q_id = db.Column(db.Integer)
 
+    # index within the question
+    q_index = db.Column(db.Integer)
+
     # the quiz option text
     text = db.Column(db.String(50))
+
+    # creates a quiz option
+    def __init__(self, qo_id, q_id, q_index, text):
+        self.qo_id = qo_id
+        self.q_id = q_id
+        self.q_index = q_index
+        self.text = text
 
 class Submission(db.Model):
     s_id = db.Column(db.Integer, primary_key=True)
@@ -106,12 +135,12 @@ def get_student_summary():
 
 
 
-@app.route('/admin_summary.html', methods=['POST'])
+@app.route('/admin_summary.html', methods=['GET','POST'])
 def get_admin_summary():
   
     #again this is temp, there has to be a better way
-    username = request.form["username"]
-    password = request.form["password"]
+    '''username = request.form["username"]
+    password = request.form["password"]'''
     #verify the user exists and is logged in
   
     return render_template('admin_summary.html')
@@ -153,7 +182,89 @@ def register():
             return jsonify ({ "Status" : "New User Created"})
 
 
+# import quiz function in the admin_summary page
+@app.route('/upload_quiz', methods=['POST'])
+def upload_quiz():
+    if request.method == 'POST':
+        qset_data = request.get_json()
+        #print(qset_data)
 
+        # determines the next unused qs_id from database
+        max_id = db.engine.execute(
+            'SELECT MAX(qs_id) FROM question__set;'
+        ).fetchone()[0]
+        qs_id = max_id + 1
+
+        # need to replace with user id supplied by browser
+        author = "admin"
+
+        enabled = 1
+        
+        if (qset_data[0]["topic"] is not None):
+            topic = qset_data[0]["topic"]
+        else:
+            topic = "General"
+        if (qset_data[0]["time"] is not None):
+            time = qset_data[0]["time"]
+        else:
+            time = 999
+
+
+        new_qs = Question_Set(qs_id,author,enabled,topic,time)
+        db.session.add(new_qs)
+
+        # Populate database with questions for that question set
+        index = 0
+        max_qid = None
+        max_qoid = None
+        
+        for item in qset_data:
+            # skips info about question_set
+            if (index == 0):
+                index += 1
+                continue
+
+            else:
+                if (max_qid is None):
+                    # determines the next unused q_id from database
+                    max_qid = db.engine.execute(
+                        'SELECT MAX(q_id) FROM question;'
+                    ).fetchone()[0]
+                max_qid += 1
+                q_id = max_qid
+
+                # to ensure starts from 0
+                qs_index = index - 1
+                text = item["question"]["data"]
+                answer_id = item["answer"]["correct_index"]
+                new_q = Question(q_id,qs_id,qs_index,text,answer_id)
+                db.session.add(new_q)
+                index += 1
+
+                # populates DB with answers for that question
+                q_index = 0
+                for answer in item["answer"]["data"]:
+                    if (max_qoid is None):
+                        # determines the next unused qo_id from database
+                        max_qoid = db.engine.execute(
+                            'SELECT MAX(qo_id) FROM quiz__option;'
+                        ).fetchone()[0]
+                    
+                    print(max_qoid)
+                    max_qoid += 1
+                    qo_id = max_qoid
+
+                    text = answer
+
+                    new_qo = Quiz_Option(qo_id,q_id,q_index,text)
+                    db.session.add(new_qo)
+
+                    q_index += 1
+
+        # add all to database
+        db.session.commit()
+
+        return jsonify ({ 'Status' : 'ok'})
 
 
 
@@ -198,18 +309,6 @@ def upload_image():
     #for testing
     return jsonify ({ 'Status' : 'ok', 'msg':'Server recieved: ' + filename})
     #return jsonify ({ 'Status' : 'ok'})
-    
-
-
-#this is for the import quiz function in the admin_summary page
-@app.route('/upload_quiz', methods=['POST'])
-def upload_quiz():
-    if request.method == 'POST':
-        qset_data = request.get_json()
-        #so qset_data is the json object, need to put it in the DB now
-        #for testing
-        return jsonify ({ 'Status' : 'ok'})
-        #return qset_data
 
 
 #this is for the export quiz function in the admin_summary page
