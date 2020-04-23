@@ -1,5 +1,5 @@
 [	
-	{"qset_id":"f300", "topic":"Capitals", "time":"30"},
+	{"topic":"Capitals", "time":"30"},
 
 	{"question":
 		{"type":"text","data":"What is the capital of Poland?"}, 
