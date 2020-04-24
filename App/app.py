@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template, redirect, send_from_
 from werkzeug.utils import secure_filename
 from flask_sqlalchemy import SQLAlchemy
 import os
-
+import json
 
 # initialise app
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -210,7 +210,7 @@ def register():
 @app.route('/upload_quiz', methods=['POST'])
 def upload_quiz():
     if request.method == 'POST':
-        qset_data = request.get_json()
+        qset_data = request.get_json()["qset_data"]
         #print(qset_data)
 
         # determines the next unused qs_id from database
@@ -310,19 +310,23 @@ def upload_image():
     #return jsonify ({ 'Status' : 'ok'})
 
 
+
+
 #this is for the export quiz function in the admin_summary page
 @app.route('/download_quiz', methods=['POST'])
 def download_quiz():
     if request.method == 'POST':
-        qset_req = request.get_json()
-        #qs_req is a list of qset_ids that need to be returned in one list of qset objects
+        qset_id_req = request.get_json()["qset_id_req"]
+        #qset_id_req is a list of qset_ids that need to be returned in one list of qset objects
         #you need to build the qset json for each qset_id, i.e. select out the data from the qset table and q table
         #after this is done and it is saved to qset_data, we send it back
         #here is a sample output for 3 qsets, so it is a list of 3 qset objects
-        qset_data = [{ "qset_id":"abc123", "u_id": "the id of the current admin user", "1":{"q_id":"xyz123","question":{"1":{"type":"text","data":"some text for Q1"}, "2":{"type":"image","data":"some_image.jpg"}, "3":{"type":"text","data":"some text"}}, "answer":{"type":"mc","data":["ans1","ans2","ans3","ans4"]}}, "2":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q2"}}}, "3":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q3"}, "2":{"type":"image","data":"some_image.jpg"}, "3":{"type":"image","data":"some_image.jpg"}, "4":{"type":"text","data":"some text"}, "5":{"type":"image","data":"some_image.jpg"}}, "answer":{"type":"mc","data":["ans1","ans2","ans3","ans4","ans5"]}}, "4":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q4"}}}, "5":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q5"}}}, "6":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q6"}}} }, {	 "qset_id":"aas3d45f", "u_id": "the id of the current admin user", "1":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q1"}, "2":{"type":"image","data":"some_image.jpg"}, "3":{"type":"text","data":"some text"}}, "answer":{"type":"mc","data":["ans1","ans2","ans3","ans4"]}}, "2":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q2"}}}, "3":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q3"}, "2":{"type":"image","data":"some_image.jpg"}, "3":{"type":"image","data":"some_image.jpg"}, "4":{"type":"text","data":"some text"}, "5":{"type":"image","data":"some_image.jpg"}}, "answer":{"type":"mc","data":["ans1","ans2","ans3","ans4","ans5"]}}, "4":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q4"}}}, "5":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q5"}}}, "6":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q6"}}} }, {	 "qset_id":"abc123456", "u_id": "the id of the current admin user", "1":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q1"}, "2":{"type":"image","data":"some_image.jpg"}, "3":{"type":"text","data":"some text"}}, "answer":{"type":"mc","data":["ans1","ans2","ans3","ans4"]}}, "2":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q2"}}}, "3":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q3"}, "2":{"type":"image","data":"some_image.jpg"}, "3":{"type":"image","data":"some_image.jpg"}, "4":{"type":"text","data":"some text"}, "5":{"type":"image","data":"some_image.jpg"}}, "answer":{"type":"mc","data":["ans1","ans2","ans3","ans4","ans5"]}}, "4":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q4"}}}, "5":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q5"}}}, "6":{"q_id":"xyz123", "question":{"1":{"type":"text","data":"some text for Q6"}}}}]
-        #note you can see here an issue wiht using dictionaries, they do not preserve order
-        #I am leaning more to using my format option 3 which used more lists
-        return jsonify ({'Status' : 'ok','msg':qset_req,'data':qset_data})
+        qset_data = []
+        qset_data.append([{"qset_id":"243","qset_name":"some question set name"}, {"question":[{"q_id":"1"},  {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},{"type":"image","data":"test_image4.jfif"},{"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},{"type":"image","data":"test_image3.jfif"},{"type":"image","data":"test_image.jpg"}]},{"question":[{"q_id":"2"},{"type":"text","data":"question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here,"},{"type":"image","data":"test_image1.jfif"},{"type":"text","data":"question 2 text here, question 2 text here, question 2 text here."}],"answer":{"type":"mc","data":["option1","option2","option3","option4"]}},{"question":[{"q_id":"3"},{"type":"text","data":"question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here."}]},{"question":[{"q_id":"4"},{"type":"text","data":"question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here."}],"answer":{"type":"mc","data":["option1","option2","option3","option4","option5"]}},{"question":[{"q_id":"5"},{"type":"text","data":"question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here,"},{"type":"image","data":"test_image2.jfif"}]}])
+        qset_data.append([{"qset_id":"23","qset_name":"some question set name"}, {"question":[{"q_id":"1"},  {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},{"type":"image","data":"test_image4.jfif"},{"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},{"type":"image","data":"test_image3.jfif"},{"type":"image","data":"test_image.jpg"}]},{"question":[{"q_id":"2"},{"type":"text","data":"question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here,"},{"type":"image","data":"test_image1.jfif"},{"type":"text","data":"question 2 text here, question 2 text here, question 2 text here."}],"answer":{"type":"mc","data":["option1","option2","option3","option4"]}},{"question":[{"q_id":"3"},{"type":"text","data":"question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here."}]},{"question":[{"q_id":"4"},{"type":"text","data":"question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here."}],"answer":{"type":"mc","data":["option1","option2","option3","option4","option5"]}},{"question":[{"q_id":"5"},{"type":"text","data":"question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here,"},{"type":"image","data":"test_image2.jfif"}]}])
+        qset_data.append([{"qset_id":"54","qset_name":"some question set name"}, {"question":[{"q_id":"1"},  {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},{"type":"image","data":"test_image4.jfif"},{"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},{"type":"image","data":"test_image3.jfif"},{"type":"image","data":"test_image.jpg"}]},{"question":[{"q_id":"2"},{"type":"text","data":"question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here,"},{"type":"image","data":"test_image1.jfif"},{"type":"text","data":"question 2 text here, question 2 text here, question 2 text here."}],"answer":{"type":"mc","data":["option1","option2","option3","option4"]}},{"question":[{"q_id":"3"},{"type":"text","data":"question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here."}]},{"question":[{"q_id":"4"},{"type":"text","data":"question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here."}],"answer":{"type":"mc","data":["option1","option2","option3","option4","option5"]}},{"question":[{"q_id":"5"},{"type":"text","data":"question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here,"},{"type":"image","data":"test_image2.jfif"}]}])
+        
+        return jsonify ({'Status' : 'ok','msg':qset_id_req,'data':qset_data})
 
 
 
@@ -330,19 +334,19 @@ def download_quiz():
 @app.route('/delete_quiz', methods=['POST'])
 def delete_quiz():
     if request.method == 'POST':
-        qset_req = request.get_json()
+        qset_id_req = request.get_json()["qset_id_req"]
         #qs_req is a list of qset_ids that need to be deleted from the qset table and q table
         #so you just need to do the sql work here
         
         #if all was ok
-        return jsonify ({'Status' : 'ok',"msg":qset_req})
+        return jsonify ({'Status' : 'ok',"msg":qset_id_req})
 
 
 #this is to load the admin_summary json data
 @app.route('/admin_summary_json', methods=['POST'])
 def admin_summary_json():
     if request.method == 'POST':
-        u_id = request.get_json()
+        u_id = request.get_json()["u_id"]
         #u_id will have the user_id that is asking for the page, right now do nothing, but later we can do something
         #you need to extract the admin summary table json, you will have to get some basic stats also, so need to access more tables here
 
@@ -350,17 +354,17 @@ def admin_summary_json():
         qset_summary =  \
         [
         ["Quiz Id","Topic","Tot Qs","MC Qs","Time(mins)","Owner","Status","Img.Missing","Attempted","Completed","Marked","Score Mean","Score SD"],
-        ["x453","Topic A",10,5,50,"u_id","Active",0,4,25,9,59.3,13.4],
-        ["y987","Topic B",20,10,100,"u_id","Active",0,8,45,33,68.3,8.4],
-        ["x365","Topic A",30,20,150,"u_id","Active",0,3,35,32,62.3,7.4],
-        ["d13","Topic A",10,5,30,"u_id","Active",0,0,65,0,-1,-1],
-        ["s4","Topic C",15,7,70,"u_id","Active",0,5,25,3,90.3,20.1],
-        ["c476","Topic C",12,8,60,"u_id","Pending",4,0,0,0,-1,-1],
-        ["x893","Topic A",20,10,80,"u_id","Active",0,2,35,22,70.3,12],
-        ["f453","Topic D",20,15,90,"u_id","Closed",0,7,45,45,67.2,8.3],
-        ["b323","Topic B",15,10,65,"u_id","Active",0,4,65,60,60.3,9.2],
-        ["z43","Topic B",10,5,40,"u_id","Active",0,3,45,30,63.3,11.1],
-        ["x443","Topic A",5,5,25,"u_id","Active",0,0,25,2,80.3,22.7]
+        ["1","Topic A",10,5,50,"u_id","Active",0,4,25,9,59.3,13.4],
+        ["2","Topic B",20,10,100,"u_id","Active",0,8,45,33,68.3,8.4],
+        ["3","Topic A",30,20,150,"u_id","Active",0,3,35,32,62.3,7.4],
+        ["4","Topic A",10,5,30,"u_id","Active",0,0,65,0,-1,-1],
+        ["5","Topic C",15,7,70,"u_id","Active",0,5,25,3,90.3,20.1],
+        ["6","Topic C",12,8,60,"u_id","Pending",4,0,0,0,-1,-1],
+        ["7","Topic A",20,10,80,"u_id","Active",0,2,35,22,70.3,12],
+        ["8","Topic D",20,15,90,"u_id","Closed",0,7,45,45,67.2,8.3],
+        ["9","Topic B",15,10,65,"u_id","Active",0,4,65,60,60.3,9.2],
+        ["10","Topic B",10,5,40,"u_id","Active",0,3,45,30,63.3,11.1],
+        ["11","Topic A",5,5,25,"u_id","Active",0,0,25,2,80.3,22.7]
         ]
 
         #if all was ok
@@ -371,30 +375,154 @@ def admin_summary_json():
 @app.route('/student_summary_json', methods=['POST'])
 def student_summary_json():
     if request.method == 'POST':
-        u_id = request.get_json()
+        u_id = request.get_json()["u_id"]
         #u_id will have the user_id that is asking for the page, right now do nothing, but later we can do something
         #you need to extract the student summary table json, you will have to get some basic stats also, so need to access more tables here
 
         #temp
 		#NOTE: the status here is different to the admin status, here it can be : [not attempted, not complete, complete, marked]
         qset_summary =  \
-        [
-        ["Quiz Id","Topic","Tot Qs","MC Qs","Time(mins)","Status","Score","Score Mean","Score SD"],
-        ["x453","Topic A",10,5,50,"Not Attempted",-1,59.3,13.4],
-        ["y987","Topic B",20,10,100,"Completed",-1,68.3,8.4],
-        ["x365","Topic A",30,20,150,"Marked",85.7,62.3,7.4],
-        ["d13","Topic A",10,5,30,"Attempted",-1,-1,-1],
-        ["s4","Topic C",15,7,70,"Not Attempted",-1,90.3,20.1],
-        ["c476","Topic C",12,8,60,"Marked",65.3,-1,-1],
-        ["x893","Topic A",20,10,80,"Completed",-1,70.3,12],
-        ["f453","Topic D",20,15,90,"Marked",88.1,67.2,8.3],
-        ["b323","Topic B",15,10,65,"Not Atttempted",-1,60.3,9.2],
-        ["z43","Topic B",10,5,40,"Marked",46.2,63.3,11.1],
-        ["x443","Topic A",5,5,25,"Completed",-1,80.3,22.7]
-        ]
+        [["Quiz Id","Topic","Tot Qs","MC Qs","Time(mins)","Status","Score","Score Mean","Score SD"],
+        ["1","Topic A",10,5,50,"Not Attempted",-1,59.3,13.4],
+        ["2","Topic B",20,10,100,"Completed",-1,68.3,8.4],
+        ["3","Topic A",30,20,150,"Marked",85.7,62.3,7.4],
+        ["4","Topic A",10,5,30,"Attempted",-1,-1,-1],
+        ["5","Topic C",15,7,70,"Not Attempted",-1,90.3,20.1],
+        ["6","Topic C",12,8,60,"Marked",65.3,-1,-1],
+        ["7","Topic A",20,10,80,"Completed",-1,70.3,12],
+        ["8","Topic D",20,15,90,"Marked",88.1,67.2,8.3],
+        ["9","Topic B",15,10,65,"Not Atttempted",-1,60.3,9.2],
+        ["10","Topic B",10,5,40,"Marked",46.2,63.3,11.1],
+        ["11","Topic A",5,5,25,"Completed",-1,80.3,22.7]]
 
         #if all was ok
         return jsonify ({'Status' : 'ok',"msg":"","data":qset_summary})
+
+
+#this is to load the take_quiz json data
+@app.route('/take_quiz_json', methods=['POST'])
+def take_quiz_json():
+    if request.method == 'POST':
+        u_id = request.get_json()["u_id"]
+        qset_id = request.get_json()["qset_id"]
+        #u_id will have the user_id that is asking for the page, and qset_id is the question set being requested
+
+        #temp
+		#NOTE: the status here is different to the admin status, here it can be : [not attempted, not complete, complete, marked]
+        qset_data = \
+        [
+        {"qset_id":"243","qset_name":"some question set name"},
+        {"question":[{"q_id":"1"},
+                    {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},
+                    {"type":"image","data":"test_image4.jfif"},
+                    {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},
+                    {"type":"image","data":"test_image3.jfif"},
+                    {"type":"image","data":"test_image.jpg"}]},
+        {"question":[{"q_id":"2"},
+                    {"type":"text","data":"question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here,"},
+                    {"type":"image","data":"test_image1.jfif"},
+                    {"type":"text","data":"question 2 text here, question 2 text here, question 2 text here."}],
+         "answer":{"type":"mc",
+                    "data":["option1","option2","option3","option4"]}},
+        {"question":[{"q_id":"3"},
+                    {"type":"text","data":"question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here."}]},
+        {"question":[{"q_id":"4"},
+                    {"type":"text","data":"question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here."}],
+         "answer":{"type":"mc",
+                    "data":["option1","option2","option3","option4","option5"]}},
+        {"question":[{"q_id":"5"},
+                    {"type":"text","data":"question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here,"},
+                    {"type":"image","data":"test_image2.jfif"}]}
+        ]
+
+        #if all was ok
+        return jsonify ({'Status' : 'ok', 
+                        "msg" : "", 
+                        "data" : qset_data})
+
+
+
+# accept answer submission and save to DB
+@app.route('/submit_answers_json', methods=['POST'])
+def submit_answers_json():
+    if request.method == 'POST':
+        a_data = request.get_json()["a_data"]
+        print('Answers Submitted:\n')
+        print(a_data)
+
+        '''
+        a_data has the following format:
+        {qset_id: qset_id,
+        u_id: u_id,
+        final_submit: 1/0,
+        1:"answer",
+        2:"answer",
+        3:"answer",
+        4:"answer"
+        }
+        NOTE: qxxx is the unique question id
+        '''
+        #so just write it to the DB
+        #if all was ok
+        return jsonify ({'Status' : 'ok', 
+                        "msg" : ""})
+
+
+
+
+#this is to load the edit_quiz json data
+@app.route('/edit_quiz_json', methods=['POST'])
+def edit_quiz_json():
+    if request.method == 'POST':
+        u_id = request.get_json()["u_id"]
+        qset_id = request.get_json()["qset_id"]
+        #u_id will have the user_id that is asking for the page, and qset_id is the question set being requested
+
+        #temp
+		#NOTE: the status here is different to the admin status, here it can be : [not attempted, not complete, complete, marked]
+        qset_data = \
+        [
+        {"qset_id":"453","qset_name":"some question set name"},
+        {"question":[{"q_id":"1"},
+                    {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},
+                    {"type":"image","data":"test_image4.jfif"},
+                    {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},
+                    {"type":"image","data":"test_image3.jfif"},
+                    {"type":"image","data":"test_image.jpg"}]},
+        {"question":[{"q_id":"2"},
+                    {"type":"text","data":"question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here,"},
+                    {"type":"image","data":"test_image1.jfif"},
+                    {"type":"text","data":"question 2 text here, question 2 text here, question 2 text here."}],
+         "answer":{"type":"mc",
+                    "data":["option1","option2","option3","option4"]}},
+        {"question":[{"q_id":"3"},
+                    {"type":"text","data":"question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here."}]},
+        {"question":[{"q_id":"4"},
+                    {"type":"text","data":"question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here."}],
+         "answer":{"type":"mc",
+                    "data":["option1","option2","option3","option4","option5"]}},
+        {"question":[{"q_id":"5"},
+                    {"type":"text","data":"question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here,"},
+                    {"type":"image","data":"test_image2.jfif"}]}
+        ]
+
+        #if all was ok
+        return jsonify ({'Status' : 'ok', "msg" : "", "data" : qset_data})
+
+
+
+# accept quiz edits and save to DB
+@app.route('/submit_qset_edits_json', methods=['POST'])
+def submit_qset_edits_json():
+    if request.method == 'POST':
+        qset_data = request.get_json()["qset_data"]
+        for item in qset_data:
+            print(item)
+            print("")
+
+        #so just write it to the DB
+        #if all was ok
+        return jsonify ({'Status' : 'ok', "msg" : ""})
 
 
 
@@ -410,18 +538,18 @@ The format for the .quiz files for the question set specification is:
 NOTE: I am not validating this format right now, the JS just passes wahtever JSON you give to the server as long as it is JSON
 ///////////////////////////////////////////////
 [	
-	{"qset_id":"some alpha-numeric string"},
-
-	{"question":[{"q_id":""},
+	{"qset_name":"some name"}
+ 
+	{"question":[{"q_id":"1"},
 				 {"type":"text","data":"some text for Q1"},
 		  		 {"type":"image","data":"some_image.jpg"},
 				 {"type":"text","data":"some text"}], 
 	 "answer":{"type":"mc","data":["ans1","ans2","ans3","ans4"]}},
 	
-	{"question":[{"q_id":""},
+	{"question":[{"q_id":"2"},
 				 {"type":"text","data":"some text for Q2"}]},
 	
-	{"question":[{"q_id":""},
+	{"question":[{"q_id":"3"},
 			     {"type":"text","data":"some text for Q3"},
 				 {"type":"image","data":"some_image.jpg"},
 				 {"type":"image","data":"some_image.jpg"},
@@ -429,13 +557,13 @@ NOTE: I am not validating this format right now, the JS just passes wahtever JSO
 				 {"type":"image","data":"some_image.jpg"}],
 	 "answer":{"type":"mc","data":["ans1","ans2","ans3","ans4","ans5"]}},
 	
-	{"question":[{"q_id":""},
+	{"question":[{"q_id":"4"},
 				 {"type":"text","data":"some text for Q4"}]},
 	
-	{"question":[{"q_id":""},
+	{"question":[{"q_id":"5"},
 				 {"type":"text","data":"some text for Q5"}]},
 	
-	{"question":[{"q_id":""},
+	{"question":[{"q_id":"6"},
 				 {"type":"text","data":"some text for Q6"}]}
 ]
 ////////////////////////////////////////
@@ -446,19 +574,20 @@ NOTE: the browser will also add the q_id parameter to object[q_seq]["q_id"]="som
 So what gets sent to the server is:
 //////////////////////////////////////////////////////
 [	
-	{"qset_id":"some alpha-numeric string",
-    "u_id": "the id of the current admin user"},
+	{"qset_id":"432",
+    "qset_name":"some name",
+    u_id": "the id of the current admin user"},
 
-	{"question":[{"q_id":""},
+	{"question":[{"q_id":"1"},
 				 {"type":"text","data":"some text for Q1"},
 		  		 {"type":"image","data":"some_image.jpg"},
 				 {"type":"text","data":"some text"}], 
 	 "answer":{"type":"mc","data":["ans1","ans2","ans3","ans4"]}},
 	
-	{"question":[{"q_id":""},
+	{"question":[{"q_id":"2"},
 				 {"type":"text","data":"some text for Q2"}]},
 	
-	{"question":[{"q_id":""},
+	{"question":[{"q_id":"3"},
 			     {"type":"text","data":"some text for Q3"},
 				 {"type":"image","data":"some_image.jpg"},
 				 {"type":"image","data":"some_image.jpg"},
@@ -466,13 +595,13 @@ So what gets sent to the server is:
 				 {"type":"image","data":"some_image.jpg"}],
 	 "answer":{"type":"mc","data":["ans1","ans2","ans3","ans4","ans5"]}},
 	
-	{"question":[{"q_id":""},
+	{"question":[{"q_id":"4"},
 				 {"type":"text","data":"some text for Q4"}]},
 	
-	{"question":[{"q_id":""},
+	{"question":[{"q_id":"5"},
 				 {"type":"text","data":"some text for Q5"}]},
 	
-	{"question":[{"q_id":""},
+	{"question":[{"q_id":"6"},
 				 {"type":"text","data":"some text for Q6"}]}
 ]
 
