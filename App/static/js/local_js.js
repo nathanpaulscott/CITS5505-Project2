@@ -19,9 +19,11 @@ function encodeQueryData(data) {
 	//these are the regex page selectors to isolate js code to specific pages
 	let regex = {};
 	regex["admin_summary"] = /\/admin_summary\.html/i;
-	regex["edit_quiz"] = /\/edit_quiz\.html/i;
 	regex["student_summary"] = /\/student_summary\.html/i;
 	regex["take_quiz"] = /\/take_quiz\.html/i;
+	regex["review_quiz"] = /\/review_quiz\.html/i;
+	regex["mark_quiz"] = /\/mark_quiz\.html/i;
+	regex["edit_quiz"] = /\/edit_quiz\.html/i;
 	regex["admin_stats"] = /\/admin_stats\.html/i;
 	regex["student_stats"] = /\/student_stats\.html/i;
 		
@@ -109,8 +111,11 @@ function encodeQueryData(data) {
 		//Do the Ajax Request here to fetch the take_quiz data
 		$.ajax({
 			type: 'POST',
-			url: '/take_quiz_json',
-			data: JSON.stringify({"u_id":u_id,"qset_id":qset_id}),
+			url: '/load_qset_json',
+			data: JSON.stringify({"u_id":u_id,
+								  "qset_id":qset_id,
+								  "include_submission":"0",
+								  "include_submitters":"0"}),
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
@@ -121,6 +126,68 @@ function encodeQueryData(data) {
 			},
 		});
 	}
+
+
+
+	//Review Quiz page
+	//This loads the selected quiz and any submission related data, the user can not actually edit anything here
+	if (window.location.pathname.search(regex["review_quiz"]) != -1) {
+		//the user id comes form the previous page
+		let u_id = findGetParameter('u_id');
+		let username = findGetParameter('username');
+		let qset_id = findGetParameter('qset_id');
+
+		//Do the Ajax Request here to fetch the take_quiz data
+		$.ajax({
+			type: 'POST',
+			url: '/load_qset_json',
+			data: JSON.stringify({"u_id":u_id,
+								  "qset_id":qset_id,
+								  "include_submission":"1",
+								  "include_submitters":"0"}),
+			contentType: "application/json",
+			data_type: "json",
+			cache: false,
+			processData: false,
+			async: true,
+			success: function(data) {
+				build_review_quiz(u_id, username, data["data"]);
+			},
+		});
+	}
+
+
+
+
+	//mark Quiz page
+	//This loads the selected quiz and any submission related data for marking
+	if (window.location.pathname.search(regex["mark_quiz"]) != -1) {
+		//the user id comes form the previous page
+		let u_id = findGetParameter('u_id');
+		let username = findGetParameter('username');
+		let qset_id = findGetParameter('qset_id');
+		let s_u_id = findGetParameter('s_u_id');
+
+		//Do the Ajax Request here to fetch the take_quiz data
+		$.ajax({
+			type: 'POST',
+			url: '/load_qset_json',
+			data: JSON.stringify({"u_id":u_id,
+								"qset_id":qset_id,
+								"s_u_id":s_u_id,
+								"include_submission":"1",
+								"include_submitters":"1"}),
+			contentType: "application/json",
+			data_type: "json",
+			cache: false,
+			processData: false,
+			async: true,
+			success: function(data) {
+				build_mark_quiz(u_id, username, data["data"], data["submitters"]);
+			},
+		});
+	}
+
 
 
 
@@ -135,8 +202,11 @@ function encodeQueryData(data) {
 		//Do the Ajax Request here to fetch the take_quiz data
 		$.ajax({
 			type: 'POST',
-			url: '/edit_quiz_json',
-			data: JSON.stringify({"u_id":u_id,"qset_id":qset_id}),
+			url: '/load_qset_json',
+			data: JSON.stringify({"u_id":u_id,
+								  "qset_id":qset_id,
+								  "include_submission":"0",
+								  "include_submitters":"0"}),
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
@@ -171,7 +241,8 @@ function build_admin_summary(u_id, username, qset_summary) {
 	html_text = '<table class="table table-hover table-striped table-responsive" id="quiz-admin-table">' + '\n';
 	html_text +='	<thead>' + '\n';
 	html_text +='		<tr>' + '\n';
-	html_text +='          <th scope="col">#</th>' + '\n';
+	html_text +='          <th scope="col"></th>' + '\n';
+	html_text +='          <th scope="col"></th>' + '\n';
 	for (header_item of qset_summary[0]) {
 		html_text +='          <th scope="col">'+ header_item +'</th>' + '\n';
 	}
@@ -183,7 +254,8 @@ function build_admin_summary(u_id, username, qset_summary) {
 	for (x = 1; x < qset_summary.length; x++){
 		let ind = Number(x);
 		html_text +='       <tr class="click-enable">' + '\n';
-		html_text +='	       <td>' + ind + '</td>' + '\n';
+		html_text +='	       <td class="edit-quiz">Edit</td>' + '\n';
+		html_text +='	       <td class="mark-quiz">Mark</td>' + '\n';
 		html_text +='	       <td id="qset-id">' + qset_summary[ind][0] + '</td>' + '\n';
 		for (y = 1; y < qset_summary[ind].length; y++){
 			let ind_inner = Number(y);
@@ -199,23 +271,43 @@ function build_admin_summary(u_id, username, qset_summary) {
 
 	//runs the datatable plugin on the table to make it sortable etc...
 	$('#quiz-admin-table').DataTable({
-		//"paging":true,"ordering":true,columnDefs: [{"orderable": false,"targets":0}],"order": [] 
+		"paging":true,
+		"ordering":true,
+		columnDefs: [{"orderable": false,"targets":[0,1]}],"order": [] 
 	});
 
-	//assigns a click listener to the table rows
+	/*
+	//assigns a click listener to the table rows for quiz marking
 	$("#quiz-admin-table tbody tr.click-enable").click(function() {
-		//This is temporary for now
 		let qset_id = $(this).find("td#qset-id").text();
-		
-		alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nu_id: " + u_id + "\nusername: " + username);
-
 		//build the target url
 		let query_data = encodeQueryData({"qset_id":qset_id,
 										"u_id":u_id,
 										"username":username});
-		window.location = "./edit_quiz.html" + "?" + query_data;
+		window.location = "./mark_quiz.html" + "?" + query_data;
+	});
+	*/
+
+	//assigns a click listener to the mark cells for marking and review
+	$("#quiz-admin-table tbody tr.click-enable td.mark-quiz").click(function() {
+		let qset_id = $(this).parent().find("td#qset-id").text();
+		//build the target url
+		let query_data = encodeQueryData({"qset_id":qset_id,
+										  "u_id":u_id,
+										  "s_u_id":"init", 
+										  "username":username});
+		window.location = "./mark_quiz.html" + "?" + query_data;
 	});
 
+	//assigns a click listener to the edit cells for editing the qset
+	$("#quiz-admin-table tbody tr.click-enable td.edit-quiz").click(function() {
+		let qset_id = $(this).parent().find("td#qset-id").text();
+		//build the target url
+		let query_data = encodeQueryData({"qset_id":qset_id,
+										  "u_id":u_id,
+										  "username":username});
+		window.location = "./edit_quiz.html" + "?" + query_data;
+	});
 
 
 	//###############################
@@ -461,11 +553,12 @@ function build_admin_summary(u_id, username, qset_summary) {
 
 
 
-/////////////////////////////////////////////////////
-/////////////////////////////////////////////////////
-/////////////////////////////////////////////////////
-/////////////////////////////////////////////////////
-/////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
 function build_student_summary(u_id, username, qset_summary) {
 	//this does the html table building				
 	//update the username in the header
@@ -476,7 +569,7 @@ function build_student_summary(u_id, username, qset_summary) {
 	html_text = '<table class="table table-hover table-striped table-responsive" id="quiz-selection-table">' + '\n';
 	html_text +='	<thead>' + '\n';
 	html_text +='		<tr>' + '\n';
-	html_text +='          <th scope="col">#</th>' + '\n';
+	//html_text +='          <th scope="col">#</th>' + '\n';
 	for (header_item of qset_summary[0]) {
 		html_text +='          <th scope="col">'+ header_item +'</th>' + '\n';
 	}
@@ -485,20 +578,14 @@ function build_student_summary(u_id, username, qset_summary) {
 
 	//does the table body
 	html_text +='   <tbody>' + '\n';
-	for (x = 1; x < qset_summary.length; x++){
-		let ind = Number(x);
-		//enable selection only if the quiz has not been completed yet
-		if (qset_summary[ind][5].search(/^(completed|marked)$/i) == -1) {
-			html_text +='       <tr class="click-enable">' + '\n';
-		}
-		else {
-			html_text +='       <tr>' + '\n';
-		}
-		html_text +='	       <th scope="row">' + ind + '</th>' + '\n';
-		html_text +='	       <td id="qset-id">' + qset_summary[ind][0] + '</td>' + '\n';
-		for (y = 1; y < qset_summary[ind].length; y++){
-			let ind_inner = Number(y);
-			html_text +='	       <td>' + qset_summary[ind][ind_inner] + '</td>' + '\n';
+	for (let i = 1; i < qset_summary.length; i++){
+		html_text +='       <tr class="click-enable">' + '\n';
+		
+		//html_text +='	       <td id="qset_id">' + String(i) + '</td>' + '\n';
+		html_text +='	       <td id="qset-status">' + qset_summary[i][0] + '</td>' + '\n';
+		html_text +='	       <td id="qset-id">' + qset_summary[i][1] + '</td>' + '\n';
+		for (let j = 2; j < qset_summary[i].length; j++){
+			html_text +='	       <td>' + qset_summary[i][j] + '</td>' + '\n';
 		}
 		html_text +='       </tr>' + '\n';
 	}
@@ -513,13 +600,17 @@ function build_student_summary(u_id, username, qset_summary) {
 
 	//assigns a click listener to the table rows
 	$("#quiz-selection-table tbody tr.click-enable").click(function() {
+		let status = $(this).find("td#qset-status").text();
 		let qset_id = $(this).find("td#qset-id").text();
-		//alert("we need to GET 'take_quiz.html' with params:\nqset_id: " + qset_id + "\nu_id: " + u_id + ",\nusername: " + username);
-		//build the target url
 		let query_data = encodeQueryData({"qset_id":qset_id,
 										"u_id":u_id,
 										"username":username});
-		window.location = "./take_quiz.html" + "?" + query_data;
+		if (["Completed","Marked"].includes(status))
+			//review the quiz sumbission and/or marks		
+			window.location = "./review_quiz.html" + "?" + query_data;
+		else
+			//take the quiz 
+			window.location = "./take_quiz.html" + "?" + query_data;
 	});
 }//end of the build_student_summary function
 
@@ -530,11 +621,14 @@ function build_student_summary(u_id, username, qset_summary) {
 
 
 
-///////////////////////////////////////////////////
-///////////////////////////////////////////////////
-///////////////////////////////////////////////////
-///////////////////////////////////////////////////
-///////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
 function build_take_quiz(u_id, username, qset_data) {
 	//this does the html building				
 	let qset_id = qset_data[0]["qset_id"];
@@ -592,7 +686,7 @@ function build_take_quiz(u_id, username, qset_data) {
 		//#######################################
 		//answer data
 		html_text += '<form>' + '\n';
-		html_text += 	'<label for="form_group">Answer</label>' + '\n';
+		html_text += 	'<label for="form_group">Answer:</label>' + '\n';
 		html_text += 	'<div class="form-group" id="form_group">' + '\n';
 
 		//add the mc choices or a textbox
@@ -603,7 +697,7 @@ function build_take_quiz(u_id, username, qset_data) {
 			let mc_options = qset_data[i]["answer"]["data"];
 			mc_options.unshift("");
 			for (let j=1; j < mc_options.length; j++) {
-				let mc_id = 'mc_' + String(j);
+				let mc_id = q_seq + "_mc_" + String(j);
 				if (j > 1) checked_text = "";
 				html_text += 		'<div class="form-check">' + '\n';
 				html_text += 			'<input class="form-check-input" type="radio" name="' + q_seq + '_mc" id="' + mc_id + '" value="' + String(j) + '" ' + checked_text + '>' + '\n';
@@ -637,11 +731,11 @@ function build_take_quiz(u_id, username, qset_data) {
 
 	//assigns a click listener to the submit button as well as the finish and submit nav choice
 	$(".save-continue, #final-save").click(function() {
-		let a_data = {"qset_id":qset_id,"u_id":u_id};
+		let a_data = [{"qset_id":qset_id,"u_id":u_id}];
 		//sets the final_submit flag to indicate the user closed off the quiz, otherwise the attmpt is not complete even though interim results are saved
-		a_data["final_submit"] = 0;
+		a_data[0]["final_submit"] = 0;
 		if ($(this).is('#final-save')) { 
-			a_data["final_submit"] = 1;
+			a_data[0]["final_submit"] = 1;
 		}
 		//get the answers
 		for (let i=1; i < qset_data.length; i++) {
@@ -650,12 +744,10 @@ function build_take_quiz(u_id, username, qset_data) {
 			//read both for the mc case and the text case, the correct one will not be undefined
 			let mc_choice = $("input[name=" + q_seq + "_mc]:checked").val();
 			let text_field = $.trim($("#" + q_seq + "_A").val());
-			if (mc_choice != undefined) {
-				a_data[i] = Number(mc_choice);
-			} 
-			else {
-				a_data[i] = text_field;
-			}	
+			if (mc_choice != undefined) 
+				a_data.push(mc_choice);
+			else 
+				a_data.push(text_field);
 		}
 
 		$.ajax({
@@ -682,13 +774,358 @@ function build_take_quiz(u_id, username, qset_data) {
 
 
 
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+function build_review_quiz(u_id, username, qset_data) {
+	//this does the html building				
+	let qset_id = qset_data[0]["qset_id"];
+	let s_username = qset_data[0]["s_username"];
+	let s_u_id = qset_data[0]["s_u_id"];
+
+	//update the username in the header
+	$("#username").text(username);
+
+	//edit the final save link
+	let query_data = encodeQueryData({"u_id":u_id,
+									"username":username});
+	$("#final-save").attr("href","./student_summary.html" + "?" + query_data); 
+
+	//do the title
+	html_text = qset_data[0]["qset_name"] + '<br/> <span class="submitter">submitter: ' + s_username + ' (' + s_u_id + ')</span>';
+	//append to the DOM
+	$("h5#title").append(html_text);
+
+	let active_text = "active";
+	let showactive_text = "show active";
+	//go through the questions, from index 1 to end of array
+	for (let i=1; i < qset_data.length; i++) {
+		//this is the actual question sequence, i.e. "Q1", "Q2", "Q3" etc... you need to build this list locally, it is basically "Q" + index+1
+		let q_seq = "Q" + String(i); 
+		let html_text = ""; 
+		
+		//sets the first question to be selected initially and also the first of any multi-choices to be selected initially
+		if (i > 1) {
+			active_text = "";
+			showactive_text = "";
+		}
+		
+		//do the menu items
+		html_text = '<li class="nav-item"><a class="nav-link ' + active_text + '" id="' + q_seq + '" data-toggle="pill" href="#' + q_seq + '-data" role="tab" aria-controls="' + q_seq + '-data" aria-selected="false">' + q_seq + '</a></li>';
+		//append to the DOM
+		$("#q_nav ul.nav").append(html_text);
+
+		//question data
+		//#######################################
+		html_text = '<div class="tab-pane fade ' + showactive_text + '" id="' + q_seq + '-data" role="tabpanel" aria-labelledby="' + q_seq + '">' + '\n';
+		//set the grade text in the title
+		let grade_text = "Not Yet Marked";
+		if (qset_data[i]["answer"]["grade"] != "-1") 
+			grade_text = qset_data[i]["answer"]["grade"] + '/' + qset_data[i]["question"][0]["marks"];
+		html_text += '<h5>' + q_seq + '&nbsp&nbsp&nbsp&nbsp(' + grade_text + ')</h5>' + '\n';
+		
+		//this goes through the question part list and adds text or image tags as specified
+		//the first index of the list is the q_id, so ignore that
+		let question_parts = qset_data[i]["question"].slice(1,);
+		for (q_part of question_parts) {
+			if (q_part["type"] == "text") {
+				html_text += '<p>' + q_part["data"] + '</p>' + '\n';
+			}
+			else if (q_part["type"] == "image") {
+				html_text += '<p><img class="inline" src="./static/images/' + q_part["data"] + '"/></p>' + '\n';
+			}
+		}
+		html_text += '<hr>' + '\n';
+
+		//#######################################
+		//answer data
+		html_text += '<form>' + '\n';
+		html_text += 	'<label for="form_group">Answer:</label>' + '\n';
+		html_text += 	'<div class="form-group" id="form_group">' + '\n';
+
+		//disable inputs
+		let disabled_text = "disabled";
+		//add the mc choices or a textbox
+		if ("answer" in qset_data[i] && qset_data[i]["answer"]["type"] == "mc") {
+			//goes through the mc items
+			//add a blank element ot the start of array to make the indicies 1 based
+			let mc_options = qset_data[i]["answer"]["data"];
+			mc_options.unshift("");
+			for (let j = 1; j < mc_options.length; j++) {
+				let mc_id = q_seq + "_mc_" + String(j);
+				//this sets the submitted radio button selection
+				let checked_text = "";
+				if (j == Number(qset_data[i]["answer"]["answer"])) 
+					checked_text = "checked";
+				
+				html_text += 		'<div class="form-check">' + '\n';
+				html_text += 			'<input class="form-check-input" type="radio" name="' + q_seq + '_mc" id="' + mc_id + '" value="' + String(j) + '" ' + checked_text + ' ' + disabled_text + '>' + '\n';
+				html_text += 			'<label class="form-check-label" for="' + mc_id + '">' + mc_options[j] + '</label>' + '\n';
+				html_text += 		'</div>' + '\n';
+			}
+		} else {  //the non-multichoice case
+			html_text += 		'<textarea class="form-control" id="' + q_seq + '_A" rows="3" ' + disabled_text + '>' + qset_data[i]["answer"]["answer"] + '</textarea>' + '\n';
+		}
+		html_text += 	'</div>' + '\n';
+
+		//add the assessor comments text
+		html_text += 	'<label for="form_group2">Assessor Comments:</label>' + '\n';
+		html_text += 	'<div class="form-group" id="form_group2">' + '\n';
+		html_text += 		'<textarea class="form-control" id="' + q_seq + '_C" rows="3" ' + disabled_text + '>' + qset_data[i]["answer"]["comment"] + '</textarea>' + '\n';
+		html_text += 	'</div>' + '\n';
+		html_text += '</form>' + '\n';
+		//#######################################
+		html_text += '</div>';
+
+		//append to the DOM
+		$("#q_data").append(html_text);
+	}
+
+	//This assigns some listeners on the take_quiz page
+	//####################################################
+	//assigns a click listener to the question selection links so they hide on question selection when in smalll screen mode
+	$("#q_nav li.nav-item").click(
+		function() {
+			let x = document.getElementById("q_nav");
+			if (x.classList.contains("show")){
+				x.classList.remove("show");
+			}
+		}
+	);
+} //end of the build_review_quiz function
 
 
-///////////////////////////////////////////////////
-///////////////////////////////////////////////////
-///////////////////////////////////////////////////
-///////////////////////////////////////////////////
-///////////////////////////////////////////////////
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+function build_mark_quiz(u_id, username, qset_data, submitters) {
+	//this does the html building				
+	let qset_id = qset_data[0]["qset_id"];
+	let s_u_id = qset_data[0]["s_u_id"];
+	let s_username = qset_data[0]["s_username"];
+
+	//update the username in the header
+	$("#username").text(username);
+
+	//edit the final save link
+	let query_data = encodeQueryData({"u_id":u_id,
+									"username":username});
+	$("#final-save").attr("href","./admin_summary.html" + "?" + query_data); 
+
+	//do the title
+	html_text = qset_data[0]["qset_name"] + '<br/> <span class="submitter">submitter: ' + s_username + ' (' + qset_data[0]["s_u_id"] + ')</span>';
+	//append to the DOM
+	$("h5#title").append(html_text);
+
+	let active_text = "active";
+	let showactive_text = "show active";
+	//go through the questions, from index 1 to end of array
+	for (let i=1; i < qset_data.length; i++) {
+		//this is the actual question sequence, i.e. "Q1", "Q2", "Q3" etc... you need to build this list locally, it is basically "Q" + index+1
+		let q_seq = "Q" + String(i); 
+		let html_text = ""; 
+		
+		//sets the first question to be selected initially and also the first of any multi-choices to be selected initially
+		if (i > 1) {
+			active_text = "";
+			showactive_text = "";
+		}
+		
+		//do the menu items
+		html_text = '<li class="nav-item"><a class="nav-link ' + active_text + '" id="' + q_seq + '" data-toggle="pill" href="#' + q_seq + '-data" role="tab" aria-controls="' + q_seq + '-data" aria-selected="false">' + q_seq + '</a></li>';
+		//append to the DOM
+		$("#q_nav ul.nav").append(html_text);
+
+		//question data
+		//#######################################
+		html_text = '<div class="tab-pane fade ' + showactive_text + '" id="' + q_seq + '-data" role="tabpanel" aria-labelledby="' + q_seq + '">' + '\n';
+		html_text += '<h5>' + q_seq + '</h5>' + '\n';
+		
+		//this goes through the question part list and adds text or image tags as specified
+		//the first index of the list is the q_id, so ignore that
+		let question_parts = qset_data[i]["question"].slice(1,);
+		for (q_part of question_parts) {
+			if (q_part["type"] == "text") {
+				html_text += '<p>' + q_part["data"] + '</p>' + '\n';
+			}
+			else if (q_part["type"] == "image") {
+				html_text += '<p><img class="inline" src="./static/images/' + q_part["data"] + '"/></p>' + '\n';
+			}
+		}
+		html_text += '<hr>' + '\n';
+
+		//#######################################
+		//answer data
+		html_text += '<form>' + '\n';
+		html_text += 	'<label for="form_group">Answer:</label>' + '\n';
+		html_text += 	'<div class="form-group" id="form_group">' + '\n';
+
+		//disable inputs
+		let disabled_text = "disabled";
+		//add the mc choices or a textbox
+		if ("answer" in qset_data[i] && qset_data[i]["answer"]["type"] == "mc") {
+			//goes through the mc items
+			//add a blank element ot the start of array to make the indicies 1 based
+			let mc_options = qset_data[i]["answer"]["data"];
+			mc_options.unshift("");
+			for (let j = 1; j < mc_options.length; j++) {
+				let mc_id = q_seq + "_mc_" + String(j);
+				//this sets the submitted radio button selection
+				let checked_text = "";
+				if (j == Number(qset_data[i]["answer"]["answer"])) 
+					checked_text = "checked";
+				
+				html_text += 		'<div class="form-check">' + '\n';
+				html_text += 			'<input class="form-check-input" type="radio" name="' + q_seq + '_mc" id="' + mc_id + '" value="' + String(j) + '" ' + checked_text + ' ' + disabled_text + '>' + '\n';
+				html_text += 			'<label class="form-check-label" for="' + mc_id + '">' + mc_options[j] + '</label>' + '\n';
+				html_text += 		'</div>' + '\n';
+			}
+		} else {  //the non-multichoice case
+			html_text += 		'<textarea class="form-control" id="' + q_seq + '_A" rows="3" ' + disabled_text + '>' + qset_data[i]["answer"]["answer"] + '</textarea>' + '\n';
+		}
+		html_text += 	'</div>' + '\n';
+
+		//add assessor grade field
+		let grade_text = "";
+		let mark_max = qset_data[i]["question"][0]["marks"];
+		if (qset_data[i]["answer"]["grade"] != undefined) {
+			grade_text = qset_data[i]["answer"]["grade"];
+			if (Number(grade_text) > Number(mark_max))
+				grade_text = mark_max;
+			if (Number(grade_text) < -1)
+				grade_text = "-1";
+		} else
+			grade_text = "-1";
+
+		html_text += 	'<label for="form_group2">Mark (out of ' + qset_data[i]["question"][0]["marks"] + '):</label>' + '\n';
+		html_text += 	'<div class="form-group" id="form_group2">' + '\n';
+		html_text += 	'	<input type="number" style="max-width:80px;" class="form-control"  id="' + q_seq + '_M" value=' + grade_text + ' max="' + mark_max + '" min="0">' + '\n';
+		html_text += 	'</div>' + '\n';
+		
+		//add the assessor comments text
+		let comment_text = "";
+		if (qset_data[i]["answer"]["comment"] != undefined)
+			comment_text = qset_data[i]["answer"]["comment"];
+		html_text += 	'<label for="form_group3">Assessor Comments:</label>' + '\n';
+		html_text += 	'<div class="form-group" id="form_group3">' + '\n';
+		html_text += 		'<textarea class="form-control" id="' + q_seq + '_C" rows="3">' + comment_text + '</textarea>' + '\n';
+		html_text += 	'</div>' + '\n';
+		html_text += 	'<button type="button" class="btn btn-success save-continue">Submit</button>' + '\n';
+		html_text += '</form>' + '\n';
+		//#######################################
+		html_text += '</div>';
+
+		//append to the DOM
+		$("#q_data").append(html_text);
+	}
+
+	//does the change submitter list
+	html_text = "";
+	for (sub of submitters)
+		html_text += '		<option value="' + sub + '"></option>' + '\n';
+	$("#submitters").append(html_text);
+
+	//This assigns some listeners on the take_quiz page
+	//####################################################
+	//assigns a click listener to the question selection links so they hide on question selection when in smalll screen mode
+	$("#q_nav li.nav-item").click(
+		function() {
+			let x = document.getElementById("q_nav");
+			if (x.classList.contains("show")){
+				x.classList.remove("show");
+			}
+		}
+	);
+
+	//assigns a click listener to the load new submitter button
+	$("#btn-load-submitter").click(function() {
+		let new_user = $('[name="input-submitter"]').val();
+		//here we need to extract the s_u_id only
+		s_u_id = new_user.slice(0,new_user.search(":")).trim();
+
+		let query_data = encodeQueryData({"qset_id":qset_id,
+										  "u_id":u_id,
+										  "s_u_id":s_u_id,
+										  "username":username});
+		window.location = "./mark_quiz.html" + "?" + query_data;
+	});
+	
+
+	//assigns a click listener to the submit button as well as the finish and submit nav choice
+	$(".save-continue, #final-save").click(function() {
+		let marking_data = [{"qset_id":qset_id,"u_id":u_id,"s_u_id":s_u_id}];
+		//sets the final_submit flag to indicate the user closed off the quiz, otherwise the attmpt is not complete even though interim results are saved
+		marking_data[0]["final_submit"] = 0;
+		if ($(this).is('#final-save')) { 
+			marking_data[0]["final_submit"] = 1;
+		}
+		//get the marking data
+		let complete_flag = 1;
+		for (let i = 1; i < qset_data.length; i++) {
+			//this is the actual question sequence, i.e. "Q1", "Q2", "Q3" etc... you need to build this list locally, it is basically "Q" + index+1
+			let q_seq = "Q" + String(i);
+			let grade_text = $("#" + q_seq + "_M").val();
+			let comment_text = $.trim($("#" + q_seq + "_C").val());
+			
+			//validation
+			let mark_max = qset_data[i]["question"][0]["marks"];
+			if (grade_text == "")
+				grade_text = "-1";
+			else {
+				if (Number(grade_text) > Number(mark_max)) 
+					grade_text = mark_max;
+				if (Number(grade_text) < -1)
+					grade_text = "-1";
+			}
+			$("#" + q_seq + "_M").val(grade_text);
+			marking_data.push({'grade':grade_text,"comment":comment_text});
+			if (grade_text == "-1") 
+				complete_flag = 0;
+		}
+		marking_data[0]["marking_complete"] = complete_flag;
+
+		$.ajax({
+			type: 'POST',
+			url: '/submit_marks_json',
+			data: JSON.stringify({"data":marking_data}),
+			contentType: "application/json",
+			data_type: "json",
+			cache: false,
+			processData: false,
+			async: true,
+			success: function(data) {
+				//write this to the DOM and trigger the download, then delete from the DOM
+				alert("Your marks were submitted with status: " + data["Status"]);
+			},
+		});
+	});  //end of submit marks code
+
+} //end of the build_mark_quiz function
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
 function build_edit_quiz(u_id, username, qset_data) {
 	let newfiles = [];
 	

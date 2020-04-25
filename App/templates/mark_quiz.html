@@ -10,9 +10,6 @@
         <!-- bootstrap -->
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-        <!--datatables-->
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css">
-        
         <!-- local css imports-->
         <link rel="stylesheet" type="text/css" href="./static/css/local_css.css"/>
 
@@ -24,14 +21,15 @@
 
     <body>
         <div class="container-fluid">
+            <!--header row-->
             <div class="row header">
                 <div class="col-sm-1 header_left align-self-start" id="username"></div>
                 <div class="col-sm-10 header_main align-self-center">Quiz App</div>
                 <div class="col-sm-1 header_right align-self-start"><a href="./landing.html"><i class="fas fa-sign-out-alt"></i></a></div>
-            </div> <!--end of row-->
+            </div>
 
-
-            <div class="row sticky-top">
+            <!-- header nav row -->
+            <div class="row">
                 <div class="col-sm-12 header_nav">
                     <nav class="navbar navbar-dark navbar-expand-sm">
                         <div class="navbar-header">
@@ -41,60 +39,98 @@
                         </div>
                         <div class="collapse navbar-collapse" id="myNavbar">
                             <ul class="nav navbar-nav">
-                                <li><a href="./student_stats.html">Statistics</a></li>
-                                <!--<li><a href="./login-reg.html">Login/Register</a></li>
-                                <li class="active"><a href="./project1-js.html">JS</a></li>
-                                <li><a href="./project1-bio.html">Bio</a></li>-->
+                                <li><a id="final-save" href="./admin_summary.html">Finish and Submit</a></li>
                             </ul>
                         </div>
                     </nav>
                 </div>
-            </div>
+            </div> 
 
+            <!-- main content row -->
             <div class="row">
-                <div class="col-sm-2 l_side">
-                </div> <!--end of l_side-->
+                <!-- left side section -->
+                <div class="col-sm-2 l_side sticky-top">
+                    <div class="row">
+                        <div class="col-sm-12" id="q_nav_main">
+                            <nav class="navbar navbar-dark navbar-expand-sm">
+                                <div class="navbar-header">
+                                    <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#q_nav">
+                                        <span class="navbar-toggler-icon"></span>
+                                    </button>
+                                </div>
+                                <div class="collapse navbar-collapse" id="q_nav">
+                                    <ul class="nav nav-pills flex-column">
+                                        <!--filled by js-->
+                                    </ul>
+                                </div>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- content section -->
                 <div class="col-sm-8 content">
-                    <h2>Quiz Selection</h2>
+                    <h2>Mark Submission</h2>
                     
-                    <h5>
-                        Quiz List
+                    <h5 id="title">
+                        <!-- filed by js -->
                     </h5>
+
                     <h6 data-toggle="collapse" data-target="#instructions" aria-expanded="false" aria-controls="instructions">
                         Instructions
                     </h6>
                     <div class="collapse multicollapse" id="instructions">             
                         <i class="instructions">
-                            Click on a quiz to take it<br/>
-                            If you have already completed the quiz you will be able to review your submission and any grades and comments
+                            Choose the question to mark on the left manu bar<br/>
+                            Grade and comment the answer at the end of the answer section<br/>
+                            Load the submission of a different submitter with the change submitter link<br/>
+                            Click submit to save your interim marks or finish to do a final save and exit
                         </i>
                     </div>
                     <hr>
+
+                    <p>
+                        <button type="button" id="btn-change-submitter" class="btn btn-success" data-toggle="collapse" data-target="#submitter-config" aria-expanded="false" aria-controls="submitter-config">Change Submitter</button>
+                    </p>
+                    <div class="collapse multicollapse" id="submitter-config" >             
+                        <form action="/load_qset_json" method="post">
+                        <p>
+                            <p>
+                                Choose a Submission or enter a name or user_id
+                            </p>
+                            <input list="submitters" name="input-submitter" style="font-size:0.8em;min-width:200px;">
+                            <datalist id="submitters">
+                                <!--filled by JS-->
+                            </datalist>
+                        </p>
+                        <button type="button" id="btn-load-submitter" class="btn btn-danger">Load</button>
+                        </form>
+                    </div>                  
+                    <hr>
                     
-                    <p id="p-quiz-selection-table">
-                        <!-- filled by js -->
+                    <p>
+                        <!-- Question Data -->
+                        <div class="tab-content" id="q_data">
+                            <!-- filled by JS -->
+
+                        </div>
                     </p>
 
-                    <i class="dev-comments">
-                        -it will update on page load from the DB<br/>
-                        -the user_id will be in the top left corner<br/>
-                        -only status = "no attempts" will link to taking the quiz<br/>
-                        -change to a more exotic table type with sortable cols, scrolling and pagination
-                    </i>
-                </div> <!--end of content-->
+                </div> 
 
+                <!-- right side section -->
                 <div class="col-sm-2 r_side">
-                </div> <!--end of r_side-->
+                </div>
 
-            </div>  <!--end of main row-->
+            </div>
 
+            <!-- footer row -->
             <div class="row">
                 <div class="col-sm-12 footer">
                 </div>
-            </div> <!--end of row-->
+            </div>
 
-        </div> <!--end of container-->
+        </div>
 
         <!--################################################################-->
         <!--js imports-->
@@ -116,14 +152,6 @@
         
         <script 
             src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
-        </script>
-
-        <!-- DataTables -->
-        <script 
-            src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js">
-        </script>
-        <script 
-            src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js">
         </script>
 
         <!-- fontawsome icons-->

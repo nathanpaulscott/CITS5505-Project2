@@ -515,7 +515,6 @@ span.ajax_text {
 	color: rgb(255,128,0);
 	background-color: rgb(210,210,210);
 	font-weight:700;
-	cursor: pointer;
 }
 
 #quiz-selection-table tbody tr.click-enable:active *,
@@ -524,6 +523,13 @@ span.ajax_text {
 	background-color: rgb(60,60,60);
 	font-weight:700;
 }
+
+#quiz-selection-table tbody tr.click-enable:hover *,
+#quiz-admin-table tbody tr.click-enable td.edit-quiz:hover,
+#quiz-admin-table tbody tr.click-enable td.mark-quiz:hover {
+	cursor: pointer;
+}
+
 
 
 
@@ -632,4 +638,11 @@ hr {
 textarea.txt, textarea.im {
 	max-width: 90%;
 	display:inline;
+}
+
+
+.submitter {
+	font-size:0.8em;
+	color:red;
+	font-weight:700;
 }
