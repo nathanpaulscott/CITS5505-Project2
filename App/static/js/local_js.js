@@ -26,6 +26,7 @@ function encodeQueryData(data) {
 	regex["edit_quiz"] = /\/edit_quiz\.html/i;
 	regex["admin_stats"] = /\/admin_stats\.html/i;
 	regex["student_stats"] = /\/student_stats\.html/i;
+	regex["manage_users"] = /\/manage_users\.html/i;
 		
 
 	if (window.location.pathname.search(regex["admin_stats"]) != -1) {
@@ -47,6 +48,31 @@ function encodeQueryData(data) {
 	
 	
 	//##########################3
+	//Manage Users page
+	if (window.location.pathname.search(regex["manage_users"]) != -1) {
+		//this builds the table of users to administer
+		//the user id comes form the previous page
+		let u_id = findGetParameter('u_id');
+		let username = findGetParameter('username');
+
+		//Do the Ajax Request here to fetch the users
+		$.ajax({
+			type: 'POST',
+			url: '/manage_users_json',
+			data: JSON.stringify({"u_id":u_id}),
+			contentType: "application/json",
+			data_type: "json",
+			cache: false,
+			processData: false,
+			async: true,
+			success: function(data) {
+				build_manage_users(u_id, username, data["data"]);
+			},
+		});
+	} 
+
+
+
 	//Admin summary page
 	//This will go to the admin_summary page which shows a summary table of all quizes
     //this page allows the admin to click on a quiz to edit it, or use the bulk import/export/delete buttons
@@ -222,6 +248,92 @@ function encodeQueryData(data) {
 
 
 
+
+
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+function build_manage_users(u_id, username, users_data) {
+	//this does the html table building				
+	//update the username in the header
+	$("#username").text(username);
+
+	//edit the finish link
+	let query_data = encodeQueryData({"u_id":u_id,
+									  "username":username});
+	$("#finish").attr("href","./admin_summary.html" + "?" + query_data); 
+
+	//does the table header
+	let html_text = ""; 
+	html_text = '<table class="table table-hover table-striped table-responsive" id="user-admin-table">' + '\n';
+	html_text +='	<thead>' + '\n';
+	html_text +='		<tr>' + '\n';
+	html_text +='          <th scope="col"></th>' + '\n';
+	html_text +='          <th scope="col"></th>' + '\n';
+	for (header_item of users_data[0]) {
+		html_text +='          <th scope="col">'+ header_item +'</th>' + '\n';
+	}
+	html_text +='     	</tr>' + '\n';
+	html_text +='   </thead>' + '\n';
+
+	//does the table body
+	html_text +='   <tbody>' + '\n';
+	for (i = 1; i < users_data.length; i++){
+		html_text +='       <tr class="click-enable">' + '\n';
+		html_text +='	       <td class="del-user">Del</td>' + '\n';
+		html_text +='	       <td class="edit-user">Edit</td>' + '\n';
+		html_text +='	       <td id="u-id">' + users_data[i][0] + '</td>' + '\n';
+		for (j = 1; j < users_data[i].length; j++){
+			html_text +='	       <td>' + users_data[i][j] + '</td>' + '\n';
+		}
+		html_text +='       </tr>' + '\n';
+	}
+	html_text +='   </tbody>' + '\n';
+	html_text += '</table>' + '\n';
+	html_text += '<i class="dev-comments">NEed to write add/edit/delete code, ideally delete just rmeoves the row on the spot\nadd just adds a row to the start of the tabel and edit => maybe do not have, just allow clicking on a ell and editing the uername and role</i>' + '\n';
+	
+	//append to the DOM
+	$("#p-user-admin-table").append(html_text);
+
+	//runs the datatable plugin on the table to make it sortable etc...
+	$('#user-admin-table').DataTable({
+		"paging":true,
+		"ordering":true,
+		columnDefs: [{"orderable": false,"targets":[0,1]}],"order": [] 
+	});
+
+	//assigns a click listener to the add user button
+	$("#btn-add-user").click(function() {
+		alert("need to write code to add the user");
+	});
+
+	//assigns a click listener to the delete user
+	$("#user-admin-table tbody tr.click-enable td.del-user").click(function() {
+		let u_id_del = $(this).parent().find("td#u-id").text();
+		//build the target url
+		alert("need to write code to delete the user");
+	});
+
+	//assigns a click listener to the edit cells
+	$("#user-admin-table tbody tr.click-enable td.edit-user").click(function() {
+		let u_ud_edit = $(this).parent().find("td#u-id").text();
+		//build the target url
+		alert("need to write code to edit the user");
+	});
+} //end of the build_manage_users function
+
+
+
+
+
+
+
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
@@ -235,6 +347,16 @@ function build_admin_summary(u_id, username, qset_summary) {
 	//this does the html table building				
 	//update the username in the header
 	$("#username").text(username);
+
+	//edit the manage_users link
+	let query_data = encodeQueryData({"u_id":u_id,
+									  "username":username});
+	$("#manage-users").attr("href","./manage_users.html" + "?" + query_data); 
+	
+	//edit the admin stats link
+	query_data = encodeQueryData({"u_id":u_id,
+				     			  "username":username});
+	$("#admin-stats").attr("href","./admin_stats.html" + "?" + query_data); 
 
 	//does the table header
 	let html_text = ""; 
@@ -251,15 +373,13 @@ function build_admin_summary(u_id, username, qset_summary) {
 
 	//does the table body
 	html_text +='   <tbody>' + '\n';
-	for (x = 1; x < qset_summary.length; x++){
-		let ind = Number(x);
+	for (i = 1; i < qset_summary.length; i++){
 		html_text +='       <tr class="click-enable">' + '\n';
 		html_text +='	       <td class="edit-quiz">Edit</td>' + '\n';
 		html_text +='	       <td class="mark-quiz">Mark</td>' + '\n';
-		html_text +='	       <td id="qset-id">' + qset_summary[ind][0] + '</td>' + '\n';
-		for (y = 1; y < qset_summary[ind].length; y++){
-			let ind_inner = Number(y);
-			html_text +='	       <td>' + qset_summary[ind][ind_inner] + '</td>' + '\n';
+		html_text +='	       <td id="qset-id">' + qset_summary[i][0] + '</td>' + '\n';
+		for (j = 1; j < qset_summary[i].length; j++){
+			html_text +='	       <td>' + qset_summary[i][j] + '</td>' + '\n';
 		}
 		html_text +='       </tr>' + '\n';
 	}
@@ -275,18 +395,6 @@ function build_admin_summary(u_id, username, qset_summary) {
 		"ordering":true,
 		columnDefs: [{"orderable": false,"targets":[0,1]}],"order": [] 
 	});
-
-	/*
-	//assigns a click listener to the table rows for quiz marking
-	$("#quiz-admin-table tbody tr.click-enable").click(function() {
-		let qset_id = $(this).find("td#qset-id").text();
-		//build the target url
-		let query_data = encodeQueryData({"qset_id":qset_id,
-										"u_id":u_id,
-										"username":username});
-		window.location = "./mark_quiz.html" + "?" + query_data;
-	});
-	*/
 
 	//assigns a click listener to the mark cells for marking and review
 	$("#quiz-admin-table tbody tr.click-enable td.mark-quiz").click(function() {
@@ -563,6 +671,11 @@ function build_student_summary(u_id, username, qset_summary) {
 	//this does the html table building				
 	//update the username in the header
 	$("#username").text(username);
+
+	//edit the student stats link
+	let query_data = encodeQueryData({"u_id":u_id,
+									  "username":username});
+	$("#student-stats").attr("href","./student_stats.html" + "?" + query_data); 
 
 	//does the table header
 	let html_text = ""; 
@@ -923,7 +1036,7 @@ function build_mark_quiz(u_id, username, qset_data, submitters) {
 
 	//edit the final save link
 	let query_data = encodeQueryData({"u_id":u_id,
-									"username":username});
+									  "username":username});
 	$("#final-save").attr("href","./admin_summary.html" + "?" + query_data); 
 
 	//do the title
@@ -1063,7 +1176,7 @@ function build_mark_quiz(u_id, username, qset_data, submitters) {
 										  "username":username});
 		window.location = "./mark_quiz.html" + "?" + query_data;
 	});
-	
+
 
 	//assigns a click listener to the submit button as well as the finish and submit nav choice
 	$(".save-continue, #final-save").click(function() {

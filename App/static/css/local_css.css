@@ -484,41 +484,40 @@ span.ajax_text {
 
 
 
-/*quiz selection/admin tables
+/*quiz selection/admin tables/user-admin
 ###########################################################*/
 #quiz-selection-table thead tr *, 
-#quiz-admin-table thead tr * {
+#quiz-admin-table thead tr *,
+#user-admin-table thead tr * {
 	color: white;
 	background-color: rgb(150,150,150);
 	font-weight:700;
 	border-bottom: rgb(255,128,0);
 	border-bottom-width:1px;
 	border-bottom-style: solid;
-	/*padding-top:10px;
-	padding-bottom:5px;*/
 	white-space: nowrap;
 }
 
 #quiz-selection-table tbody tr *, 
-#quiz-admin-table tbody tr * {
+#quiz-admin-table tbody tr *,
+#user-admin-table tbody tr * {
 	border-width: 0px;
 	padding-top:5px;
 	padding-bottom:5px;
 	white-space: nowrap;
-	/*border-left-width:0.5px;
-	border-left-style: solid;
-	border-color:lightgray;*/
 }
 
 #quiz-selection-table tbody tr.click-enable:hover *,
-#quiz-admin-table tbody tr.click-enable:hover * {
+#quiz-admin-table tbody tr.click-enable:hover *,
+#user-admin-table tbody tr.click-enable:hover * {
 	color: rgb(255,128,0);
 	background-color: rgb(210,210,210);
 	font-weight:700;
 }
 
 #quiz-selection-table tbody tr.click-enable:active *,
-#quiz-admin-table tbody tr.click-enable:active * {
+#quiz-admin-table tbody tr.click-enable:active *,
+#user-admin-table tbody tr.click-enable:active * {
 	color: rgb(255,128,0);
 	background-color: rgb(60,60,60);
 	font-weight:700;
@@ -526,7 +525,9 @@ span.ajax_text {
 
 #quiz-selection-table tbody tr.click-enable:hover *,
 #quiz-admin-table tbody tr.click-enable td.edit-quiz:hover,
-#quiz-admin-table tbody tr.click-enable td.mark-quiz:hover {
+#quiz-admin-table tbody tr.click-enable td.mark-quiz:hover,
+#user-admin-table tbody tr.click-enable td.edit-user:hover,
+#user-admin-table tbody tr.click-enable td.mark-user:hover {
 	cursor: pointer;
 }
 

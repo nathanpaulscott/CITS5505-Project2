@@ -275,6 +275,14 @@ def get_admin_summary():
                             u_id=request.args['u_id'])
 
 
+
+@app.route('/manage_users.html', methods=['GET'])
+def get_manage_users():
+    return render_template('manage_users.html',
+                            username=request.args['username'], 
+                            u_id=request.args['u_id'])
+
+
 @app.route('/edit_quiz.html', methods=['GET'])
 def get_edit_quiz():
     return render_template('edit_quiz.html',
@@ -312,16 +320,6 @@ def get_mark_quiz():
                             u_id=request.args['u_id'],
                             s_u_id=request.args['s_u_id'],
                             qset_id=request.args['qset_id'])
-
-
-
-#to be written
-#admin needs to be able to add/del users and mod user data, incl permissions
-@app.route('/manage_users.html', methods=['GET'])
-def get_manage_users():
-    return render_template('manage_users.html',
-                            username=request.args['username'], 
-                            u_id=request.args['u_id'])
 
 
 
@@ -559,6 +557,37 @@ def delete_quiz():
         
         #if all was ok
         return jsonify ({'Status' : 'ok',"msg":qset_id_req})
+
+
+
+#this is to load the manage_users json data
+@app.route('/manage_users_json', methods=['POST'])
+def manage_users_json():
+    if request.method == 'POST':
+        u_id = request.get_json()["u_id"]
+
+        #DB action required!!
+        ##fill the users_data from the DB
+        users_data =  \
+        [
+        ["User_Id", "Username", "Role"],
+        ["43", "Fred Flintstone", "Teacher"],
+        ["64", "John Connor", "Student"],
+        ["42", "James Scott", "Student"],
+        ["22", "Donald Duck", "Teacher"],
+        ["425", "Jim Banks", "Student"],
+        ["1", "Agnes Monica", "Teacher"],
+        ["244", "Margaret Thatcher", "Student"],
+        ["33", "Bart Simpson", "Student"],
+        ["111", "Barney Rubble", "Student"],
+        ["54", "Peppa Pig", "Teacher"],
+        ["21", "Hoot", "Student"],
+        ["25", "Noddy", "Student"],
+        ["65", "Eggs on Toast", "Teacher"]
+        ]
+
+        #if all was ok
+        return jsonify ({'Status' : 'ok',"msg":"","data":users_data})
 
 
 
