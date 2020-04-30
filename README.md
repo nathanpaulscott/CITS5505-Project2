@@ -39,6 +39,7 @@ You can register, then login wiht yoru username and password.  You go to the stu
  * login and password, this needs to be secure and redone ~ 3 days (Jack).  This is super critical to get right before submission.  Users need to not be able to just enter a url and get to protected pages (CSRF attacks), we have to implement something like flask-wtf forms to do this, we can basically get the structure from the sample project on github (group-up).  This may require some screwing around with the routing and the front end code.
  * refactor backend - 2 days  (Jack).  Can be done near the end.  The sample project has a more modular format, ie. breaking up the app.py file into routes, models, controllers etc.
  * refactor front-end - 3 days  (Nathan).  Clean up the code and move some of the basic page building to jinja, but I suggest staying with the current structure, just cleaning up some things and doing the basic stuff in the server to show we can do it.  Like putting the username in the template, we can do in the backend, but the looping, just do in javascript.
+ * writing all quizzes and adding to database - 1 day (Jack)
  
 
 Extras:
