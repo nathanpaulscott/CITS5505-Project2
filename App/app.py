@@ -262,9 +262,31 @@ def upload_quiz():
 
 @app.route('/student_summary.html', methods=['GET'])
 def get_student_summary():
+    # pagination? (I think front end already does this - give all quizzes)
+
+    # select all qsets from db
+    qsets = []
+    qs_id = 0
+    while True:
+        qset = Question_Set.query.get(qs_id)
+        if (qset is not None):
+            # get no. questions
+            q_count = len(Question.query.filter_by(qs_id=qs_id).all())
+            #print(q_count)
+            qset.count = q_count
+
+            qsets.append(qset)
+            qs_id += 1
+        else:
+            break
+    #print(qsets[1].count)
+
+    # front end extracts info from qsets, puts into table
     return render_template('student_summary.html',
-                            username=request.args['username'], 
-                            u_id=request.args['u_id'])
+                           username=request.args['username'], 
+                            u_id=request.args['u_id'],
+                            qsets=qsets)
+                            #page=request.args['page'])
 
 
 
