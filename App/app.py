@@ -3,6 +3,10 @@ from werkzeug.utils import secure_filename
 from flask_sqlalchemy import SQLAlchemy
 import os
 import json
+import statistics as st
+
+
+#from flask_migratey import Migrate
 
 # initialise app
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -12,17 +16,21 @@ app = Flask(__name__)
 
 
 # Database
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + os.path.join(basedir, 'db.sqlite')
+#app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + os.path.join(basedir, 'db.sqlite')
+app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + os.path.join(basedir, 'db2.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # initialise database
 db = SQLAlchemy(app)
 
 # tables in database - move each to separate file
 class User(db.Model):
-    user_id = db.Column(db.Integer, primary_key=True)
+    __tablename__ = 'user'
+    u_id = db.Column(db.Integer, primary_key=True)
     admin = db.Column(db.Boolean)
     username = db.Column(db.String(10), unique=True )
     password = db.Column(db.String(10))
+    #submissions = db.relationship('Submission', backref='user', lazy=True)
+    #submission_answers = db.relationship('Submission_Answer', backref='user', lazy=True)
 
     # creates a user
     def __init__(self, admin, username, password):
@@ -31,11 +39,16 @@ class User(db.Model):
         self.password = password
 
 class Question_Set(db.Model):
+    __tablename__ = 'question_set'
     qs_id = db.Column(db.Integer, primary_key=True)
     author = db.Column(db.String(20))
     enabled = db.Column(db.Boolean)
     topic = db.Column(db.String(10))
     time = db.Column(db.Integer)
+    #q_ids = db.relationship('Question', backref='question_set', lazy=True)
+    #u_ids = db.relationship('Submission', backref='question_set', lazy=True)
+    #submissions = db.relationship('Submission', backref='question_set', lazy=True)
+    #submission_answers = db.relationship('Submission_Answer', backref='question_set', lazy=True)
 
     # creates a question set
     def __init__(self, qs_id, author, enabled, topic, time):
@@ -46,28 +59,65 @@ class Question_Set(db.Model):
         self.time = time
 
 class Question(db.Model):
-    q_id = db.Column(db.Integer, primary_key=True)
-
-    # id of the question set the question belongs to
-    qs_id = db.Column(db.Integer)
-
-    # index within the question set
-    qs_index = db.Column(db.Integer)
-
-    # the quiz question text
-    text = db.Column(db.String(50))
-
-    # id of the quiz_option that is the correct answer to this question
-    answer_id = db.Column(db.Integer)
+    __tablename__ = 'question'
+    qs_id = db.Column(db.Integer, db.ForeignKey('question_set.qs_id'), primary_key=True)  # id of the question set the question belongs to
+    q_id = db.Column(db.Integer, primary_key=True)   #n part of a compound primary key with qs_id
+    q_marks = db.Column(db.Integer)     #marks available
+    q_data = db.Column(db.Text)         #question data, stored as a json string
+    a_type = db.Column(db.String(10))   #mc/text
+    a_data = db.Column(db.Text)         #mc answer options, stored as a json string
+    a_correct = db.Column(db.Text)      #correct answer (just a string of an integer for mc)
+    #submission_answers = db.relationship('Submission_Answer', backref='question', lazy=True)
 
     # creates a question
-    def __init__(self, q_id, qs_id, qs_index, text, answer_id):
-        self.q_id = q_id
+    def __init__(self, qs_id, q_id, q_marks, q_data, a_type, a_data, a_correct):
         self.qs_id = qs_id
-        self.qs_index = qs_index
-        self.text = text
-        self.answer_id = answer_id
+        self.q_id = q_id
+        self.q_marks = qs_marks
+        self.q_data = q_data
+        self.a_type = a_type
+        self.a_data = a_data
+        self.a_correct = a_correct
 
+class Submission(db.Model):
+    __tablename__ = 'submission'
+    qs_id = db.Column(db.Integer, db.ForeignKey('question_set.qs_id'), primary_key=True)
+    u_id = db.Column(db.Integer, db.ForeignKey('user.u_id'), primary_key=True)
+    status = db.Column(db.String(30))
+    #total_mark = db.relationship('Submission_Answer', backref='submission', lazy=True)
+    #max_mark = db.relationship('Question', backref='submission', lazy=True)
+
+    # creates a submission
+    def __init__(self, qs_id, u_id, status):
+        self.qs_id = qs_id
+        self.u_id = u_id
+        self.status = status
+
+class Submission_Answer(db.Model):
+    __tablename__ = 'submission_answer'
+    qs_id = db.Column(db.Integer, db.ForeignKey('question_set.qs_id'), primary_key=True)
+    q_id = db.Column(db.Integer, db.ForeignKey('question.q_id'), primary_key=True)
+    u_id = db.Column(db.Integer, db.ForeignKey('user.u_id'), primary_key=True)
+    data = db.Column(db.Text)        #sqlite3 Text
+    mark = db.Column(db.Float)    #sqlite3 real
+    comment = db.Column(db.Text)     #sqlite3 Text
+
+    # creates an answer
+    def __init__(self, qs_id, q_id, u_id, data, mark, comment):
+        self.qs_id = qs_id
+        self.q_id = q_id
+        self.u_id = u_id
+        self.data = data
+        self.mark = mark
+        self.comment = comment
+
+class Log(db.Model):
+    action_id = db.Column(db.Integer, primary_key=True)
+    u_id = db.Column(db.Integer)
+    action = db.Column(db.String(30))
+
+
+'''
 # possible answer for multiple choice questions
 class Quiz_Option(db.Model):
     qo_id = db.Column(db.Integer, primary_key=True)
@@ -87,15 +137,7 @@ class Quiz_Option(db.Model):
         self.q_id = q_id
         self.q_index = q_index
         self.text = text
-
-class Submission(db.Model):
-    s_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer)
-
-class Log(db.Model):
-    action_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer)
-    action = db.Column(db.String(30))
+'''
 
 
 # url routing
@@ -260,33 +302,68 @@ def upload_quiz():
 
 
 
+#this is to load the student_summary basic template
 @app.route('/student_summary.html', methods=['GET'])
 def get_student_summary():
-    # pagination? (I think front end already does this - give all quizzes)
-
-    # select all qsets from db
-    qsets = []
-    qs_id = 0
-    while True:
-        qset = Question_Set.query.get(qs_id)
-        if (qset is not None):
-            # get no. questions
-            q_count = len(Question.query.filter_by(qs_id=qs_id).all())
-            #print(q_count)
-            qset.count = q_count
-
-            qsets.append(qset)
-            qs_id += 1
-        else:
-            break
-    #print(qsets[1].count)
-
-    # front end extracts info from qsets, puts into table
     return render_template('student_summary.html',
-                           username=request.args['username'], 
-                            u_id=request.args['u_id'],
-                            qsets=qsets)
-                            #page=request.args['page'])
+                            username=request.args['username'], 
+                            u_id=request.args['u_id'])
+
+
+#this is to load the student_summary json data
+@app.route('/student_summary_json', methods=['POST'])
+def student_summary_json():
+    if request.method == 'POST':
+        u_id = request.get_json()["u_id"]
+        qset_summary =  \
+        [["Status","Quiz Id","Topic","Tot Qs","MC Qs","Time(mins)","Score","Score Mean","Score SD"]]
+
+        #fill the student summary data from the DB
+        # select all qsets from db
+        qsets = Question_Set.query.all()
+        qsets = query2list_of_dict(qsets)
+        #will have qs_id, author, enabled, topic, time
+        #need to fill the rest of the fields ["Status","Tot Qs","MC Qs","Time(mins)","Score","Score Mean","Score SD"]
+        for qset in qsets:
+            qs_id = qset['qs_id']
+            # get no. questions
+            qset['tot_qs'] = len(Question.query.filter_by(qs_id=qs_id).all())
+            qset['mc_qs'] = len(Question.query.filter_by(qs_id=qs_id,a_type='mc').all())
+            # get the student status for the qset
+            result = Submission.query.filter_by(qs_id=qs_id,u_id=u_id).all()
+            if len(result) == 0:
+                qset['status'] = 'Not Attempted'
+            else:
+                qset['status'] = result.status
+            #get the grade
+            result = Submission_Answer.query.filter_by(qs_id=qs_id,u_id=u_id).all()
+            qset['grade'] = sum([x.mark for x in result])
+            #get the grade stats
+            result = Submission_Answer.query.filter_by(qs_id=qs_id).all()
+            grades = []
+            for user in set([x.u_id for x in result]):
+                grades.append(sum([x.mark for x in result if x.u_id == user]))
+            qset['grade_mean'] = -1
+            qset['grade_sd'] = -1
+            if len(grades) > 0:
+                qset['grade_mean'] = st.mean(grades)
+                qset['grade_sd'] = st.stdev(grades)
+
+            #fill the output list with data
+            qset_summary.append([qset['status'], 
+                                qs_id, 
+                                qset['topic'],
+                                qset['tot_qs'],
+                                qset['mc_qs'],
+                                qset['time'],
+                                qset['grade'],
+                                qset['grade_mean'],
+                                qset['grade_sd']])
+
+        #if all was ok
+        return jsonify ({'Status' : 'ok',
+                        'msg':'',
+                        'data':qset_summary})
 
 
 
@@ -641,31 +718,6 @@ def admin_summary_json():
         return jsonify ({'Status' : 'ok',"msg":"","data":qset_summary})
 
 
-#this is to load the student_summary json data
-@app.route('/student_summary_json', methods=['POST'])
-def student_summary_json():
-    if request.method == 'POST':
-        u_id = request.get_json()["u_id"]
-
-        #DB action required!!
-        #fill the student summary data from the DB
-        qset_summary =  \
-        [["Status","Quiz Id","Topic","Tot Qs","MC Qs","Time(mins)","Score","Score Mean","Score SD"],
-        ["Not Attempted","1","Topic A",10,5,50,-1,59.3,13.4],
-        ["Completed","2","Topic B",20,10,100,-1,68.3,8.4],
-        ["Marked","3","Topic A",30,20,150,85.7,62.3,7.4],
-        ["Attempted","4","Topic A",10,5,30,-1,-1,-1],
-        ["Not Atttempted","5","Topic C",15,7,70,-1,90.3,20.1],
-        ["Marked","6","Topic C",12,8,60,65.3,-1,-1],
-        ["Completed","7","Topic A",20,10,80,-1,70.3,12],
-        ["Marked","8","Topic D",20,15,90,88.1,67.2,8.3],
-        ["Not Atttempted","9","Topic B",15,10,65,-1,60.3,9.2],
-        ["Marked","10","Topic B",10,5,40,46.2,63.3,11.1],
-        ["Completed","11","Topic A",5,5,25,-1,80.3,22.7]]
-
-        #if all was ok
-        return jsonify ({'Status' : 'ok',"msg":"","data":qset_summary})
-
 
 #//////////////////////////////////////////////////////
 #//////////////////////////////////////////////////////
@@ -790,8 +842,27 @@ col: comment: the markers comment for this answer
 #########################################################
 
 
+def query2list_of_dict(result):
+    #this converts the returned object from sqlalchemy to an Python list of dicts
+    #the field names are in the dict of each element
+    if len(result) == 0:
+        return []
+    fields = [x.name for x in result[0].__table__.columns]
+    return [{field:vars(row)[field] for field in fields} for row in result]
 
 
+
+def query2list_of_list(result):
+    #this converts the returned object from sqlalchemy to an Python list of lists
+    #the first element are the field names
+    output = []
+    if len(result) == 0:
+        return output
+    fields = [x.name for x in result[0].__table__.columns]
+    output.append(fields)
+    for row in result:
+        output.append([vars(row)[field] for field in fields])
+    return output
 
 
 

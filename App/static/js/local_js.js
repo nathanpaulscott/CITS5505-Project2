@@ -107,6 +107,8 @@ function encodeQueryData(data) {
 		//the user id comes form the previous page
 		let u_id = findGetParameter('u_id');
 		let username = findGetParameter('username');
+		let qset_summary = findGetParameter('data');
+		console.log(qset_summary);
 
 		//Do the Ajax Request here to fetch the student summary table data (qset_summary)
 		$.ajax({
