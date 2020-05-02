@@ -315,50 +315,51 @@ def get_student_summary():
 def student_summary_json():
     if request.method == 'POST':
         u_id = request.get_json()["u_id"]
+        #this is the output data structure to be passed back to the client, list of lists
         qset_summary =  \
         [["Status","Quiz Id","Topic","Tot Qs","MC Qs","Time(mins)","Score","Score Mean","Score SD"]]
 
-        #fill the student summary data from the DB
-        # select all qsets from db
+        #fills qset_summary from the DB
         qsets = Question_Set.query.all()
-        qsets = query2list_of_dict(qsets)
         #will have qs_id, author, enabled, topic, time
         #need to fill the rest of the fields ["Status","Tot Qs","MC Qs","Time(mins)","Score","Score Mean","Score SD"]
         for qset in qsets:
-            qs_id = qset['qs_id']
-            # get no. questions
-            qset['tot_qs'] = len(Question.query.filter_by(qs_id=qs_id).all())
-            qset['mc_qs'] = len(Question.query.filter_by(qs_id=qs_id,a_type='mc').all())
+            qs_id = qset.qs_id
+            # get num questions
+            qset.tot_qs = len(Question.query.filter_by(qs_id=qs_id).all())
+            qset.mc_qs = len(Question.query.filter_by(qs_id=qs_id, a_type='mc').all())
             # get the student status for the qset
-            result = Submission.query.filter_by(qs_id=qs_id,u_id=u_id).all()
+            result = Submission.query.filter_by(qs_id=qs_id, u_id=u_id).all()
             if len(result) == 0:
-                qset['status'] = 'Not Attempted'
+                qset.status = 'Not Attempted'
             else:
-                qset['status'] = result.status
+                qset.status = result.status
             #get the grade
             result = Submission_Answer.query.filter_by(qs_id=qs_id,u_id=u_id).all()
-            qset['grade'] = sum([x.mark for x in result])
+            qset.grade = -1
+            if len(result) > 0:
+                qset.grade = sum([x.mark for x in result])
             #get the grade stats
             result = Submission_Answer.query.filter_by(qs_id=qs_id).all()
             grades = []
             for user in set([x.u_id for x in result]):
                 grades.append(sum([x.mark for x in result if x.u_id == user]))
-            qset['grade_mean'] = -1
-            qset['grade_sd'] = -1
+            qset.grade_mean = -1
+            qset.grade_sd = -1
             if len(grades) > 0:
-                qset['grade_mean'] = st.mean(grades)
-                qset['grade_sd'] = st.stdev(grades)
+                qset.grade_mean = st.mean(grades)
+                qset.grade_sd = st.stdev(grades)
 
             #fill the output list with data
-            qset_summary.append([qset['status'], 
-                                qs_id, 
-                                qset['topic'],
-                                qset['tot_qs'],
-                                qset['mc_qs'],
-                                qset['time'],
-                                qset['grade'],
-                                qset['grade_mean'],
-                                qset['grade_sd']])
+            qset_summary.append([qset.status, 
+                                qset.qs_id, 
+                                qset.topic,
+                                qset.tot_qs,
+                                qset.mc_qs,
+                                qset.time,
+                                qset.grade,
+                                qset.grade_mean,
+                                qset.grade_sd])
 
         #if all was ok
         return jsonify ({'Status' : 'ok',
