@@ -1,0 +1,29 @@
+[	
+	{"topic":"Capitals", "time":30},
+
+	{"question":
+		[
+		{"marks":20}, 
+		{"type":"text","data":"What is the capital of Poland?"}
+		],
+	 "answer":
+		{
+		"type":"mc",
+		"correct":3,
+		"data": ["Krakow","Moscow","Warsaw","Sofia"]
+		}
+	},
+	
+	{"question":
+		[
+		{"marks":30},
+		{"type":"text","data":"What is the capital of Switzerland?"}
+		],
+	 "answer":
+		{
+		"type":"mc",
+		"correct":2,
+		"data":	["Geneva","Bern","Zurich","Basel"]
+		}
+	}
+]

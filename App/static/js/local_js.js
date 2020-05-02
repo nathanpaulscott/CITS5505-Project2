@@ -141,6 +141,7 @@ function encodeQueryData(data) {
 			type: 'POST',
 			url: '/load_qset_json',
 			data: JSON.stringify({"u_id":u_id,
+								  "username":username,
 								  "qset_id":qset_id,
 								  "include_submission":"0",
 								  "include_submitters":"0"}),
@@ -150,6 +151,13 @@ function encodeQueryData(data) {
 			processData: false,
 			async: true,
 			success: function(data) {
+				if (data["Status"] == "nok") {
+					alert(data["msg"]);
+					let query_data = encodeQueryData({"u_id":u_id,
+													"username":username});
+					window.location = "./student_summary.html" + "?" + query_data;
+				}
+
 				build_take_quiz(u_id, username, data["data"]);
 			},
 		});
@@ -170,6 +178,7 @@ function encodeQueryData(data) {
 			type: 'POST',
 			url: '/load_qset_json',
 			data: JSON.stringify({"u_id":u_id,
+								  "username":username,
 								  "qset_id":qset_id,
 								  "include_submission":"1",
 								  "include_submitters":"0"}),
@@ -179,6 +188,13 @@ function encodeQueryData(data) {
 			processData: false,
 			async: true,
 			success: function(data) {
+				if (data["Status"] == "nok") {
+					alert(data["msg"]);
+					let query_data = encodeQueryData({"u_id":u_id,
+													"username":username});
+					window.location = "./student_summary.html" + "?" + query_data;
+				}
+
 				build_review_quiz(u_id, username, data["data"]);
 			},
 		});
@@ -201,6 +217,7 @@ function encodeQueryData(data) {
 			type: 'POST',
 			url: '/load_qset_json',
 			data: JSON.stringify({"u_id":u_id,
+								"username":username,
 								"qset_id":qset_id,
 								"s_u_id":s_u_id,
 								"include_submission":"1",
@@ -211,6 +228,13 @@ function encodeQueryData(data) {
 			processData: false,
 			async: true,
 			success: function(data) {
+				if (data["Status"] == "nok") {
+					alert(data["msg"]);
+					let query_data = encodeQueryData({"u_id":u_id,
+													"username":username});
+					window.location = "./admin_summary.html" + "?" + query_data;
+				}
+
 				build_mark_quiz(u_id, username, data["data"], data["submitters"]);
 			},
 		});
@@ -232,6 +256,7 @@ function encodeQueryData(data) {
 			type: 'POST',
 			url: '/load_qset_json',
 			data: JSON.stringify({"u_id":u_id,
+								  "username":username,
 								  "qset_id":qset_id,
 								  "include_submission":"0",
 								  "include_submitters":"0"}),
@@ -241,6 +266,13 @@ function encodeQueryData(data) {
 			processData: false,
 			async: true,
 			success: function(data) {
+				if (data["Status"] == "nok") {
+					alert(data["msg"]);
+					let query_data = encodeQueryData({"u_id":u_id,
+													"username":username});
+					window.location = "./admin_summary.html" + "?" + query_data;
+				}
+
 				build_edit_quiz(u_id, username, data["data"]);
 			},
 		});
@@ -445,8 +477,9 @@ function build_admin_summary(u_id, username, qset_summary) {
 		//get the current set of qs_ids
 		let qset_id_db = [];
 		for (qset of qset_summary.slice(1,)) {
-			qset_id_db.push(qset[0]);
+			qset_id_db.push(String(qset[0]));
 		}
+
 		//get the clean set of requested qs_ids
 		let qset_id_req = [];
 		for (qset of qset_id_text) {
@@ -493,12 +526,13 @@ function build_admin_summary(u_id, username, qset_summary) {
 		//it is using qset_summary whihc is the json object coming in to populate the table in this page
 		//##############################################33
 		let qset_id_text = $.trim($("#export-config-text").val()).split(",");
-		
+
 		//get the current set of qs_ids
 		let qset_id_db = [];
 		for (qset of qset_summary.slice(1,)) {
-			qset_id_db.push(qset[0]);
+			qset_id_db.push(String(qset[0]));
 		}
+
 		//get the clean set of requested qs_ids
 		let qset_id_req = [];
 		for (qset of qset_id_text) {
@@ -531,7 +565,7 @@ function build_admin_summary(u_id, username, qset_summary) {
 				$("#span-export-submit").text("Status: " + data["Status"] + ", msg: " + data["msg"]);
 				//write this to the DOM and trigger the download, then delete from the DOM
 				for (qset of data["data"]) {
-					let filename = "export_qset_id_" + String(qset[0]["qset_id"]) + ".quiz";
+					let filename = "export_qset_id_" + String(qset[0]["qs_id"]) + ".quiz";
 					let el = document.getElementById('a-export');
 					let href_text = "data:application/xml;charset=utf-8,";
 					href_text += JSON.stringify(qset, null, 2);
@@ -568,6 +602,12 @@ function build_admin_summary(u_id, username, qset_summary) {
 		//this code accepts multiple files, the quiz files should be .quiz and just be a text file of a json object with the correct format specifying the quiz text, answer types and images.  So we validate these files.  Any non .quiz files, are assumed to be associated image files and are just uploaded to the server, there is no crosschecking done locally, that can be done server-side later.  The quizes will still work with no image files, the images just will not render
 		
 		let files = this.files;
+		var upload_data = [];
+		let cnt = 0;
+		for (f of files) 
+			if (f["name"].search(/\.quiz/i) > -1) 
+				cnt = cnt + 1;
+
 		for (f of files){
 			//alert('you selected: ' + f["name"]);
 			if (f["name"].search(/\.quiz/i) == -1) {
@@ -596,8 +636,6 @@ function build_admin_summary(u_id, username, qset_summary) {
 					cache: false,
 					processData: false,
 					success: function(data) {
-						//testing
-						//alert(JSON.stringify(status));
 						$("#import-config").append(JSON.stringify(data,null,2) + "<br/>");
 					}
 				});
@@ -608,20 +646,20 @@ function build_admin_summary(u_id, username, qset_summary) {
 				//this uses a closure to handle all the file read and to pass the filename in, I still do not understand how it works
 				//this is for .quiz text files which contain quiz data in the specified json format.  we validate each one and reject if it fails (informing the user why)
 				let reader = new FileReader();
-				reader.onload = (function(e1,files_accept) {
+				reader.onload = (function(e1) {
 					return function(e2) {
 						let name = e1.name;
 						let file_data = e2.target.result;
-						//alert("file length is: " + file_data.length + " chars");
+						let qset_data = [];
+						let cancel_upload = true;
 						try{
-							let qs_data = JSON.parse(file_data);
+							qset_data = JSON.parse(file_data);
+							$("#import-config").append("parsed ok '" + name + "' uploading....<br/>");
+							cancel_upload = false;
 						}
 						catch(err) {
-							$("#import-config").append("failed parsing '" + name + "' not uploading....<br/>");
-							//alert('failed parsing ' + name + ' not uploading....');
-							return;
+							$("#import-config").append("!!! failed parsing '" + name + "' not uploading....<br/>");
 						}
-						//alert('parsing ' + name + ', then sending to the server');
 
 						////////////////////////////////////////////////
 						////////////////////////////////////////////////
@@ -633,24 +671,26 @@ function build_admin_summary(u_id, username, qset_summary) {
 						////////////////////////////////////////////////
 						////////////////////////////////////////////////
 
-						//send to server
-						$.ajax({
-							type: 'POST',
-							url: '/upload_quiz',
-							data: JSON.stringify({"qs_data":qs_data}),
-							contentType: "application/json",
-							data_type: "json",
-							cache: false,
-							processData: false,
-							async: true,
-							success: function(data) {
-								//for testing
-								//alert(JSON.stringify(status,null,2));
-								data["msg"] = "Server received: '" + name + "'";
-								$("#import-config").append(JSON.stringify(data,null,2) + "<br/>");
-							},
-						});
-
+						upload_data.push(qset_data);
+						
+						//check we are done and can do the upload
+						//need to upload all quizes in one array to avoid qs_id issues
+						if (upload_data.length == cnt && !cancel_upload){
+							//send to server
+							$.ajax({
+								type: 'POST',
+								url: '/upload_quiz',
+								data: JSON.stringify({"u_id":u_id,"upload_data":upload_data}),
+								contentType: "application/json",
+								data_type: "json",
+								cache: false,
+								processData: false,
+								async: true,
+								success: function(data) {
+									$("#import-config").append("Upload Successfull<br/>");
+								},
+							});
+						}
 					};
 				})(f);
 				reader.readAsText(f);
@@ -746,7 +786,7 @@ function build_student_summary(u_id, username, qset_summary) {
 ///////////////////////////////////////////////////////////////////////////////////////
 function build_take_quiz(u_id, username, qset_data) {
 	//this does the html building				
-	let qset_id = qset_data[0]["qset_id"];
+	let qset_id = qset_data[0]["qs_id"];
 
 	//update the username in the header
 	$("#username").text(username);
@@ -757,7 +797,7 @@ function build_take_quiz(u_id, username, qset_data) {
 	$("#final-save").attr("href","./student_summary.html" + "?" + query_data); 
 
 	//do the title
-	html_text = qset_data[0]["qset_name"];
+	html_text = qset_data[0]["topic"];
 	//append to the DOM
 	$("h5#title").append(html_text);
 
@@ -899,7 +939,7 @@ function build_take_quiz(u_id, username, qset_data) {
 ///////////////////////////////////////////////////////////////////////////////////////
 function build_review_quiz(u_id, username, qset_data) {
 	//this does the html building				
-	let qset_id = qset_data[0]["qset_id"];
+	let qset_id = qset_data[0]["qs_id"];
 	let s_username = qset_data[0]["s_username"];
 	let s_u_id = qset_data[0]["s_u_id"];
 
@@ -912,7 +952,7 @@ function build_review_quiz(u_id, username, qset_data) {
 	$("#final-save").attr("href","./student_summary.html" + "?" + query_data); 
 
 	//do the title
-	html_text = qset_data[0]["qset_name"] + '<br/> <span class="submitter">submitter: ' + s_username + ' (' + s_u_id + ')</span>';
+	html_text = qset_data[0]["topic"] + '<br/> <span class="submitter">submitter: ' + s_username + ' (' + s_u_id + ')</span>';
 	//append to the DOM
 	$("h5#title").append(html_text);
 
@@ -1029,7 +1069,7 @@ function build_review_quiz(u_id, username, qset_data) {
 ///////////////////////////////////////////////////////////////////////////////////////
 function build_mark_quiz(u_id, username, qset_data, submitters) {
 	//this does the html building				
-	let qset_id = qset_data[0]["qset_id"];
+	let qset_id = qset_data[0]["qs_id"];
 	let s_u_id = qset_data[0]["s_u_id"];
 	let s_username = qset_data[0]["s_username"];
 
@@ -1042,7 +1082,7 @@ function build_mark_quiz(u_id, username, qset_data, submitters) {
 	$("#final-save").attr("href","./admin_summary.html" + "?" + query_data); 
 
 	//do the title
-	html_text = qset_data[0]["qset_name"] + '<br/> <span class="submitter">submitter: ' + s_username + ' (' + qset_data[0]["s_u_id"] + ')</span>';
+	html_text = qset_data[0]["topic"] + '<br/> <span class="submitter">submitter: ' + s_username + ' (' + qset_data[0]["s_u_id"] + ')</span>';
 	//append to the DOM
 	$("h5#title").append(html_text);
 
@@ -1245,7 +1285,7 @@ function build_edit_quiz(u_id, username, qset_data) {
 	let newfiles = [];
 	
 	//this does the html building				
-	let qset_id = qset_data[0]["qset_id"];
+	let qset_id = qset_data[0]["qs_id"];
 
 	//this does the html building				
 	//update the username in the header
@@ -1257,7 +1297,7 @@ function build_edit_quiz(u_id, username, qset_data) {
 	$("#final-save").attr("href","./admin_summary.html" + "?" + query_data); 
 	
 	//do the title
-	html_text = qset_data[0]["qset_name"] + ' (qset_id: ' + qset_id + ')';
+	html_text = qset_data[0]["topic"] + ' (qset_id: ' + qset_id + ')';
 	//append to the DOM
 	$("h5#title").append(html_text);
 

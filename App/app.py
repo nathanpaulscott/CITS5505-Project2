@@ -41,9 +41,9 @@ class User(db.Model):
 class Question_Set(db.Model):
     __tablename__ = 'question_set'
     qs_id = db.Column(db.Integer, primary_key=True)
-    author = db.Column(db.String(20))
+    author = db.Column(db.String(30))
     enabled = db.Column(db.Boolean)
-    topic = db.Column(db.String(10))
+    topic = db.Column(db.String(50))
     time = db.Column(db.Integer)
     #q_ids = db.relationship('Question', backref='question_set', lazy=True)
     #u_ids = db.relationship('Submission', backref='question_set', lazy=True)
@@ -73,7 +73,7 @@ class Question(db.Model):
     def __init__(self, qs_id, q_id, q_marks, q_data, a_type, a_data, a_correct):
         self.qs_id = qs_id
         self.q_id = q_id
-        self.q_marks = qs_marks
+        self.q_marks = q_marks
         self.q_data = q_data
         self.a_type = a_type
         self.a_data = a_data
@@ -216,91 +216,6 @@ def register():
             return jsonify ({ "Status" : "New User Created"})
 
 
-# import quiz function in the admin_summary page
-@app.route('/upload_quiz', methods=['POST'])
-def upload_quiz():
-    if request.method == 'POST':
-        qset_data = request.get_json()["qset_data"]
-        #print(qset_data)
-
-        # determines the next unused qs_id from database
-        max_id = db.engine.execute(
-            'SELECT MAX(qs_id) FROM question__set;'
-        ).fetchone()[0]
-        qs_id = max_id + 1
-
-        # need to replace with user id supplied by browser
-        author = "admin"
-
-        enabled = 1
-        
-        if (qset_data[0]["topic"] is not None):
-            topic = qset_data[0]["topic"]
-        else:
-            topic = "General"
-        if (qset_data[0]["time"] is not None):
-            time = qset_data[0]["time"]
-        else:
-            time = 999
-
-
-        new_qs = Question_Set(qs_id,author,enabled,topic,time)
-        db.session.add(new_qs)
-
-        # Populate database with questions for that question set
-        index = 0
-        max_qid = None
-        max_qoid = None
-        
-        for item in qset_data:
-            # skips info about question_set
-            if (index == 0):
-                index += 1
-                continue
-
-            else:
-                if (max_qid is None):
-                    # determines the next unused q_id from database
-                    max_qid = db.engine.execute(
-                        'SELECT MAX(q_id) FROM question;'
-                    ).fetchone()[0]
-                max_qid += 1
-                q_id = max_qid
-
-                # to ensure starts from 0
-                qs_index = index - 1
-                text = item["question"]["data"]
-                answer_id = item["answer"]["correct_index"]
-                new_q = Question(q_id,qs_id,qs_index,text,answer_id)
-                db.session.add(new_q)
-                index += 1
-
-                # populates DB with answers for that question
-                q_index = 0
-                for answer in item["answer"]["data"]:
-                    if (max_qoid is None):
-                        # determines the next unused qo_id from database
-                        max_qoid = db.engine.execute(
-                            'SELECT MAX(qo_id) FROM quiz__option;'
-                        ).fetchone()[0]
-                    
-                    print(max_qoid)
-                    max_qoid += 1
-                    qo_id = max_qoid
-
-                    text = answer
-
-                    new_qo = Quiz_Option(qo_id,q_id,q_index,text)
-                    db.session.add(new_qo)
-
-                    q_index += 1
-
-        # add all to database
-        db.session.commit()
-
-        return jsonify ({ 'Status' : 'ok'})
-
-
 
 #this is to load the student_summary basic template
 @app.route('/student_summary.html', methods=['GET'])
@@ -317,7 +232,7 @@ def student_summary_json():
         u_id = request.get_json()["u_id"]
         #this is the output data header to be passed back to the client, list of lists
         qset_summary =  \
-        [["Status","Quiz Id","Topic","Tot Qs","MC Qs","Time(mins)","Score","Score Mean","Score SD"]]
+        [["Status","Quiz Id","Topic","Tot Qs","MC Qs","Time(mins)","Marks Available","Marks Attained","Marks Mean","Marks SD"]]
 
         #fills qset_summary from the DB
         qsets = Question_Set.query.all()
@@ -334,21 +249,24 @@ def student_summary_json():
                 qset.status = 'Not Attempted'
             else:
                 qset.status = result.status
-            #get the grade
+            #get the marks available
+            result = Question.query.filter_by(qs_id=qs_id).all()
+            qset.marks_avail = sum([x.q_marks for x in result])
+            #get the marks given
             result = Submission_Answer.query.filter_by(qs_id=qs_id,u_id=u_id).all()
-            qset.grade = -1
+            qset.marks = -1
             if len(result) > 0:
-                qset.grade = sum([x.mark for x in result])
-            #get the grade stats
+                qset.marks = sum([x.mark for x in result])
+            #get the marks stats
             result = Submission_Answer.query.filter_by(qs_id=qs_id).all()
-            grades = []
-            qset.grade_mean = -1
-            qset.grade_sd = -1
+            marks = []
+            qset.marks_mean = -1
+            qset.marks_sd = -1
             for user in set([x.u_id for x in result]):
-                grades.append(sum([x.mark for x in result if x.u_id == user]))
-            if len(grades) > 0:
-                qset.grade_mean = st.mean(grades)
-                qset.grade_sd = st.stdev(grades)
+                marks.append(sum([x.mark for x in result if x.u_id == user]))
+            if len(marks) > 0:
+                qset.marks_mean = st.mean(marks)
+                qset.marks_sd = st.stdev(marks)
 
             #fill the output list with data
             qset_summary.append([qset.status, 
@@ -357,9 +275,10 @@ def student_summary_json():
                                 qset.tot_qs,
                                 qset.mc_qs,
                                 qset.time,
-                                qset.grade,
-                                qset.grade_mean,
-                                qset.grade_sd])
+                                qset.marks_avail,
+                                qset.marks,
+                                qset.marks_mean,
+                                qset.marks_sd])
 
         #if all was ok
         return jsonify ({'Status' : 'ok',
@@ -382,7 +301,7 @@ def admin_summary_json():
         u_id = request.get_json()["u_id"]
         #this is the output data header to be passed back to the client, list of lists
         qset_summary =  \
-        [["Quiz Id","Marked","Completed","Attempted","Topic","Tot Qs","MC Qs","Time(mins)","Owner","Enabled","Img.Missing","Score Mean","Score SD"]]
+        [["Quiz Id","Marked","Completed","Attempted","Topic","Tot Qs","MC Qs","Time(mins)","Owner","Enabled","Img.Missing","Marks Available","Mark Mean","Mark SD"]]
 
         #fills qset_summary from the DB
         qsets = Question_Set.query.all()
@@ -400,16 +319,19 @@ def admin_summary_json():
             qset.marked = len(result)
             result = Submission.query.filter_by(qs_id=qs_id, status="Attempted").all()
             qset.attempted = len(result)
-            #get the grade stats
+            #get the marks available
+            result = Question.query.filter_by(qs_id=qs_id).all()
+            qset.marks_avail = sum([x.q_marks for x in result])
+            #get the marks stats
             result = Submission_Answer.query.filter_by(qs_id=qs_id).all()
-            grades = []
-            qset.grade_mean = -1
-            qset.grade_sd = -1
+            marks = []
+            qset.marks_mean = -1
+            qset.marks_sd = -1
             for user in set([x.u_id for x in result]):
-                grades.append(sum([x.mark for x in result if x.u_id == user]))
-            if len(grades) > 0:
-                qset.grade_mean = st.mean(grades)
-                qset.grade_sd = st.stdev(grades)
+                marks.append(sum([x.mark for x in result if x.u_id == user]))
+            if len(marks) > 0:
+                qset.marks_mean = st.mean(marks)
+                qset.marks_sd = st.stdev(marks)
             #get the num images missing
             result = Question.query.filter_by(qs_id=qs_id).all()
             qset.img_missing = 0
@@ -420,10 +342,10 @@ def admin_summary_json():
                 #convert the question data to a json object
                 q_data = json.loads(row.q_data)
                 #go through each part
-                for item in q_data[1:]:
+                for item in q_data:
                     #if the part is an image ref extract it
-                    if item.type == "image":
-                        image_refs.append(item.data)
+                    if item['type'] == "image":
+                        image_refs.append(item['data'])
             #find the image files in the static/images folder
             image_files = []
             for root,dirs,files in os.walk(basedir + '/' + image_folder, topdown=True):
@@ -446,11 +368,151 @@ def admin_summary_json():
                                 qset.author,
                                 qset.enabled,
                                 qset.img_missing,
-                                qset.grade_mean,
-                                qset.grade_sd])
+                                qset.marks_avail,
+                                qset.marks_mean,
+                                qset.marks_sd])
 
         #if all was ok
         return jsonify ({'Status' : 'ok',"msg":"","data":qset_summary})
+
+
+
+# import quiz function in the admin_summary page
+@app.route('/upload_quiz', methods=['POST'])
+def upload_quiz():
+    if request.method == 'POST':
+        upload_data = request.get_json()["upload_data"]
+        u_id = request.get_json()["u_id"]
+
+        #go through the qset data that is not blank
+        for qset_data in [x for x in upload_data if x != []]:
+            #get the qs_id
+            if "qs_id" in qset_data[0]:
+                qs_id = qset_data[0]["qs_id"]
+            else:
+                #determines the next unused qs_id from database
+                #this is not a real world soluton, but works for the project
+                qs_id = 1
+                result = db.engine.execute(
+                    'SELECT MAX(qs_id) FROM question_set;'
+                ).fetchone()[0]
+                if result is not None:
+                    qs_id = result + 1
+                    #add it to the DB to minimise contention overwrites from other concurrent users
+                    new_qs = Question_Set(qs_id,u_id,False,'',-1)
+                    db.session.add(new_qs)
+                    db.session.commit()
+
+            #get the topic
+            topic = "Unspecified"
+            if "topic" in qset_data[0]:
+                topic = qset_data[0]["topic"]
+            #get the time
+            time = -1
+            if 'time' in qset_data[0]:
+                time = qset_data[0]["time"]
+            #get enabled
+            enabled = False
+            if 'enabled' in qset_data[0]:
+                enabled = qset_data[0]["enabled"]
+
+            #update the DB
+            #----------------------------------------
+            #remove any conflicting data from the DB first
+            Question_Set.query.filter_by(qs_id=qs_id).delete()
+            Question.query.filter_by(qs_id=qs_id).delete()
+            #add qsets to the DB, ignores the author field and uses the uploader u_id
+            new_qs = Question_Set(qs_id,u_id,enabled,topic,time)
+            db.session.add(new_qs)
+            # commit changes
+            db.session.commit()
+            #add questions to the DB, not reading the qs_id field, just assigning it sequentially 
+            q_id = 1
+            for q in qset_data[1:]:
+                q_marks = -1
+                if 'marks' in q["question"][0]:
+                    q_marks = q["question"][0]["marks"]
+                q_data = json.dumps(q["question"][1:])
+                a_type = q["answer"]["type"]
+                a_correct = q["answer"]["correct"]
+                a_data = ""
+                if a_type == "mc":
+                    a_data = json.dumps(q["answer"]["data"])
+                #add to the DB
+                new_q = Question(qs_id,q_id,q_marks,q_data,a_type,a_data,a_correct)
+                db.session.add(new_q)
+                q_id += 1
+
+            # commit changes
+            db.session.commit()
+
+        return jsonify ({ 'Status' : 'ok'})
+
+
+
+#this is for the import image function in the admin_summary page
+@app.route('/upload_image', methods=['POST'])
+def upload_image():
+    if 'file' not in request.files:
+        return jsonify ({ 'Status' : 'error', 'msg':'bad form format'})
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify ({ 'Status' : 'error', 'msg':'no file selected'})
+    file = request.files['file']
+    filename = secure_filename(file.filename)
+    file.save(basedir + '/' + image_folder + '/' + filename)
+    return jsonify ({ 'Status' : 'ok', 'msg':'Server recieved: ' + filename})
+
+
+
+#this is for the export quiz function in the admin_summary page
+@app.route('/download_quiz', methods=['POST'])
+def download_quiz():
+    if request.method == 'POST':
+        qset_id_req = request.get_json()["qset_id_req"]
+        
+        #get the standard qset_json format for each requested qset_id and put in a list to send back to the user
+        #so qset_data will be a list of qset jsons, each of which are a list of questions
+        qset_data = []
+        qsets = query2list_of_dict(Question_Set.query.all())
+        #filter out only the ones requested, too hard to do with sqlalchemy
+        qsets = [x for x in qsets if str(x['qs_id']) in qset_id_req]
+        for qset in qsets:
+            data = [qset]
+            questions = Question.query.filter_by(qs_id=qset['qs_id']).all()
+            for question in questions:
+                temp = {'question':[], 'answer':{}}
+                temp['question'].append({'q_id':question.q_id, 'marks':question.q_marks})
+                temp['question'].extend(json.loads(question.q_data))
+                temp['answer']['type'] = question.a_type
+                temp['answer']['correct'] = question.a_correct
+                if question.a_type == "mc":
+                    temp['answer']['data'] = json.loads(question.a_data)
+                #add to the qset list
+                data.append(temp)
+            #add the qset list to the output list
+            qset_data.append(data)
+
+        return jsonify ({'Status' : 'ok','msg':qset_id_req,'data':qset_data})
+
+
+
+#this is for the delete quiz function in the admin_summary page
+@app.route('/delete_quiz', methods=['POST'])
+def delete_quiz():
+    if request.method == 'POST':
+        qset_id_req = request.get_json()["qset_id_req"]
+
+        #deletes the requested qsets and questions from the DB
+        for qs_id in qset_id_req:
+            Question_Set.query.filter_by(qs_id=qs_id).delete()
+            Question.query.filter_by(qs_id=qs_id).delete()
+
+        # commit changes
+        db.session.commit()
+
+        #if all was ok
+        return jsonify ({'Status' : 'ok',"msg":qset_id_req})
 
 
 
@@ -461,12 +523,51 @@ def get_manage_users():
                             u_id=request.args['u_id'])
 
 
+#this is to load the manage_users json data
+@app.route('/manage_users_json', methods=['POST'])
+def manage_users_json():
+    if request.method == 'POST':
+        u_id = request.get_json()["u_id"]
+        users_data = [["User_Id", "Role", "Username", "Password"]]
+
+        ##fill the users_data from the DB
+        users = User.query.all()
+        for user in users:
+            users_data.append([user.u_id, 
+                              "Teacher" if user.admin else "Student", 
+                              user.username,
+                              user.password])
+
+        #if all was ok
+        return jsonify ({'Status' : 'ok',"msg":"","data":users_data})
+
+
+
+
 @app.route('/edit_quiz.html', methods=['GET'])
 def get_edit_quiz():
     return render_template('edit_quiz.html',
                             username=request.args['username'], 
                             u_id=request.args['u_id'],
                             qset_id=request.args['qset_id'])
+
+
+
+# accept quiz edits and save to DB
+@app.route('/submit_qset_edits_json', methods=['POST'])
+def submit_qset_edits_json():
+    if request.method == 'POST':
+        qset_data = request.get_json()["qset_data"]
+
+        #DB action required!!
+        #write the contents of qset_data to the DB
+
+        #if all was ok
+        return jsonify ({'Status' : 'ok', "msg" : ""})
+
+
+
+
 
 
 #for a student to actually do the quiz and make a submission
@@ -476,176 +577,6 @@ def get_take_quiz():
                             username=request.args['username'], 
                             u_id=request.args['u_id'],
                             qset_id=request.args['qset_id'])
-
-
-#for student to review a submission and marks if available
-@app.route('/review_quiz.html', methods=['GET'])
-def get_review_quiz():
-    return render_template('review_quiz.html',
-                            username=request.args['username'], 
-                            u_id=request.args['u_id'],
-                            qset_id=request.args['qset_id'])
-
-
-#nathan...testing
-##########################################################
-#to be written, for the assessor to mark quizes
-#you load the qset via json with the include_submission = true
-@app.route('/mark_quiz.html', methods=['GET'])
-def get_mark_quiz():
-    return render_template('mark_quiz.html',
-                            username=request.args['username'], 
-                            u_id=request.args['u_id'],
-                            s_u_id=request.args['s_u_id'],
-                            qset_id=request.args['qset_id'])
-
-
-
-
-#this is to load a qset via json
-@app.route('/load_qset_json', methods=['POST'])
-def load_qset_json():
-    if request.method == 'POST':
-        u_id = request.get_json()["u_id"]
-        qset_id = request.get_json()["qset_id"]
-        include_submission = request.get_json()["include_submission"]
-        include_submitters = request.get_json()["include_submitters"]
-        s_u_id = u_id  #for the review submission by student case
-        if "s_u_id" in request.get_json():
-            s_u_id = request.get_json()["s_u_id"]   #for the mark submission case
-        
-        #u_id will have the user_id that is asking for the page, and qset_id is the question set being requested
-        qset_data = []
-        submitters = []
-
-        #DB action required!!
-        if include_submitters == "1":
-            #need to pull the list of users as a list
-            #it has to be of ALL users with submissions for the given qset_id
-            #ranked by submission status in this order (Completed, Marked, Attempted, Not Yet Attempted)
-            #each item in the list is a string made up of: "u_id: username, status"
-            #here is a sample:
-            submitters =  \
-            [
-            "43: Fred Flintstone, Completed",
-            "64: John Connor, Completed",
-            "42: James Scott, Completed",
-            "22: Donald Duck, Completed",
-            "425: Jim Banks, Marked",
-            "1: Agnes Monica, Marked",
-            "244: Margaret Thatcher, Marked",
-            "33: Bart Simpson, Marked",
-            "111: Barney Rubble, Attempted",
-            "54: Peppa Pig, Attempted",
-            "21: Hoot, Attempted",
-            "25: Noddy, Not yet Attempted",
-            "65: Eggs on Toast, Not yet Attempted"
-            ]
-
-        #get the standard qset data json format to send to the user
-        if include_submission == "1":
-            if s_u_id == "init":
-                #you need to query the unmarked submissions and return the first unmarked s_u_id
-                #if there are no unmarked submissions, then pick any submission and return that s_u_id
-                s_u_id = 23   #this is temporary
-            #else 
-                #s_u_id is a valid id
-
-            #use s_u_id and qset_id to return data from the submissions table like answers, grade, comments
-            #then merge it into the answer parts of the complete qset data object
-            
-            #get the submitter username from the s_u_id
-            s_username = "some person"
-            
-            qset_data = \
-            [
-            {"qset_id":"243","qset_name":"some question set name","s_u_id":s_u_id,"s_username":s_username},
-            {"question":[{"q_id":"1","marks":"10"},
-                        {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},
-                        {"type":"image","data":"test_image4.jfif"},
-                        {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},
-                        {"type":"image","data":"test_image3.jfif"},
-                        {"type":"image","data":"test_image.jpg"}],
-            "answer":{"type":"text","answer":"some answer","grade":"5","comment":"good answer!"}},
-            {"question":[{"q_id":"2","marks":"20"},
-                        {"type":"text","data":"question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here,"},
-                        {"type":"image","data":"test_image1.jfif"},
-                        {"type":"text","data":"question 2 text here, question 2 text here, question 2 text here."}],
-            "answer":{"type":"mc","answer":"3","grade":"15","comment":"good answer!",
-                    "data":["option1","option2","option3","option4"]}},
-            {"question":[{"q_id":"3","marks":"5"},
-                        {"type":"text","data":"question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here."}],
-            "answer":{"type":"text","answer":"some answer","grade":"4","comment":"good answer!"}},
-            {"question":[{"q_id":"4","marks":"10"},
-                        {"type":"text","data":"question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here."}],
-            "answer":{"type":"mc","answer":"4","grade":"8","comment":"good answer!",
-                    "data":["option1","option2","option3","option4","option5"]}},
-            {"question":[{"q_id":"5","marks":"12"},
-                        {"type":"text","data":"question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here,"},
-                        {"type":"image","data":"test_image2.jfif"}],
-            "answer":{"type":"text","answer":"some answer","grade":"3","comment":"bad answer!"}}
-            ]
-        else:
-            qset_data = \
-            [
-            {"qset_id":"243","qset_name":"some question set name"},
-            {"question":[{"q_id":"1","marks":"10"},
-                        {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},
-                        {"type":"image","data":"test_image4.jfif"},
-                        {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},
-                        {"type":"image","data":"test_image3.jfif"},
-                        {"type":"image","data":"test_image.jpg"}],
-            "answer":{"type":"text"}},
-            {"question":[{"q_id":"2","marks":"10"},
-                        {"type":"text","data":"question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here,"},
-                        {"type":"image","data":"test_image1.jfif"},
-                        {"type":"text","data":"question 2 text here, question 2 text here, question 2 text here."}],
-                "answer":{"type":"mc",
-                        "data":["option1","option2","option3","option4"]}},
-            {"question":[{"q_id":"3","marks":"10"},
-                        {"type":"text","data":"question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here."}],
-            "answer":{"type":"text"}},
-            {"question":[{"q_id":"4","marks":"10"},
-                        {"type":"text","data":"question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here."}],
-                "answer":{"type":"mc",
-                        "data":["option1","option2","option3","option4","option5"]}},
-            {"question":[{"q_id":"5","marks":"10"},
-                        {"type":"text","data":"question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here,"},
-                        {"type":"image","data":"test_image2.jfif"}],
-            "answer":{"type":"text"}}
-            ]
-
-        #if all was ok
-        return jsonify ({'Status' : 'ok', "msg" : "", "data" : qset_data, "submitters" : submitters})
-
-
-
-
-
-# accept answer submission and save to DB
-@app.route('/submit_marks_json', methods=['POST'])
-def submit_marks_json():
-    if request.method == 'POST':
-        marking_data = request.get_json()["data"]
-        print(marking_data)
-        #DB action required!!
-        #store the marks in the DB
-        '''
-        mark_data has the following format:
-        [
-        {qset_id:qset_id, u_id:u_id, s_u_id:s_u_id, final_submit: 1/0},
-        {grade:grade,comment:comment}
-        {grade:grade,comment:comment}
-        {grade:grade,comment:comment}
-        {grade:grade,comment:comment}
-        {grade:grade,comment:comment}
-        ]
-        NOTE: the q_id is the index of the element 1 to end
-        NOTE: mark_data[0] always has the header 
-        '''
-        #if all was ok
-        return jsonify ({'Status' : 'ok', "msg" : ""})
-
 
 
 
@@ -677,96 +608,165 @@ def submit_answers_json():
 
 
 
-# accept quiz edits and save to DB
-@app.route('/submit_qset_edits_json', methods=['POST'])
-def submit_qset_edits_json():
+#for student to review a submission and marks if available
+@app.route('/review_quiz.html', methods=['GET'])
+def get_review_quiz():
+    return render_template('review_quiz.html',
+                            username=request.args['username'], 
+                            u_id=request.args['u_id'],
+                            qset_id=request.args['qset_id'])
+
+
+#nathan...testing
+##########################################################
+#to be written, for the assessor to mark quizes
+#you load the qset via json with the include_submission = true
+@app.route('/mark_quiz.html', methods=['GET'])
+def get_mark_quiz():
+    return render_template('mark_quiz.html',
+                            username=request.args['username'], 
+                            u_id=request.args['u_id'],
+                            s_u_id=request.args['s_u_id'],
+                            qset_id=request.args['qset_id'])
+
+
+# accept answer submission and save to DB
+@app.route('/submit_marks_json', methods=['POST'])
+def submit_marks_json():
     if request.method == 'POST':
-        qset_data = request.get_json()["qset_data"]
-
+        marking_data = request.get_json()["data"]
+        print(marking_data)
         #DB action required!!
-        #write the contents of qset_data to the DB
-
+        #store the marks in the DB
+        '''
+        mark_data has the following format:
+        [
+        {qset_id:qset_id, u_id:u_id, s_u_id:s_u_id, final_submit: 1/0},
+        {grade:grade,comment:comment}
+        {grade:grade,comment:comment}
+        {grade:grade,comment:comment}
+        {grade:grade,comment:comment}
+        {grade:grade,comment:comment}
+        ]
+        NOTE: the q_id is the index of the element 1 to end
+        NOTE: mark_data[0] always has the header 
+        '''
         #if all was ok
         return jsonify ({'Status' : 'ok', "msg" : ""})
 
 
 
-#this is for the import image function in the admin_summary page
-@app.route('/upload_image', methods=['POST'])
-def upload_image():
-    if 'file' not in request.files:
-        return jsonify ({ 'Status' : 'error', 'msg':'bad form format'})
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify ({ 'Status' : 'error', 'msg':'no file selected'})
-    file = request.files['file']
-    filename = secure_filename(file.filename)
-    file.save(basedir + '/' + image_folder + '/' + filename)
-    return jsonify ({ 'Status' : 'ok', 'msg':'Server recieved: ' + filename})
-    #return jsonify ({ 'Status' : 'ok'})
 
 
-
-#this is for the export quiz function in the admin_summary page
-@app.route('/download_quiz', methods=['POST'])
-def download_quiz():
-    if request.method == 'POST':
-        qset_id_req = request.get_json()["qset_id_req"]
-
-        #DB action required!!
-        #get the standard qset_json format for each requested qset_id and put in a list to send back to the user
-        qset_data = []
-        qset_data.append([{"qset_id":"243","qset_name":"some question set name"}, {"question":[{"q_id":"1","marks":"10"},  {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here.","marks":"10"},{"type":"image","data":"test_image4.jfif","marks":"10"},{"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here.","marks":"10"},{"type":"image","data":"test_image3.jfif","marks":"10"},{"type":"image","data":"test_image.jpg"}]},{"question":[{"q_id":"2","marks":"10"},{"type":"text","data":"question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here,","marks":"10"},{"type":"image","data":"test_image1.jfif","marks":"10"},{"type":"text","data":"question 2 text here, question 2 text here, question 2 text here."}],"answer":{"type":"mc","data":["option1","option2","option3","option4"]}},{"question":[{"q_id":"3","marks":"10"},{"type":"text","data":"question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here."}]},{"question":[{"q_id":"4","marks":"10"},{"type":"text","data":"question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here."}],"answer":{"type":"mc","data":["option1","option2","option3","option4","option5"]}},{"question":[{"q_id":"5","marks":"10"},{"type":"text","data":"question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here,","marks":"10"},{"type":"image","data":"test_image2.jfif"}]}])
-        qset_data.append([{"qset_id":"23","qset_name":"some question set name"}, {"question":[{"q_id":"1","marks":"10"},  {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here.","marks":"10"},{"type":"image","data":"test_image4.jfif","marks":"10"},{"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here.","marks":"10"},{"type":"image","data":"test_image3.jfif","marks":"10"},{"type":"image","data":"test_image.jpg"}]},{"question":[{"q_id":"2","marks":"10"},{"type":"text","data":"question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here,","marks":"10"},{"type":"image","data":"test_image1.jfif","marks":"10"},{"type":"text","data":"question 2 text here, question 2 text here, question 2 text here."}],"answer":{"type":"mc","data":["option1","option2","option3","option4"]}},{"question":[{"q_id":"3","marks":"10"},{"type":"text","data":"question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here."}]},{"question":[{"q_id":"4","marks":"10"},{"type":"text","data":"question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here."}],"answer":{"type":"mc","data":["option1","option2","option3","option4","option5"]}},{"question":[{"q_id":"5","marks":"10"},{"type":"text","data":"question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here,","marks":"10"},{"type":"image","data":"test_image2.jfif"}]}])
-        qset_data.append([{"qset_id":"54","qset_name":"some question set name"}, {"question":[{"q_id":"1","marks":"10"},  {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here.","marks":"10"},{"type":"image","data":"test_image4.jfif","marks":"10"},{"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here.","marks":"10"},{"type":"image","data":"test_image3.jfif","marks":"10"},{"type":"image","data":"test_image.jpg"}]},{"question":[{"q_id":"2","marks":"10"},{"type":"text","data":"question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here,","marks":"10"},{"type":"image","data":"test_image1.jfif","marks":"10"},{"type":"text","data":"question 2 text here, question 2 text here, question 2 text here."}],"answer":{"type":"mc","data":["option1","option2","option3","option4"]}},{"question":[{"q_id":"3","marks":"10"},{"type":"text","data":"question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here."}]},{"question":[{"q_id":"4","marks":"10"},{"type":"text","data":"question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here."}],"answer":{"type":"mc","data":["option1","option2","option3","option4","option5"]}},{"question":[{"q_id":"5","marks":"10"},{"type":"text","data":"question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here,","marks":"10"},{"type":"image","data":"test_image2.jfif"}]}])
-        
-        return jsonify ({'Status' : 'ok','msg':qset_id_req,'data':qset_data})
-
-
-
-#this is for the delete quiz function in the admin_summary page
-@app.route('/delete_quiz', methods=['POST'])
-def delete_quiz():
-    if request.method == 'POST':
-        qset_id_req = request.get_json()["qset_id_req"]
-
-        #DB action required!!
-        #delete these qset_id's and associated q_id's from the DB
-        
-        #if all was ok
-        return jsonify ({'Status' : 'ok',"msg":qset_id_req})
-
-
-
-#this is to load the manage_users json data
-@app.route('/manage_users_json', methods=['POST'])
-def manage_users_json():
+#this is to load a qset via json
+#this route is used by all the pages that need to load the question set data
+@app.route('/load_qset_json', methods=['POST'])
+def load_qset_json():
     if request.method == 'POST':
         u_id = request.get_json()["u_id"]
+        username = request.get_json()["username"]
+        qs_id = request.get_json()["qset_id"]
+        #for the review submission by student case
+        s_u_id = u_id
+        #for marking submission
+        if "s_u_id" in request.get_json():
+            s_u_id = request.get_json()["s_u_id"]
+        #for marking submission of a particular s_u_id
+        include_submission = request.get_json()["include_submission"]
+        #for the list of submissions to choose when marking
+        include_submitters = request.get_json()["include_submitters"]
+        qset_data = []
+        submitters = []
+        
+        #get the data from the DB
+        if include_submitters == "1":
+            #get the list of submissions for this qs_id along with their status
+            submitters = []
+            statuses = ['Completed','Marked','Attempted']
+            for status in statuses:
+                s_users = Submission.query.filter_by(qs_id=qs_id,status=status).all()
+                for s_user in s_users:
+                    s_username = User.query.get(s_user.u_id).username
+                    submitters.append(s_username + ' (' + str(s_user.u_id) + '), ' + status)
 
-        #DB action required!!
-        ##fill the users_data from the DB
-        users_data =  \
-        [
-        ["User_Id", "Username", "Role"],
-        ["43", "Fred Flintstone", "Teacher"],
-        ["64", "John Connor", "Student"],
-        ["42", "James Scott", "Student"],
-        ["22", "Donald Duck", "Teacher"],
-        ["425", "Jim Banks", "Student"],
-        ["1", "Agnes Monica", "Teacher"],
-        ["244", "Margaret Thatcher", "Student"],
-        ["33", "Bart Simpson", "Student"],
-        ["111", "Barney Rubble", "Student"],
-        ["54", "Peppa Pig", "Teacher"],
-        ["21", "Hoot", "Student"],
-        ["25", "Noddy", "Student"],
-        ["65", "Eggs on Toast", "Teacher"]
-        ]
+        #get the standard qset data json format to send to the user
+        if include_submission == '1':
+            if s_u_id == 'init':
+                #find the next s_u_id to use
+                statuses = ['Completed','Marked','Attempted']
+                for status in statuses:
+                    s_users = Submission.query.filter_by(qs_id=qs_id,status=status).all()
+                    if len(s_users) > 0:
+                        s_u_id = s_users.u_id
+                        s_username = User.query.get(s_u_id).username
+                        break
+            #check if we have a suitable s_u_id
+            if s_u_id == 'init':
+                return jsonify ({'Status' : 'nok', "msg" : "no submissions yet for that question set"})
+            #construct qset_data to return
+            qset = query2list_of_dict(Question_Set.query.filter_by(qs_id=qs_id).all())
+            if len(qset) == 0:
+                return jsonify ({'Status' : 'nok', 'msg' : "question set doesn't exist"})
+            qset = qset[0]
+            #add s_u_id and s_unsername
+            qset['s_u_id'] = s_u_id
+            qset['s_username'] = s_username
+            #add to qset_data
+            qset_data.append(qset)
+            #add the questions
+            questions = Question.query.filter_by(qs_id=qs_id).all()
+            if len(questions) == 0:
+                return jsonify ({'Status' : 'nok', 'msg' : "no questions in that question set"})
+            for question in questions:
+                #this is the regular question data
+                temp = {'question':[], 'answer':{}}
+                temp['question'].append({'q_id':question.q_id, 'marks':question.q_marks})
+                temp['question'].extend(json.loads(question.q_data))
+                temp['answer']['type'] = question.a_type
+                temp['answer']['correct'] = question.a_correct
+                if question.a_type == "mc":
+                    temp['answer']['data'] = json.loads(question.a_data)
+                #get the submission_answer data
+                result = Submission_Answer.query.filter_by(qs_id=qs_id,q_id=question.q_id,u_id=s_u_id).all()
+                answer = ''
+                mark = -1
+                comment = ''
+                if len(result) > 0:
+                    result = result[0]
+                    answer = result.data
+                    mark = result.mark
+                    comment = result.comment
+                temp['answer']['answer'] = answer
+                temp['answer']['grade'] = mark
+                temp['answer']['comment'] = comment
+                #add to the qset list
+                qset_data.append(temp)
+        else:
+            #construct qset_data to return
+            qset = query2list_of_dict(Question_Set.query.filter_by(qs_id=qs_id).all())
+            if len(qset) == 0:
+                return jsonify ({'Status' : 'nok', 'msg' : "question set doesn't exist"})
+            qset = qset[0]
+            #add to qset_data
+            qset_data.append(qset)
+            #add the questions
+            questions = Question.query.filter_by(qs_id=qs_id).all()
+            if len(questions) == 0:
+                return jsonify ({'Status' : 'nok', 'msg' : "no questions in that question set"})
+            for question in questions:
+                #this is the regular question data
+                temp = {'question':[], 'answer':{}}
+                temp['question'].append({'q_id':question.q_id, 'marks':question.q_marks})
+                temp['question'].extend(json.loads(question.q_data))
+                temp['answer']['type'] = question.a_type
+                temp['answer']['correct'] = question.a_correct
+                if question.a_type == "mc":
+                    temp['answer']['data'] = json.loads(question.a_data)
+                #add to the qset list
+                qset_data.append(temp)
 
         #if all was ok
-        return jsonify ({'Status' : 'ok',"msg":"","data":users_data})
-
+        return jsonify ({'Status' : 'ok', "msg" : "", "data" : qset_data, "submitters" : submitters})
 
 
 
