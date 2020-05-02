@@ -315,7 +315,7 @@ def get_student_summary():
 def student_summary_json():
     if request.method == 'POST':
         u_id = request.get_json()["u_id"]
-        #this is the output data structure to be passed back to the client, list of lists
+        #this is the output data header to be passed back to the client, list of lists
         qset_summary =  \
         [["Status","Quiz Id","Topic","Tot Qs","MC Qs","Time(mins)","Score","Score Mean","Score SD"]]
 
@@ -342,10 +342,10 @@ def student_summary_json():
             #get the grade stats
             result = Submission_Answer.query.filter_by(qs_id=qs_id).all()
             grades = []
-            for user in set([x.u_id for x in result]):
-                grades.append(sum([x.mark for x in result if x.u_id == user]))
             qset.grade_mean = -1
             qset.grade_sd = -1
+            for user in set([x.u_id for x in result]):
+                grades.append(sum([x.mark for x in result if x.u_id == user]))
             if len(grades) > 0:
                 qset.grade_mean = st.mean(grades)
                 qset.grade_sd = st.stdev(grades)
@@ -373,6 +373,84 @@ def get_admin_summary():
     return render_template('admin_summary.html',
                             username=request.args['username'], 
                             u_id=request.args['u_id'])
+
+
+#this is to load the admin_summary json data
+@app.route('/admin_summary_json', methods=['POST'])
+def admin_summary_json():
+    if request.method == 'POST':
+        u_id = request.get_json()["u_id"]
+        #this is the output data header to be passed back to the client, list of lists
+        qset_summary =  \
+        [["Quiz Id","Marked","Completed","Attempted","Topic","Tot Qs","MC Qs","Time(mins)","Owner","Enabled","Img.Missing","Score Mean","Score SD"]]
+
+        #fills qset_summary from the DB
+        qsets = Question_Set.query.all()
+        #will have qs_id, author, enabled, topic, time
+        #need to fill the rest of the fields ["Marked","Completed","Attempted","Tot Qs","MC Qs","Img.Missing","Score Mean","Score SD"]
+        for qset in qsets:
+            qs_id = qset.qs_id
+            # get num questions
+            qset.tot_qs = len(Question.query.filter_by(qs_id=qs_id).all())
+            qset.mc_qs = len(Question.query.filter_by(qs_id=qs_id, a_type='mc').all())
+            # get the status numbers for the qset
+            result = Submission.query.filter_by(qs_id=qs_id, status="Completed").all()
+            qset.completed = len(result)
+            result = Submission.query.filter_by(qs_id=qs_id, status="Marked").all()
+            qset.marked = len(result)
+            result = Submission.query.filter_by(qs_id=qs_id, status="Attempted").all()
+            qset.attempted = len(result)
+            #get the grade stats
+            result = Submission_Answer.query.filter_by(qs_id=qs_id).all()
+            grades = []
+            qset.grade_mean = -1
+            qset.grade_sd = -1
+            for user in set([x.u_id for x in result]):
+                grades.append(sum([x.mark for x in result if x.u_id == user]))
+            if len(grades) > 0:
+                qset.grade_mean = st.mean(grades)
+                qset.grade_sd = st.stdev(grades)
+            #get the num images missing
+            result = Question.query.filter_by(qs_id=qs_id).all()
+            qset.img_missing = 0
+            image_refs = []
+            #get all the images refs in all questions in the question set
+            #go through each question in the qset
+            for row in result:
+                #convert the question data to a json object
+                q_data = json.loads(row.q_data)
+                #go through each part
+                for item in q_data[1:]:
+                    #if the part is an image ref extract it
+                    if item.type == "image":
+                        image_refs.append(item.data)
+            #find the image files in the static/images folder
+            image_files = []
+            for root,dirs,files in os.walk(basedir + '/' + image_folder, topdown=True):
+                for file in files:
+                    image_files.append(file)
+            #does the crosschecking
+            for image in image_refs:
+                if image not in image_files:
+                    qset.img_missing += 1
+
+            #fill the output list with data
+            qset_summary.append([qset.qs_id, 
+                                qset.marked, 
+                                qset.completed,
+                                qset.attempted,
+                                qset.topic,
+                                qset.tot_qs,
+                                qset.mc_qs,
+                                qset.time,
+                                qset.author,
+                                qset.enabled,
+                                qset.img_missing,
+                                qset.grade_mean,
+                                qset.grade_sd])
+
+        #if all was ok
+        return jsonify ({'Status' : 'ok',"msg":"","data":qset_summary})
 
 
 
@@ -690,33 +768,6 @@ def manage_users_json():
         return jsonify ({'Status' : 'ok',"msg":"","data":users_data})
 
 
-
-#this is to load the admin_summary json data
-@app.route('/admin_summary_json', methods=['POST'])
-def admin_summary_json():
-    if request.method == 'POST':
-        u_id = request.get_json()["u_id"]
-
-        #DB action required!!
-        ##fill the admin summary data from the DB
-        qset_summary =  \
-        [
-        ["Quiz Id","Marked","Completed","Attempted","Topic","Tot Qs","MC Qs","Time(mins)","Owner","Status","Img.Missing","Score Mean","Score SD"],
-        ["1",9,25,4,"Topic A",10,5,50,"u_id","Active",0,59.3,13.4],
-        ["2",33,45,8,"Topic B",20,10,100,"u_id","Active",0,68.3,8.4],
-        ["3",32,35,3,"Topic C",30,20,150,"u_id","Active",0,62.3,7.4],
-        ["4",0,65,0,"Topic A",10,5,30,"u_id","Active",0,-1,-1],
-        ["5",3,25,5,"Topic C",15,7,70,"u_id","Active",0,90.3,20.1],
-        ["6",0,0,0,"Topic C",12,8,60,"u_id","Pending",4,-1,-1],
-        ["7",22,35,2,"Topic A",20,10,80,"u_id","Active",0,70.3,12],
-        ["8",45,45,7,"Topic D",20,15,90,"u_id","Closed",0,67.2,8.3],
-        ["9",60,65,4,"Topic B",15,10,65,"u_id","Active",0,60.3,9.2],
-        ["10",30,45,3,"Topic B",10,5,40,"u_id","Active",0,63.3,11.1],
-        ["11",2,25,0,"Topic A",5,5,25,"u_id","Active",0,80.3,22.7]
-        ]
-
-        #if all was ok
-        return jsonify ({'Status' : 'ok',"msg":"","data":qset_summary})
 
 
 
