@@ -85,8 +85,20 @@
                             Choose the question to edit on the left manu bar<br/>
                             Click and drag the text/image elements of the quesiton to change the order<br/>
                             Click the red X to delete an element<br/>
-                            Click the add text/add image buttons to add a new text or image element<br/>
-                            Answer section: if the question requires a text answer, leave the Answer box empty, if it requires multichoice, then type 'mc:' followed by the multichoice options as a comma separated list
+                            Click the add text/add image buttons to add a new text or image element<br/><br/>
+                            Answer section, use the following format:<br/>
+                            NOTE: mc answers should be on separate lines<br/> 
+                            -------------------------------------<br/>
+                            1) multi-choice answer<br/>
+                            mc<br/>
+                            correct: 3<br/>
+                            London<br/>
+                            Madrid<br/>
+                            ....<br/>
+                            New York<br/>
+                            -------------------------------------<br/>
+                            2) text answer<br/>
+                            correct: the correct text for the answer<br/>
                         </i>
                     </div>
                     <hr>
@@ -99,7 +111,7 @@
                     </p>
 
                     <i class="dev-comments">
-                        -this loads the question set selected via HTTP get with params (qset_id, user_id)<br/>
+                        -this loads the question set selected via HTTP get with params (qs_id, u_id)<br/>
                     </i>
 
                 </div> 

@@ -248,7 +248,7 @@ def student_summary_json():
             if len(result) == 0:
                 qset.status = 'Not Attempted'
             else:
-                qset.status = result.status
+                qset.status = result[0].status
             #get the marks available
             result = Question.query.filter_by(qs_id=qs_id).all()
             qset.marks_avail = sum([x.q_marks for x in result])
@@ -264,8 +264,9 @@ def student_summary_json():
             qset.marks_sd = -1
             for user in set([x.u_id for x in result]):
                 marks.append(sum([x.mark for x in result if x.u_id == user]))
-            if len(marks) > 0:
+            if len(marks) >= 1:
                 qset.marks_mean = st.mean(marks)
+            if len(marks) >= 2:
                 qset.marks_sd = st.stdev(marks)
 
             #fill the output list with data
@@ -381,7 +382,7 @@ def get_edit_quiz():
     return render_template('edit_quiz.html',
                             username=request.args['username'], 
                             u_id=request.args['u_id'],
-                            qset_id=request.args['qset_id'])
+                            qs_id=request.args['qs_id'])
 
 
 
@@ -393,7 +394,6 @@ def upload_quiz():
         upload_data = request.get_json()["upload_data"]
         u_id = request.get_json()["u_id"]
         import_flag = request.get_json()["import_flag"]
-        final_submit_flag = request.get_json()["final_submit_flag"]
 
         #go through the qset data that is not blank
         for qset_data in [x for x in upload_data if x != []]:
@@ -484,14 +484,14 @@ def upload_image():
 @app.route('/download_quiz', methods=['POST'])
 def download_quiz():
     if request.method == 'POST':
-        qset_id_req = request.get_json()["qset_id_req"]
+        qs_id_req = request.get_json()["qs_id_req"]
         
-        #get the standard qset_json format for each requested qset_id and put in a list to send back to the user
+        #get the standard qset_json format for each requested qs_id and put in a list to send back to the user
         #so qset_data will be a list of qset jsons, each of which are a list of questions
         qset_data = []
         qsets = query2list_of_dict(Question_Set.query.all())
         #filter out only the ones requested, too hard to do with sqlalchemy
-        qsets = [x for x in qsets if str(x['qs_id']) in qset_id_req]
+        qsets = [x for x in qsets if str(x['qs_id']) in qs_id_req]
         for qset in qsets:
             data = [qset]
             questions = Question.query.filter_by(qs_id=qset['qs_id']).all()
@@ -508,7 +508,7 @@ def download_quiz():
             #add the qset list to the output list
             qset_data.append(data)
 
-        return jsonify ({'Status' : 'ok','msg':qset_id_req,'data':qset_data})
+        return jsonify ({'Status' : 'ok','msg':qs_id_req,'data':qset_data})
 
 
 
@@ -516,10 +516,10 @@ def download_quiz():
 @app.route('/delete_quiz', methods=['POST'])
 def delete_quiz():
     if request.method == 'POST':
-        qset_id_req = request.get_json()["qset_id_req"]
+        qs_id_req = request.get_json()["qs_id_req"]
 
         #deletes the requested qsets and questions from the DB
-        for qs_id in qset_id_req:
+        for qs_id in qs_id_req:
             Question_Set.query.filter_by(qs_id=qs_id).delete()
             Question.query.filter_by(qs_id=qs_id).delete()
 
@@ -527,7 +527,7 @@ def delete_quiz():
         db.session.commit()
 
         #if all was ok
-        return jsonify ({'Status' : 'ok',"msg":qset_id_req})
+        return jsonify ({'Status' : 'ok',"msg":qs_id_req})
 
 
 
@@ -566,7 +566,7 @@ def get_take_quiz():
     return render_template('take_quiz.html',
                             username=request.args['username'], 
                             u_id=request.args['u_id'],
-                            qset_id=request.args['qset_id'])
+                            qs_id=request.args['qs_id'])
 
 
 
@@ -574,26 +574,37 @@ def get_take_quiz():
 @app.route('/submit_answers_json', methods=['POST'])
 def submit_answers_json():
     if request.method == 'POST':
+        qs_id = request.get_json()["qs_id"]
+        u_id = request.get_json()["u_id"]
         a_data = request.get_json()["a_data"]
-        #print(a_data)
+        final_flag = request.get_json()["final_flag"]
+        status = 'Attempted'
+        if final_flag:
+            status = 'Completed'
 
-        #DB action required!!
-        #store this submission in the DB
-        '''
-        a_data has the following format:
-        [
-        {qset_id: qset_id, u_id: u_id, final_submit: 1/0},
-        "answer text for text answer",
-        "4",
-        "2",
-        "answer text for text answer",
-        ]
-        NOTE: the q_id is the index of the element 1 to end
-        NOTE: a_data[0] always has the header 
-        '''
+        #check that the submission is legal
+        result = Submission.query.filter_by(qs_id=qs_id,u_id=u_id).all()
+        if len(result) > 0 and result[0].status in ['Completed','Marked']:
+            return jsonify ({'Status' : 'nok', 'msg' : 'no further submissions possible'})
+
+        #remove any existing submissions
+        Submission.query.filter_by(qs_id=qs_id,u_id=u_id).delete()
+        Submission_Answer.query.filter_by(qs_id=qs_id,u_id=u_id).delete()
+        #add submissions to the DB
+        new_sub = Submission(qs_id,u_id,status)
+        db.session.add(new_sub)
+        #add submission_answers
+        q_id = 1
+        for answer in a_data:
+            new_sub_ans = Submission_Answer(qs_id,q_id,u_id,answer,0,'')
+            db.session.add(new_sub_ans)
+            q_id += 1 
+
+        # commit changes
+        db.session.commit()
+
         #if all was ok
-        return jsonify ({'Status' : 'ok', 
-                        "msg" : ""})
+        return jsonify ({'Status' : 'ok', "msg" : ""})
 
 
 
@@ -604,7 +615,7 @@ def get_review_quiz():
     return render_template('review_quiz.html',
                             username=request.args['username'], 
                             u_id=request.args['u_id'],
-                            qset_id=request.args['qset_id'])
+                            qs_id=request.args['qs_id'])
 
 
 #you load the qset via json with the include_submission = true
@@ -614,7 +625,7 @@ def get_mark_quiz():
                             username=request.args['username'], 
                             u_id=request.args['u_id'],
                             s_u_id=request.args['s_u_id'],
-                            qset_id=request.args['qset_id'])
+                            qs_id=request.args['qs_id'])
 
 
 # accept answer submission and save to DB
@@ -628,7 +639,7 @@ def submit_marks_json():
         '''
         mark_data has the following format:
         [
-        {qset_id:qset_id, u_id:u_id, s_u_id:s_u_id, final_submit: 1/0},
+        {qs_id:qs_id, u_id:u_id, s_u_id:s_u_id, final_submit: 1/0},
         {grade:grade,comment:comment}
         {grade:grade,comment:comment}
         {grade:grade,comment:comment}
@@ -652,7 +663,7 @@ def load_qset_json():
     if request.method == 'POST':
         u_id = request.get_json()["u_id"]
         username = request.get_json()["username"]
-        qs_id = request.get_json()["qset_id"]
+        qs_id = request.get_json()["qs_id"]
         #for the review submission by student case
         s_u_id = u_id
         #for marking submission
