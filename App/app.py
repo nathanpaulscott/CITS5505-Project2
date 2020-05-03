@@ -639,33 +639,32 @@ def get_review_quiz():
 @app.route('/mark_quiz.html', methods=['GET'])
 def get_mark_quiz():
     return render_template('mark_quiz.html',
+                            qs_id=request.args['qs_id'],
                             username=request.args['username'], 
                             u_id=request.args['u_id'],
-                            s_u_id=request.args['s_u_id'],
-                            qs_id=request.args['qs_id'])
+                            s_u_id=request.args['s_u_id'])
 
 
 # accept answer submission and save to DB
 @app.route('/submit_marks_json', methods=['POST'])
 def submit_marks_json():
     if request.method == 'POST':
-        marking_data = request.get_json()["data"]
-        print(marking_data)
-        #DB action required!!
-        #store the marks in the DB
-        '''
-        mark_data has the following format:
-        [
-        {qs_id:qs_id, u_id:u_id, s_u_id:s_u_id, final_submit: 1/0},
-        {grade:grade,comment:comment}
-        {grade:grade,comment:comment}
-        {grade:grade,comment:comment}
-        {grade:grade,comment:comment}
-        {grade:grade,comment:comment}
-        ]
-        NOTE: the q_id is the index of the element 1 to end
-        NOTE: mark_data[0] always has the header 
-        '''
+        data = request.get_json()["data"]
+        qs_id = data[0]["qs_id"]
+        u_id = data[0]["s_u_id"]
+
+        #update marks in the DB
+        result = Submission.query.filter_by(qs_id=qs_id,u_id=u_id).first()
+        if result is not None:
+            result.status = 'Marked'
+            db.session.commit()
+            for i in range(1,len(data)):
+                result = Submission_Answer.query.filter_by(qs_id=qs_id,q_id=i,u_id=u_id).first()
+                if result is not None:
+                    result.mark = float(data[i]["mark"])
+                    result.comment = data[i]["comment"]
+                    db.session.commit()
+
         #if all was ok
         return jsonify ({'Status' : 'ok', "msg" : ""})
 
@@ -695,46 +694,55 @@ def load_qset_json():
         qset_data = []
         submitters = []
         
-        #get the data from the DB
-        if include_submitters == "1":
-            #get the list of submissions for this qs_id along with their status
+        def get_user_by_status(qs_id, get_one):
             submitters = []
             statuses = ['Completed','Marked','Attempted']
             for status in statuses:
-                s_users = Submission.query.filter_by(qs_id=qs_id,status=status).all()
-                for s_user in s_users:
-                    s_username = User.query.get(s_user.u_id).username
-                    submitters.append(s_username + ' (' + str(s_user.u_id) + '), ' + status)
+                subs = Submission.query.filter_by(qs_id=qs_id,status=status).all()
+                for sub in subs:
+                    user = User.query.filter_by(u_id=sub.u_id).first()
+                    if user is not None:
+                        if get_one:
+                            return user.u_id
+                        submitters.append(user.username + ' (' + str(user.u_id) + '), ' + status)
+            if get_one:
+                return None
+            return submitters
+                        
 
+        #get the data from the DB
+        if include_submitters == "1":
+            #get the list of submissions for this qs_id along with their status
+            submitters = get_user_by_status(qs_id, False)
+        
         #get the standard qset data json format to send to the user
         if include_submission == '1':
             if s_u_id == 'init':    
                 #this is sent by the mark_quiz code when it launches as it doesn't have a target s_u_id, so we need to find the next s_u_id to use
-                statuses = ['Completed','Marked','Attempted']
-                for status in statuses:
-                    s_users = Submission.query.filter_by(qs_id=qs_id,status=status).all()
-                    if len(s_users) > 0:
-                        s_u_id = s_users.u_id
-                        s_username = User.query.get(s_u_id).username
-                        break
-            #check if we have a suitable s_u_id
-            if s_u_id == 'init':
-                return jsonify ({'Status':'nok', "msg":"no submissions yet for that question set"})
+                s_u_id = get_user_by_status(qs_id, True)
+                #check if we have a suitable s_u_id
+                if s_u_id is None:
+                    return jsonify ({'Status':'nok', "msg":"no submissions yet for that question set"})
+            
             #get the status
             result = Submission.query.filter_by(qs_id=qs_id,u_id=s_u_id).first()
             if result is not None:
                 submission_status = result.status
             else:
                 submission_status = 'Not Attempted'
+            
             #construct qset_data to return
             qset = query2list_of_dict(Question_Set.query.filter_by(qs_id=qs_id).all())
             if len(qset) == 0:
                 return jsonify ({'Status':'nok', 'msg':"question set doesn't exist"})
             qset = qset[0]
+            
             #add s_u_id and s_unsername
             qset['s_u_id'] = s_u_id
-            result = User.query.filter_by(u_id=s_u_id).all()
-            qset['s_username'] = result[0].username
+            result = User.query.filter_by(u_id=s_u_id).first()
+            if result is None:
+                return jsonify ({'Status':'nok', 'msg':"user " + s_u_id + " doesn't exist"})
+            qset['s_username'] = result.username
             #add to qset_data
             qset_data.append(qset)
             #add the questions

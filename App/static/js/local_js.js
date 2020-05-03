@@ -134,7 +134,9 @@ function encodeQueryData(data) {
 		let u_id = findGetParameter('u_id');
 		let username = findGetParameter('username');
 		let qs_id = findGetParameter('qs_id');
-		let preview_flag = findGetParameter('preview_flag');
+		preview_flag = false;
+		if (findGetParameter('preview_flag') == 'true') 
+			preview_flag = true;
 
 		//Do the Ajax Request here to fetch the take_quiz data
 		$.ajax({
@@ -436,8 +438,8 @@ function build_admin_summary(u_id, username, qset_summary) {
 		//build the target url
 		let query_data = encodeQueryData({"qs_id":qs_id,
 										  "u_id":u_id,
-										  "s_u_id":"init", 
-										  "username":username});
+										  "username":username,
+										  "s_u_id":"init"});
 		window.location = "./mark_quiz.html" + "?" + query_data;
 	});
 
@@ -762,12 +764,20 @@ function build_student_summary(u_id, username, qset_summary) {
 		let query_data = encodeQueryData({"qs_id":qs_id,
 										"u_id":u_id,
 										"username":username});
-		if (["Completed","Marked"].includes(status))
+		if (["Completed","Marked"].includes(status)) {
 			//review the quiz sumbission and/or marks		
+			let query_data = encodeQueryData({"qs_id":qs_id,
+											"u_id":u_id,
+											"username":username});
 			window.location = "./review_quiz.html" + "?" + query_data;
-		else
+		} else {
 			//take the quiz 
+			let query_data = encodeQueryData({"qs_id":qs_id,
+											"u_id":u_id,
+											"username":username,
+											"preview_flag":false});
 			window.location = "./take_quiz.html" + "?" + query_data;
+		}
 	});
 }//end of the build_student_summary function
 
@@ -874,18 +884,18 @@ function build_take_quiz(u_id, username, qset_data, preview_flag) {
 
 		//append to the DOM
 		$("#q_data").append(html_text);
+	}
 
-		//makes some DOM changes for the preview case
-		if (preview_flag) {
-			$("#final-save").attr("id","back2edit"); 		
-			let query_data = encodeQueryData({"qs_id":qs_id,
-											"u_id":u_id,
-											"username":username});
-			$("#back2edit").attr("href","./edit_quiz.html" + "?" + query_data); 
-			$("#back2edit").text("Back to Edit Quiz");
-			$("#cancel-test").remove();
-			$(".save-continue").prop("disabled",true);
-		}
+	//makes some DOM changes for the preview case
+	if (preview_flag) {
+		$("#final-save").attr("id","back2edit"); 		
+		let query_data = encodeQueryData({"qs_id":qs_id,
+										"u_id":u_id,
+										"username":username});
+		$("#back2edit").attr("href","./edit_quiz.html" + "?" + query_data); 
+		$("#back2edit").text("Back to Edit Quiz");
+		$("#cancel-test").remove();
+		$(".save-continue").prop("disabled",true);
 	}
 
 	//This assigns some listeners on the take_quiz page
@@ -1017,10 +1027,10 @@ function build_review_quiz(u_id, username, submission_status, qset_data) {
 		//#######################################
 		html_text = '<div class="tab-pane fade ' + showactive_text + '" id="' + q_seq + '-data" role="tabpanel" aria-labelledby="' + q_seq + '">' + '\n';
 		//set the grade text in the title
-		let grade_text = "Not Yet Marked";
+		let mark_text = "Not Yet Marked";
 		if (qset_data[i]["answer"]["grade"] != "-1") 
-			grade_text = qset_data[i]["answer"]["grade"] + '/' + qset_data[i]["question"][0]["marks"];
-		html_text += '<h5>' + q_seq + '&nbsp&nbsp&nbsp&nbsp(' + grade_text + ')</h5>' + '\n';
+			mark_text = qset_data[i]["answer"]["grade"] + '/' + qset_data[i]["question"][0]["marks"];
+		html_text += '<h5>' + q_seq + '&nbsp&nbsp&nbsp&nbsp(' + mark_text + ')</h5>' + '\n';
 		
 		//this goes through the question part list and adds text or image tags as specified
 		//the first index of the list is the q_id, so ignore that
@@ -1193,20 +1203,20 @@ function build_mark_quiz(u_id, username, submission_status, qset_data, submitter
 		html_text += 	'</div>' + '\n';
 
 		//add assessor grade field
-		let grade_text = "";
+		let mark_text = "";
 		let mark_max = qset_data[i]["question"][0]["marks"];
 		if (qset_data[i]["answer"]["grade"] != undefined) {
-			grade_text = qset_data[i]["answer"]["grade"];
-			if (Number(grade_text) > Number(mark_max))
-				grade_text = mark_max;
-			if (Number(grade_text) < -1)
-				grade_text = "-1";
+			mark_text = qset_data[i]["answer"]["grade"];
+			if (Number(mark_text) > Number(mark_max))
+				mark_text = mark_max;
+			if (Number(mark_text) < -1)
+				mark_text = "-1";
 		} else
-			grade_text = "-1";
+			mark_text = "-1";
 
 		html_text += 	'<label for="form_group2">Mark (out of ' + qset_data[i]["question"][0]["marks"] + '):</label>' + '\n';
 		html_text += 	'<div class="form-group" id="form_group2">' + '\n';
-		html_text += 	'	<input type="number" style="max-width:80px;" class="form-control"  id="' + q_seq + '_M" value=' + grade_text + ' max="' + mark_max + '" min="0">' + '\n';
+		html_text += 	'	<input type="number" style="max-width:80px;" class="form-control"  id="' + q_seq + '_M" value=' + mark_text + ' max="' + mark_max + '" min="0">' + '\n';
 		html_text += 	'</div>' + '\n';
 		
 		//add the assessor comments text
@@ -1227,6 +1237,10 @@ function build_mark_quiz(u_id, username, submission_status, qset_data, submitter
 	}
 
 	//does the change submitter list
+	//this resets the control
+	
+	document.getElementById("submitters").value = "";
+	
 	html_text = "";
 	for (sub of submitters)
 		html_text += '		<option value="' + sub + '"></option>' + '\n';
@@ -1244,52 +1258,35 @@ function build_mark_quiz(u_id, username, submission_status, qset_data, submitter
 		}
 	);
 
-	//assigns a click listener to the load new submitter button
-	$("#btn-load-submitter").click(function() {
-		let new_user = $('[name="input-submitter"]').val();
-		//here we need to extract the s_u_id only
-		s_u_id = new_user.slice(0,new_user.search(":")).trim();
-
-		let query_data = encodeQueryData({"qs_id":qs_id,
-										  "u_id":u_id,
-										  "s_u_id":s_u_id,
-										  "username":username});
-		window.location = "./mark_quiz.html" + "?" + query_data;
-	});
-
 
 	//assigns a click listener to the submit button as well as the finish and submit nav choice
-	$(".save-continue, #final-save").click(function() {
+	$(".save-continue, \
+		#final-save, \
+		#btn-load-submitter").click(function() {
+		//set the change s_u_id flag for the case the user want to change
+		let change_flag = $(this).is("#btn-load-submitter");
+
 		let marking_data = [{"qs_id":qs_id,"u_id":u_id,"s_u_id":s_u_id}];
-		//sets the final_submit flag to indicate the user closed off the quiz, otherwise the attmpt is not complete even though interim results are saved
-		marking_data[0]["final_submit"] = 0;
-		if ($(this).is('#final-save')) { 
-			marking_data[0]["final_submit"] = 1;
-		}
 		//get the marking data
-		let complete_flag = 1;
 		for (let i = 1; i < qset_data.length; i++) {
 			//this is the actual question sequence, i.e. "Q1", "Q2", "Q3" etc... you need to build this list locally, it is basically "Q" + index+1
 			let q_seq = "Q" + String(i);
-			let grade_text = $("#" + q_seq + "_M").val();
+			let mark_text = $("#" + q_seq + "_M").val();
 			let comment_text = $.trim($("#" + q_seq + "_C").val());
 			
 			//validation
 			let mark_max = qset_data[i]["question"][0]["marks"];
-			if (grade_text == "")
-				grade_text = "-1";
+			if (mark_text == "")
+				mark_text = "0";
 			else {
-				if (Number(grade_text) > Number(mark_max)) 
-					grade_text = mark_max;
-				if (Number(grade_text) < -1)
-					grade_text = "-1";
+				if (Number(mark_text) > Number(mark_max)) 
+					mark_text = mark_max;
+				if (Number(mark_text) < 0)
+					mark_text = "0";
 			}
-			$("#" + q_seq + "_M").val(grade_text);
-			marking_data.push({'grade':grade_text,"comment":comment_text});
-			if (grade_text == "-1") 
-				complete_flag = 0;
+			$("#" + q_seq + "_M").val(mark_text);
+			marking_data.push({"mark":mark_text,"comment":comment_text});
 		}
-		marking_data[0]["marking_complete"] = complete_flag;
 
 		$.ajax({
 			type: 'POST',
@@ -1301,12 +1298,21 @@ function build_mark_quiz(u_id, username, submission_status, qset_data, submitter
 			processData: false,
 			async: true,
 			success: function(data) {
-				//write this to the DOM and trigger the download, then delete from the DOM
-				alert("Your marks were submitted with status: " + data["Status"]);
+				if (change_flag) {
+					//change the s_u_id
+					let new_user = $('[name="input-submitter"]').val();
+					s_u_id = new_user.slice(new_user.search("\\(")+1,new_user.search("\\)")).trim();
+					//go to the chosen user mark page
+					let query_data = encodeQueryData({"qs_id":qs_id,
+													"u_id":u_id,
+													"username":username,
+													"s_u_id":s_u_id});
+					window.location = "./mark_quiz.html" + "?" + query_data;
+				}
+				//alert("Your marks were submitted with status: " + data["Status"]);
 			},
 		});
 	});  //end of submit marks code
-
 } //end of the build_mark_quiz function
 
 
@@ -1450,7 +1456,8 @@ function build_edit_quiz(u_id, username, qset_data) {
 	//#######################################
 	$(".add-image-btn").click(function (e) {
 		//this resets the input control (important)
-		for (el of document.getElementsByClassName("select-image")) el.value = "";
+		for (el of document.getElementsByClassName("select-image")) 
+			el.value = "";
 		$(e.target.parentNode).find(".select-image").trigger("click",e);
 	});
 
