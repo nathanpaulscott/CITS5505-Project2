@@ -376,32 +376,47 @@ def admin_summary_json():
         return jsonify ({'Status' : 'ok',"msg":"","data":qset_summary})
 
 
+@app.route('/edit_quiz.html', methods=['GET'])
+def get_edit_quiz():
+    return render_template('edit_quiz.html',
+                            username=request.args['username'], 
+                            u_id=request.args['u_id'],
+                            qset_id=request.args['qset_id'])
 
-# import quiz function in the admin_summary page
+
+
+# import quiz function for the admin_summary page import feature
+# or the submit edit quiz page
 @app.route('/upload_quiz', methods=['POST'])
 def upload_quiz():
     if request.method == 'POST':
         upload_data = request.get_json()["upload_data"]
         u_id = request.get_json()["u_id"]
+        import_flag = request.get_json()["import_flag"]
+        final_submit_flag = request.get_json()["final_submit_flag"]
 
         #go through the qset data that is not blank
         for qset_data in [x for x in upload_data if x != []]:
-            #get the qs_id
-            if "qs_id" in qset_data[0]:
+            #if we are just updating quiz edits, we know the qs_id
+            if not import_flag:
                 qs_id = qset_data[0]["qs_id"]
             else:
-                #determines the next unused qs_id from database
-                #this is not a real world soluton, but works for the project
-                qs_id = 1
-                result = db.engine.execute(
-                    'SELECT MAX(qs_id) FROM question_set;'
-                ).fetchone()[0]
-                if result is not None:
-                    qs_id = result + 1
-                    #add it to the DB to minimise contention overwrites from other concurrent users
-                    new_qs = Question_Set(qs_id,u_id,False,'',-1)
-                    db.session.add(new_qs)
-                    db.session.commit()
+                #get the qs_id
+                if "qs_id" in qset_data[0]:
+                    qs_id = qset_data[0]["qs_id"]
+                else:
+                    #determines the next unused qs_id from database
+                    #this is not a real world soluton, but works for the project
+                    qs_id = 1
+                    result = db.engine.execute(
+                        'SELECT MAX(qs_id) FROM question_set;'
+                    ).fetchone()[0]
+                    if result is not None:
+                        qs_id = result + 1
+                        #add it to the DB to minimise contention overwrites from other concurrent users
+                        new_qs = Question_Set(qs_id,u_id,False,'',-1)
+                        db.session.add(new_qs)
+                        db.session.commit()
 
             #get the topic
             topic = "Unspecified"
@@ -446,7 +461,7 @@ def upload_quiz():
             # commit changes
             db.session.commit()
 
-        return jsonify ({ 'Status' : 'ok'})
+        return jsonify ({'Status':'ok'})
 
 
 
@@ -544,31 +559,6 @@ def manage_users_json():
 
 
 
-@app.route('/edit_quiz.html', methods=['GET'])
-def get_edit_quiz():
-    return render_template('edit_quiz.html',
-                            username=request.args['username'], 
-                            u_id=request.args['u_id'],
-                            qset_id=request.args['qset_id'])
-
-
-
-# accept quiz edits and save to DB
-@app.route('/submit_qset_edits_json', methods=['POST'])
-def submit_qset_edits_json():
-    if request.method == 'POST':
-        qset_data = request.get_json()["qset_data"]
-
-        #DB action required!!
-        #write the contents of qset_data to the DB
-
-        #if all was ok
-        return jsonify ({'Status' : 'ok', "msg" : ""})
-
-
-
-
-
 
 #for a student to actually do the quiz and make a submission
 @app.route('/take_quiz.html', methods=['GET'])
@@ -617,9 +607,6 @@ def get_review_quiz():
                             qset_id=request.args['qset_id'])
 
 
-#nathan...testing
-##########################################################
-#to be written, for the assessor to mark quizes
 #you load the qset via json with the include_submission = true
 @app.route('/mark_quiz.html', methods=['GET'])
 def get_mark_quiz():
@@ -767,128 +754,6 @@ def load_qset_json():
 
         #if all was ok
         return jsonify ({'Status' : 'ok', "msg" : "", "data" : qset_data, "submitters" : submitters})
-
-
-
-
-#//////////////////////////////////////////////////////
-#//////////////////////////////////////////////////////
-#//////////////////////////////////////////////////////
-#//////////////////////////////////////////////////////
-#//////////////////////////////////////////////////////
-#//////////////////////////////////////////////////////
-""" 
-The format for the .quiz files for the question set specification is:
-NOTE: I am not validating this format right now, the JS just passes wahtever JSON you give to the server as long as it is JSON
-///////////////////////////////////////////////
-[
-{"qset_name":"some question set name"},
-{"question":[{"q_id":"1","marks":"10"},
-            {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},
-            {"type":"image","data":"test_image4.jfif"},
-            {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},
-            {"type":"image","data":"test_image3.jfif"},
-            {"type":"image","data":"test_image.jpg"}]},
-{"question":[{"q_id":"2","marks":"10"},
-            {"type":"text","data":"question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here,"},
-            {"type":"image","data":"test_image1.jfif"},
-            {"type":"text","data":"question 2 text here, question 2 text here, question 2 text here."}],
-   "answer":{"type":"mc",
-            "data":["option1","option2","option3","option4"]}},
-{"question":[{"q_id":"3","marks":"10"},
-            {"type":"text","data":"question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here."}]},
-{"question":[{"q_id":"4","marks":"10"},
-            {"type":"text","data":"question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here."}],
-   "answer":{"type":"mc",
-            "data":["option1","option2","option3","option4","option5"]}},
-{"question":[{"q_id":"5","marks":"10"},
-            {"type":"text","data":"question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here,"},
-            {"type":"image","data":"test_image2.jfif"}]}
-]
-////////////////////////////////////////
-NOTE: The browser will add object["user_id"]="the user id" to the incoming json object before upg to the server
-NOTE: if the qset_id is missing, then the browser adds this field to the json object using the next available qset_id (say qset_ids are "qs" + a number)
-//////////////////////////////////////////////////////
-So what gets sent to the server is:
-//////////////////////////////////////////////////////
-[
-{"qset_id":"453","qset_name":"some question set name", "u_id":"u_id"},
-{"question":[{"q_id":"1","marks":"10"},
-            {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},
-            {"type":"image","data":"test_image4.jfif"},
-            {"type":"text","data":"question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here, question 1 text here."},
-            {"type":"image","data":"test_image3.jfif"},
-            {"type":"image","data":"test_image.jpg"}]},
-{"question":[{"q_id":"2","marks":"10"},
-            {"type":"text","data":"question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here, question 2 text here,"},
-            {"type":"image","data":"test_image1.jfif"},
-            {"type":"text","data":"question 2 text here, question 2 text here, question 2 text here."}],
-    "answer":{"type":"mc",
-            "data":["option1","option2","option3","option4"]}},
-{"question":[{"q_id":"3","marks":"10"},
-            {"type":"text","data":"question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here, question 3 text here."}]},
-{"question":[{"q_id":"4","marks":"10"},
-            {"type":"text","data":"question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here, question 4 text here."}],
-    "answer":{"type":"mc",
-            "data":["option1","option2","option3","option4","option5"]}},
-{"question":[{"q_id":"5","marks":"10"},
-            {"type":"text","data":"question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here, question 5 text here,"},
-            {"type":"image","data":"test_image2.jfif"}]}
-]
-
-//////////////////////////////////////////////////////
-to access the qset header:
---------------------------------
-    object_name[0]
-
-to access one question:
---------------------------------
-    object_name[q_id]
-
-to access the mc answer options:
---------------------------------
-    object_name[q_id]["answer"]["data"]
-
-to test if it is text or mc:
---------------------------------
-    if ("answer" in object_name[3] && object_name[q_id]["answer"]["type"] == "mc")
-
-to access the question header of a question:
---------------------------------
-    object_name[q_id]["question"][0]
-
-to access the question data of a question:
---------------------------------
-    object_name[q_id]["question"][1:]
-
-/////////////////////////////////////////////////////
-Then at the server this json object needs to go in the question_set table and the question table as so:
-/////////////////////////////////////////////////////
-table: question_set, one row per question set
-col(PK): qset_id => jsut a unique integer
-col: qset_name
-col: owner => object["u_id"]
-col: status => give it an initial status of "not active"
-
-table: questions, one row per question
-col(PK): qset_id
-col(PK): q_id => the question sequence integer in the qset
-col: marks: the marks available for this question
-col: answer_type: text/mc
-col: answer_data: json.dumps(object[q_id]["answer"]["data"][1:])
-col: question_data: json.dumps(object[q_id]["question"][1:])
-
-table: submissions, one row per question per student
-col(PK): qset_id
-col(PK): q_id => the question sequence integer in the qset
-col(PK): u_id
-col: complete: true/false   (only true if the submit was a final submit, otherwise it is an uncomplete attempt)
-col: answer_type: text/mc
-col: answer_data: the answer text
-col: grade: the marks given or this answer
-col: comment: the markers comment for this answer
-
-"""
 
 
 #########################################################

@@ -680,7 +680,10 @@ function build_admin_summary(u_id, username, qset_summary) {
 							$.ajax({
 								type: 'POST',
 								url: '/upload_quiz',
-								data: JSON.stringify({"u_id":u_id,"upload_data":upload_data}),
+								data: JSON.stringify({"u_id":u_id,
+													"upload_data":upload_data,
+													"final_submit_flag":true,
+													"import_flag":true}),
 								contentType: "application/json",
 								data_type: "json",
 								cache: false,
@@ -1285,7 +1288,7 @@ function build_edit_quiz(u_id, username, qset_data) {
 	let newfiles = [];
 	
 	//this does the html building				
-	let qset_id = qset_data[0]["qs_id"];
+	let qs_id = qset_data[0]["qs_id"];
 
 	//this does the html building				
 	//update the username in the header
@@ -1297,7 +1300,7 @@ function build_edit_quiz(u_id, username, qset_data) {
 	$("#final-save").attr("href","./admin_summary.html" + "?" + query_data); 
 	
 	//do the title
-	html_text = qset_data[0]["topic"] + ' (qset_id: ' + qset_id + ')';
+	html_text = qset_data[0]["topic"] + ' (qs_id: ' + qs_id + ')';
 	//append to the DOM
 	$("h5#title").append(html_text);
 
@@ -1512,9 +1515,11 @@ function build_edit_quiz(u_id, username, qset_data) {
 	//assigns a click listener to the submit button as well as the finish and submit nav choice
 	$(".save-continue, #final-save").click(function() {
 		//so basically here you need to build the whole qset_data object to send
-		let qset_data = [{"qset_id":qset_id,"u_id":u_id,"final_submit":0}];
+		let qset_data = [{"qs_id":qs_id,"u_id":u_id}];
 		//sets the final_submit flag to indicate the user closed off the quiz, otherwise the attmpt is not complete even though interim results are saved
-		if ($(this).is('#final-save')) qset_data[0]["final_submit"] = 1;
+		let final_submit_flag = false;
+		if ($(this).is('#final-save')) 
+			final_submit_flag = true;
 		let text_data = "";
 		let blobs = {};   // will hold the DOMstrings and filenames for any added images to upload
 
@@ -1568,8 +1573,11 @@ function build_edit_quiz(u_id, username, qset_data) {
 
 		$.ajax({
 			type: 'POST',
-			url: '/submit_qset_edits_json',
-			data: JSON.stringify({"qset_data":qset_data}),
+			url: '/upload_quiz',
+			data: JSON.stringify({"u_id":u_id,
+								"upload_data":[qset_data],
+								"final_submit_flag":final_submit_flag,
+								"import_flag":false}),
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
