@@ -134,6 +134,7 @@ function encodeQueryData(data) {
 		let u_id = findGetParameter('u_id');
 		let username = findGetParameter('username');
 		let qs_id = findGetParameter('qs_id');
+		let preview_flag = findGetParameter('preview_flag');
 
 		//Do the Ajax Request here to fetch the take_quiz data
 		$.ajax({
@@ -157,7 +158,7 @@ function encodeQueryData(data) {
 					window.location = "./student_summary.html" + "?" + query_data;
 				}
 
-				build_take_quiz(u_id, username, data["data"]);
+				build_take_quiz(u_id, username, data["data"], preview_flag);
 			},
 		});
 	}
@@ -172,7 +173,7 @@ function encodeQueryData(data) {
 		let username = findGetParameter('username');
 		let qs_id = findGetParameter('qs_id');
 
-		//Do the Ajax Request here to fetch the take_quiz data
+		//Do the Ajax Request here to fetch the review_quiz data
 		$.ajax({
 			type: 'POST',
 			url: '/load_qset_json',
@@ -194,7 +195,7 @@ function encodeQueryData(data) {
 					window.location = "./student_summary.html" + "?" + query_data;
 				}
 
-				build_review_quiz(u_id, username, data["data"]);
+				build_review_quiz(u_id, username, data["submission_status"], data["data"]);
 			},
 		});
 	}
@@ -211,7 +212,7 @@ function encodeQueryData(data) {
 		let qs_id = findGetParameter('qs_id');
 		let s_u_id = findGetParameter('s_u_id');
 
-		//Do the Ajax Request here to fetch the take_quiz data
+		//Do the Ajax Request here to fetch the mark_quiz data
 		$.ajax({
 			type: 'POST',
 			url: '/load_qset_json',
@@ -234,7 +235,7 @@ function encodeQueryData(data) {
 					window.location = "./admin_summary.html" + "?" + query_data;
 				}
 
-				build_mark_quiz(u_id, username, data["data"], data["submitters"]);
+				build_mark_quiz(u_id, username, data["submission_status"], data["data"], data["submitters"]);
 			},
 		});
 	}
@@ -250,7 +251,7 @@ function encodeQueryData(data) {
 		let username = findGetParameter('username');
 		let qs_id = findGetParameter('qs_id');
 
-		//Do the Ajax Request here to fetch the take_quiz data
+		//Do the Ajax Request here to fetch the edit_quiz data
 		$.ajax({
 			type: 'POST',
 			url: '/load_qset_json',
@@ -785,7 +786,7 @@ function build_student_summary(u_id, username, qset_summary) {
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
-function build_take_quiz(u_id, username, qset_data) {
+function build_take_quiz(u_id, username, qset_data, preview_flag) {
 	//this does the html building				
 	let qs_id = qset_data[0]["qs_id"];
 
@@ -794,6 +795,10 @@ function build_take_quiz(u_id, username, qset_data) {
 
 	//disable the final save href
 	$("#final-save").attr("href","javascript:;"); 
+	//edit the cancel save link
+	let query_data = encodeQueryData({"u_id":u_id,
+									"username":username});
+	$("#cancel-test").attr("href","./student_summary.html" + "?" + query_data); 
 
 	//do the title
 	html_text = qset_data[0]["topic"];
@@ -869,6 +874,18 @@ function build_take_quiz(u_id, username, qset_data) {
 
 		//append to the DOM
 		$("#q_data").append(html_text);
+
+		//makes some DOM changes for the preview case
+		if (preview_flag) {
+			$("#final-save").attr("id","back2edit"); 		
+			let query_data = encodeQueryData({"qs_id":qs_id,
+											"u_id":u_id,
+											"username":username});
+			$("#back2edit").attr("href","./edit_quiz.html" + "?" + query_data); 
+			$("#back2edit").text("Back to Edit Quiz");
+			$("#cancel-test").remove();
+			$(".save-continue").prop("disabled",true);
+		}
 	}
 
 	//This assigns some listeners on the take_quiz page
@@ -884,11 +901,15 @@ function build_take_quiz(u_id, username, qset_data) {
 	);
 
 	//assigns a click listener to the submit button as well as the finish and submit nav choice
-	$(".save-continue, #final-save").click(function() {
+	$(".save-continue, #final-save, #cancel-test").click(function() {
 		//sets the final_submit flag to indicate the user closed off the quiz, otherwise the attmpt is not complete even though interim results are saved
 		let final_flag = false;
 		if ($(this).is('#final-save'))  
 			final_flag = true;
+
+		//if they cancelled, just log an attempt
+		if ($(this).is('#cancel-test'))  
+			final_flag = false;
 
 		let a_data = [];
 		//get the answers
@@ -921,6 +942,7 @@ function build_take_quiz(u_id, username, qset_data) {
 					if (!final_flag) 
 						alert("Your answers were submitted with status: ok");
 					else {
+						alert("Your answers were submitted with status: ok");
 						//back to student_summary page if no issues on final commit
 						let query_data = encodeQueryData({"u_id":u_id,
 														"username":username});
@@ -953,7 +975,7 @@ function build_take_quiz(u_id, username, qset_data) {
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
-function build_review_quiz(u_id, username, qset_data) {
+function build_review_quiz(u_id, username, submission_status, qset_data) {
 	//this does the html building				
 	let qs_id = qset_data[0]["qs_id"];
 	let s_username = qset_data[0]["s_username"];
@@ -968,7 +990,7 @@ function build_review_quiz(u_id, username, qset_data) {
 	$("#final-save").attr("href","./student_summary.html" + "?" + query_data); 
 
 	//do the title
-	html_text = qset_data[0]["topic"] + '<br/> <span class="submitter">submitter: ' + s_username + ' (' + s_u_id + ')</span>';
+	html_text = qset_data[0]["topic"] + '<br/> <span class="submitter">username: ' + s_username + '<br/>user_id: ' + s_u_id + '<br/>status: ' + submission_status + '</span>';
 	//append to the DOM
 	$("h5#title").append(html_text);
 
@@ -1083,7 +1105,7 @@ function build_review_quiz(u_id, username, qset_data) {
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
-function build_mark_quiz(u_id, username, qset_data, submitters) {
+function build_mark_quiz(u_id, username, submission_status, qset_data, submitters) {
 	//this does the html building				
 	let qs_id = qset_data[0]["qs_id"];
 	let s_u_id = qset_data[0]["s_u_id"];
@@ -1098,7 +1120,7 @@ function build_mark_quiz(u_id, username, qset_data, submitters) {
 	$("#final-save").attr("href","./admin_summary.html" + "?" + query_data); 
 
 	//do the title
-	html_text = qset_data[0]["topic"] + '<br/> <span class="submitter">submitter: ' + s_username + ' (' + qset_data[0]["s_u_id"] + ')</span>';
+	html_text = qset_data[0]["topic"] + '<br/> <span class="submitter">username: ' + s_username + '<br/>user_id: ' + qset_data[0]["s_u_id"] + '<br/>status: ' + submission_status + '</span>';
 	//append to the DOM
 	$("h5#title").append(html_text);
 
@@ -1306,6 +1328,13 @@ function build_edit_quiz(u_id, username, qset_data) {
 	//this does the html building				
 	//update the username in the header
 	$("#username").text(username);
+
+	//edit the preview link
+	let query_data = encodeQueryData({"qs_id":qs_id,
+									"u_id":u_id,
+									"username":username,
+									"preview_flag":true});
+	$("#preview").attr("href","./take_quiz.html" + "?" + query_data); 
 
 	//disable the final save href
 	$("#final-save").attr("href","javascript:;"); 
@@ -1529,6 +1558,7 @@ function build_edit_quiz(u_id, username, qset_data) {
 	//#######################################
 
 
+
 	//assigns a click listener to the submit button as well as the finish and submit nav choice
 	$(".save-continue, #final-save").click(function() {
 		//so basically here you need to build the whole qset_data object to send
@@ -1639,6 +1669,7 @@ function build_edit_quiz(u_id, username, qset_data) {
 					if (!final_flag) 
 						alert("Your edits were submitted with status: ok");
 					else {
+						alert("Your edits were submitted with status: ok");
 						//back to the admin page if there were no issues on final commit
 						let query_data = encodeQueryData({"u_id":u_id,
 														"username":username});

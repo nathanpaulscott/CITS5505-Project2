@@ -4,6 +4,8 @@ from flask_sqlalchemy import SQLAlchemy
 import os
 import json
 import statistics as st
+from datetime import datetime as dt
+import threading as th
 
 
 #from flask_migratey import Migrate
@@ -27,8 +29,11 @@ class User(db.Model):
     __tablename__ = 'user'
     u_id = db.Column(db.Integer, primary_key=True)
     admin = db.Column(db.Boolean)
-    username = db.Column(db.String(10), unique=True )
-    password = db.Column(db.String(10))
+    username = db.Column(db.String(30), unique=True )
+    password = db.Column(db.String(30))
+    login_status = db.Column(db.String(30))
+    login_att = db.Column(db.Integer)
+    login_time = db.Column(db.Integer)
     #submissions = db.relationship('Submission', backref='user', lazy=True)
     #submission_answers = db.relationship('Submission_Answer', backref='user', lazy=True)
 
@@ -112,32 +117,19 @@ class Submission_Answer(db.Model):
         self.comment = comment
 
 class Log(db.Model):
+    __tablename__ = 'log'
+    time = db.Column(db.Integer, primary_key=True)
+    u_id = db.Column(db.Integer, primary_key=True)
     action_id = db.Column(db.Integer, primary_key=True)
-    u_id = db.Column(db.Integer)
-    action = db.Column(db.String(30))
+    action = db.Column(db.Text)
 
+    # creates an log entry
+    def __init__(self, action_id, u_id, action, time):
+        self.time = time
+        self.u_id = u_id
+        self.action_id = action_id
+        self.action = action
 
-'''
-# possible answer for multiple choice questions
-class Quiz_Option(db.Model):
-    qo_id = db.Column(db.Integer, primary_key=True)
-
-    # id of the question the answer option belongs to
-    q_id = db.Column(db.Integer)
-
-    # index within the question
-    q_index = db.Column(db.Integer)
-
-    # the quiz option text
-    text = db.Column(db.String(50))
-
-    # creates a quiz option
-    def __init__(self, qo_id, q_id, q_index, text):
-        self.qo_id = qo_id
-        self.q_id = q_id
-        self.q_index = q_index
-        self.text = text
-'''
 
 
 # url routing
@@ -156,34 +148,57 @@ def get_landing():
 
 @app.route('/login.html', methods=['GET', 'POST'])
 def get_login():
-    #NOTE: I made these temporary changes so I could get rid of the 2 login buttons, I will leave it to you to implement it properly...Nathan
-    #basically when the login is page is GET reuqested, it is before it has been filled, once the user presses the submit button, it loads login as a POST request with the username and password, which gets verified and redirected to the correct page.  Again, this is just temporary
     if request.method == 'GET':
         return render_template('login.html')
     
     elif request.method == 'POST':
         username = request.form["username"]
         password = request.form["password"]
+        login_timeout = 30*3600
+
         #verify the user exists and the password is correct 
         # and log them in with a login flag in the DB
         #also get the admin status and u_id from the DB
+        result = User.query.filter_by(username=username).first()
+        if result is None:
+            #no username found
+            return render_template('register.html')
+        #check that the login flag is set to logged in
+        if result.login_status is None  \
+        or result.login_status == 'logged in'  \
+        or (int(dt.now().timestamp()) - result.login_time) > login_timeout:
+            result.login_status = 'logged out'
+            db.session.commit()
 
-        #temp for testing => if username=="admin" login as admin
-        #######################
-        u_id = "u1234"
-        admin_flag = False
-        if username == "admin":
-            admin_flag = True
-        #######################
-        if admin_flag:
+        if result.login_att is None:
+            result.login_att = 1
+            db.session.commit()
+        elif result.login_att > 5:
+            #make another page here to inform the user to stop trying and contact admin
+            return render_template('landing.html')
+
+        #check the password
+        if result.password != password:
+            #wrong password
+            result.login_att = result.login_att + 1
+            db.session.commit()
+            return render_template('login.html')
+        
+        #user gets logged in, reset the attempts counter and set the login time
+        result.login_att = 0
+        result.login_status = 'logged in'
+        result.login_time = int(dt.now().timestamp())
+        db.session.commit()
+
+        #decide on destination
+        if result.admin:
             return redirect(url_for('get_admin_summary',
                                     username=username,
-                                    u_id=u_id))  
-            #307 forces it to be POST and send the login form data
+                                    u_id=result.u_id))  
         else:
             return redirect(url_for('get_student_summary',
                                     username=username,
-                                    u_id=u_id))
+                                    u_id=result.u_id))
 
 
 
@@ -244,17 +259,17 @@ def student_summary_json():
             qset.tot_qs = len(Question.query.filter_by(qs_id=qs_id).all())
             qset.mc_qs = len(Question.query.filter_by(qs_id=qs_id, a_type='mc').all())
             # get the student status for the qset
-            result = Submission.query.filter_by(qs_id=qs_id, u_id=u_id).all()
-            if len(result) == 0:
+            result = Submission.query.filter_by(qs_id=qs_id, u_id=u_id).first()
+            if result is None:
                 qset.status = 'Not Attempted'
             else:
-                qset.status = result[0].status
+                qset.status = result.status
             #get the marks available
             result = Question.query.filter_by(qs_id=qs_id).all()
             qset.marks_avail = sum([x.q_marks for x in result])
             #get the marks given
             result = Submission_Answer.query.filter_by(qs_id=qs_id,u_id=u_id).all()
-            qset.marks = -1
+            qset.marks = 0
             if len(result) > 0:
                 qset.marks = sum([x.mark for x in result])
             #get the marks stats
@@ -330,8 +345,9 @@ def admin_summary_json():
             qset.marks_sd = -1
             for user in set([x.u_id for x in result]):
                 marks.append(sum([x.mark for x in result if x.u_id == user]))
-            if len(marks) > 0:
+            if len(marks) >= 1:
                 qset.marks_mean = st.mean(marks)
+            if len(marks) >= 2:
                 qset.marks_sd = st.stdev(marks)
             #get the num images missing
             result = Question.query.filter_by(qs_id=qs_id).all()
@@ -618,6 +634,7 @@ def get_review_quiz():
                             qs_id=request.args['qs_id'])
 
 
+
 #you load the qset via json with the include_submission = true
 @app.route('/mark_quiz.html', methods=['GET'])
 def get_mark_quiz():
@@ -664,15 +681,17 @@ def load_qset_json():
         u_id = request.get_json()["u_id"]
         username = request.get_json()["username"]
         qs_id = request.get_json()["qs_id"]
-        #for the review submission by student case
-        s_u_id = u_id
-        #for marking submission
         if "s_u_id" in request.get_json():
+            #for marking submission
             s_u_id = request.get_json()["s_u_id"]
+        else:
+            #for the review submission by student case
+            s_u_id = u_id
         #for marking submission of a particular s_u_id
         include_submission = request.get_json()["include_submission"]
         #for the list of submissions to choose when marking
         include_submitters = request.get_json()["include_submitters"]
+        submission_status = ''
         qset_data = []
         submitters = []
         
@@ -689,8 +708,8 @@ def load_qset_json():
 
         #get the standard qset data json format to send to the user
         if include_submission == '1':
-            if s_u_id == 'init':
-                #find the next s_u_id to use
+            if s_u_id == 'init':    
+                #this is sent by the mark_quiz code when it launches as it doesn't have a target s_u_id, so we need to find the next s_u_id to use
                 statuses = ['Completed','Marked','Attempted']
                 for status in statuses:
                     s_users = Submission.query.filter_by(qs_id=qs_id,status=status).all()
@@ -700,15 +719,22 @@ def load_qset_json():
                         break
             #check if we have a suitable s_u_id
             if s_u_id == 'init':
-                return jsonify ({'Status' : 'nok', "msg" : "no submissions yet for that question set"})
+                return jsonify ({'Status':'nok', "msg":"no submissions yet for that question set"})
+            #get the status
+            result = Submission.query.filter_by(qs_id=qs_id,u_id=s_u_id).first()
+            if result is not None:
+                submission_status = result.status
+            else:
+                submission_status = 'Not Attempted'
             #construct qset_data to return
             qset = query2list_of_dict(Question_Set.query.filter_by(qs_id=qs_id).all())
             if len(qset) == 0:
-                return jsonify ({'Status' : 'nok', 'msg' : "question set doesn't exist"})
+                return jsonify ({'Status':'nok', 'msg':"question set doesn't exist"})
             qset = qset[0]
             #add s_u_id and s_unsername
             qset['s_u_id'] = s_u_id
-            qset['s_username'] = s_username
+            result = User.query.filter_by(u_id=s_u_id).all()
+            qset['s_username'] = result[0].username
             #add to qset_data
             qset_data.append(qset)
             #add the questions
@@ -727,7 +753,7 @@ def load_qset_json():
                 #get the submission_answer data
                 result = Submission_Answer.query.filter_by(qs_id=qs_id,q_id=question.q_id,u_id=s_u_id).all()
                 answer = ''
-                mark = -1
+                mark = 0
                 comment = ''
                 if len(result) > 0:
                     result = result[0]
@@ -764,7 +790,7 @@ def load_qset_json():
                 qset_data.append(temp)
 
         #if all was ok
-        return jsonify ({'Status' : 'ok', "msg" : "", "data" : qset_data, "submitters" : submitters})
+        return jsonify ({'Status' : 'ok', "msg" : "", "data" : qset_data, "submitters" : submitters, "submission_status":submission_status})
 
 
 #########################################################
@@ -792,6 +818,34 @@ def query2list_of_list(result):
         output.append([vars(row)[field] for field in fields])
     return output
 
+
+
+'''
+#this code will periodically check users login status or usage status and log them out if they are dormant
+#the issue with this is that it locks the code and you can't quit the code, the code runs, but you can't quit
+def check_login_status(cancel_flag):
+    #this periodically checks users login status and kicks them out if they have been logged in too long
+    if not cancel_flag.is_set():
+        #start the timer again
+        th.Timer(15*3600, check_login_status, [cancel_flag]).start()
+        #check that the user has made some actions in the last 60mins otherwise logout
+        users = User.query.filter_by(login_status='logged in').all()
+        for user in users:
+            log = Log.query.filter_by(u_id=user.u_id).order_by(Log.time.desc()).first()
+            if log is not None:
+                if int(dt.now().timestamp()) - log.time > 60*3600:
+                    user.login_status = 'logged out'
+                    db.session.commit()
+            elif user.login_time is not None:
+                if int(dt.now().timestamp()) - user.login_time > 60*3600:
+                    user.login_status = 'logged out'
+                    db.session.commit()
+            
+
+#start the periodic timer
+cancel_flag = th.Event()
+check_login_status(cancel_flag)
+'''
 
 
 # runs server
