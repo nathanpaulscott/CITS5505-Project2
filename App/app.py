@@ -9,6 +9,17 @@ import threading as th
 
 
 #from flask_migratey import Migrate
+#need to do some testing on it, that will help you id missing features 
+#need to plan auto testing too, I do not know how to start there
+#need to merge with teh master branch
+#sort out the login using a secret key
+#need to clean up the code!!!  
+#1) js to template
+#2) split js up
+#3) split app.py up  
+
+
+
 
 # initialise app
 basedir = os.path.abspath(os.path.dirname(__file__))
