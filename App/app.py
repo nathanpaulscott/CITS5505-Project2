@@ -36,8 +36,9 @@ class User(db.Model):
     #submission_answers = db.relationship('Submission_Answer', backref='user', lazy=True)
 
     # creates a user
-    def __init__(self, admin, username, password):
+    def __init__(self, u_id, admin, username, password, login_status, login_att, login_time):
         self.admin = admin
+        self.u_id = u_id
         self.username = username
         self.password = password
         self.login_status = login_status
@@ -47,7 +48,7 @@ class User(db.Model):
 class Question_Set(db.Model):
     __tablename__ = 'question_set'
     qs_id = db.Column(db.Integer, primary_key=True)
-    author = db.Column(db.String(30))
+    u_id = db.Column(db.Integer, db.ForeignKey('user.u_id'), primary_key=True)
     enabled = db.Column(db.Boolean)
     topic = db.Column(db.String(50))
     time = db.Column(db.Integer)
@@ -57,9 +58,9 @@ class Question_Set(db.Model):
     #submission_answers = db.relationship('Submission_Answer', backref='question_set', lazy=True)
 
     # creates a question set
-    def __init__(self, qs_id, author, enabled, topic, time):
+    def __init__(self, qs_id, u_id, enabled, topic, time):
         self.qs_id = qs_id
-        self.author = author
+        self.u_id = u_id
         self.enabled = enabled
         self.topic = topic
         self.time = time
@@ -120,7 +121,7 @@ class Submission_Answer(db.Model):
 class Log(db.Model):
     __tablename__ = 'log'
     time = db.Column(db.Integer, primary_key=True)
-    u_id = db.Column(db.Integer, primary_key=True)
+    u_id = db.Column(db.Integer, db.ForeignKey('user.u_id'), primary_key=True)
     action_id = db.Column(db.Integer, primary_key=True)
     action = db.Column(db.Text)
 
@@ -242,13 +243,13 @@ def register():
                 u_id = result + 1
     
             # add new user to database
-            new_user = User(u_id, 
-                            admin, 
-                            username, 
-                            password, 
-                            'logged in', 
-                            0, 
-                            int(dt.now().timestamp()))
+            new_user = User(u_id=u_id, 
+                            admin=admin, 
+                            username=username, 
+                            password=password, 
+                            login_status='logged in', 
+                            login_att=0, 
+                            login_time=int(dt.now().timestamp()))
             db.session.add(new_user)
             db.session.commit()
 
@@ -289,7 +290,7 @@ def student_summary_json():
 
         #fills qset_summary from the DB
         qsets = Question_Set.query.all()
-        #will have qs_id, author, enabled, topic, time
+        #will have qs_id, u_id, enabled, topic, time
         #need to fill the rest of the fields ["Status","Tot Qs","MC Qs","Time(mins)","Score","Score Mean","Score SD"]
         for qset in qsets:
             qs_id = qset.qs_id
@@ -363,7 +364,7 @@ def admin_summary_json():
 
         #fills qset_summary from the DB
         qsets = Question_Set.query.all()
-        #will have qs_id, author, enabled, topic, time
+        #will have qs_id, u_id, enabled, topic, time
         #need to fill the rest of the fields ["Marked","Completed","Attempted","Tot Qs","MC Qs","Img.Missing","Score Mean","Score SD"]
         for qset in qsets:
             qs_id = qset.qs_id
@@ -433,7 +434,7 @@ def admin_summary_json():
                                 qset.tot_qs,
                                 qset.mc_qs,
                                 qset.time,
-                                qset.author,
+                                qset.u_id,
                                 qset.enabled,
                                 qset.img_missing,
                                 qset.marks_avail,
@@ -490,7 +491,11 @@ def upload_quiz():
                     if result is not None:
                         qs_id = result + 1
                         #add it to the DB to minimise contention overwrites from other concurrent users
-                        new_qs = Question_Set(qs_id,u_id,False,'',-1)
+                        new_qs = Question_Set(qs_id=qs_id,
+                                            u_id=u_id,
+                                            enabled=False,
+                                            topic='',
+                                            time=-1)
                         db.session.add(new_qs)
                         db.session.commit()
 
@@ -515,7 +520,7 @@ def upload_quiz():
             Question_Set.query.filter_by(qs_id=qs_id).delete()
             Question.query.filter_by(qs_id=qs_id).delete()
 
-            #add qsets to the DB, ignores the author field and uses the uploader u_id
+            #add qsets to the DB, ignores the u_id field in the data and uses the uploader u_id
             new_qs = Question_Set(qs_id,u_id,enabled,topic,time)
             db.session.add(new_qs)
 
@@ -535,7 +540,13 @@ def upload_quiz():
                 if a_type == "mc":
                     a_data = json.dumps(q["answer"]["data"])
                 #add to the DB
-                new_q = Question(qs_id,q_id,q_marks,q_data,a_type,a_data,a_correct)
+                new_q = Question(qs_id=qs_id,
+                                q_id=q_id,
+                                q_marks=q_marks,
+                                q_data=q_data,
+                                a_type=a_type,
+                                a_data=a_data,
+                                a_correct=a_correct)
                 db.session.add(new_q)
                 q_id += 1
 
@@ -717,7 +728,12 @@ def submit_answers_json():
         #add submission_answers
         q_id = 1
         for answer in a_data:
-            new_sub_ans = Submission_Answer(qs_id,q_id,u_id,answer,0,'')
+            new_sub_ans = Submission_Answer(qs_id=qs_id,
+                                            q_id=q_id,
+                                            u_id=u_id,
+                                            data=answer,
+                                            mark=0,
+                                            comment='')
             db.session.add(new_sub_ans)
             q_id += 1 
 
@@ -954,6 +970,7 @@ def write_log(u_id,action_id,action):
                             action=action)
             db.session.add(log_entry)
             db.session.commit()
+            print('exiting...')
             break
         except Exception as e:
             print('got log primary key conflict due to time.  Rollback, wait and try again')
