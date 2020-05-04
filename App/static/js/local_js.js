@@ -107,6 +107,7 @@ function encodeQueryData(data) {
 		//the user id comes form the previous page
 		let u_id = findGetParameter('u_id');
 		let username = findGetParameter('username');
+		let qset_summary = findGetParameter('data');
 
 		//Do the Ajax Request here to fetch the student summary table data (qset_summary)
 		$.ajax({
@@ -132,14 +133,18 @@ function encodeQueryData(data) {
 		//the user id comes form the previous page
 		let u_id = findGetParameter('u_id');
 		let username = findGetParameter('username');
-		let qset_id = findGetParameter('qset_id');
+		let qs_id = findGetParameter('qs_id');
+		preview_flag = false;
+		if (findGetParameter('preview_flag') == 'true') 
+			preview_flag = true;
 
 		//Do the Ajax Request here to fetch the take_quiz data
 		$.ajax({
 			type: 'POST',
 			url: '/load_qset_json',
 			data: JSON.stringify({"u_id":u_id,
-								  "qset_id":qset_id,
+								  "username":username,
+								  "qs_id":qs_id,
 								  "include_submission":"0",
 								  "include_submitters":"0"}),
 			contentType: "application/json",
@@ -148,7 +153,14 @@ function encodeQueryData(data) {
 			processData: false,
 			async: true,
 			success: function(data) {
-				build_take_quiz(u_id, username, data["data"]);
+				if (data["Status"] == "nok") {
+					alert(data["msg"]);
+					let query_data = encodeQueryData({"u_id":u_id,
+													"username":username});
+					window.location = "./student_summary.html" + "?" + query_data;
+				}
+
+				build_take_quiz(u_id, username, data["data"], preview_flag);
 			},
 		});
 	}
@@ -161,14 +173,15 @@ function encodeQueryData(data) {
 		//the user id comes form the previous page
 		let u_id = findGetParameter('u_id');
 		let username = findGetParameter('username');
-		let qset_id = findGetParameter('qset_id');
+		let qs_id = findGetParameter('qs_id');
 
-		//Do the Ajax Request here to fetch the take_quiz data
+		//Do the Ajax Request here to fetch the review_quiz data
 		$.ajax({
 			type: 'POST',
 			url: '/load_qset_json',
 			data: JSON.stringify({"u_id":u_id,
-								  "qset_id":qset_id,
+								  "username":username,
+								  "qs_id":qs_id,
 								  "include_submission":"1",
 								  "include_submitters":"0"}),
 			contentType: "application/json",
@@ -177,7 +190,14 @@ function encodeQueryData(data) {
 			processData: false,
 			async: true,
 			success: function(data) {
-				build_review_quiz(u_id, username, data["data"]);
+				if (data["Status"] == "nok") {
+					alert(data["msg"]);
+					let query_data = encodeQueryData({"u_id":u_id,
+													"username":username});
+					window.location = "./student_summary.html" + "?" + query_data;
+				}
+
+				build_review_quiz(u_id, username, data["submission_status"], data["data"]);
 			},
 		});
 	}
@@ -191,15 +211,16 @@ function encodeQueryData(data) {
 		//the user id comes form the previous page
 		let u_id = findGetParameter('u_id');
 		let username = findGetParameter('username');
-		let qset_id = findGetParameter('qset_id');
+		let qs_id = findGetParameter('qs_id');
 		let s_u_id = findGetParameter('s_u_id');
 
-		//Do the Ajax Request here to fetch the take_quiz data
+		//Do the Ajax Request here to fetch the mark_quiz data
 		$.ajax({
 			type: 'POST',
 			url: '/load_qset_json',
 			data: JSON.stringify({"u_id":u_id,
-								"qset_id":qset_id,
+								"username":username,
+								"qs_id":qs_id,
 								"s_u_id":s_u_id,
 								"include_submission":"1",
 								"include_submitters":"1"}),
@@ -209,7 +230,14 @@ function encodeQueryData(data) {
 			processData: false,
 			async: true,
 			success: function(data) {
-				build_mark_quiz(u_id, username, data["data"], data["submitters"]);
+				if (data["Status"] == "nok") {
+					alert(data["msg"]);
+					let query_data = encodeQueryData({"u_id":u_id,
+													"username":username});
+					window.location = "./admin_summary.html" + "?" + query_data;
+				}
+
+				build_mark_quiz(u_id, username, data["submission_status"], data["data"], data["submitters"]);
 			},
 		});
 	}
@@ -223,14 +251,15 @@ function encodeQueryData(data) {
 		//the user id comes form the previous page
 		let u_id = findGetParameter('u_id');
 		let username = findGetParameter('username');
-		let qset_id = findGetParameter('qset_id');
+		let qs_id = findGetParameter('qs_id');
 
-		//Do the Ajax Request here to fetch the take_quiz data
+		//Do the Ajax Request here to fetch the edit_quiz data
 		$.ajax({
 			type: 'POST',
 			url: '/load_qset_json',
 			data: JSON.stringify({"u_id":u_id,
-								  "qset_id":qset_id,
+								  "username":username,
+								  "qs_id":qs_id,
 								  "include_submission":"0",
 								  "include_submitters":"0"}),
 			contentType: "application/json",
@@ -239,6 +268,13 @@ function encodeQueryData(data) {
 			processData: false,
 			async: true,
 			success: function(data) {
+				if (data["Status"] == "nok") {
+					alert(data["msg"]);
+					let query_data = encodeQueryData({"u_id":u_id,
+													"username":username});
+					window.location = "./admin_summary.html" + "?" + query_data;
+				}
+
 				build_edit_quiz(u_id, username, data["data"]);
 			},
 		});
@@ -377,7 +413,7 @@ function build_admin_summary(u_id, username, qset_summary) {
 		html_text +='       <tr class="click-enable">' + '\n';
 		html_text +='	       <td class="edit-quiz">Edit</td>' + '\n';
 		html_text +='	       <td class="mark-quiz">Mark</td>' + '\n';
-		html_text +='	       <td id="qset-id">' + qset_summary[i][0] + '</td>' + '\n';
+		html_text +='	       <td id="qs-id">' + qset_summary[i][0] + '</td>' + '\n';
 		for (j = 1; j < qset_summary[i].length; j++){
 			html_text +='	       <td>' + qset_summary[i][j] + '</td>' + '\n';
 		}
@@ -398,20 +434,20 @@ function build_admin_summary(u_id, username, qset_summary) {
 
 	//assigns a click listener to the mark cells for marking and review
 	$("#quiz-admin-table tbody tr.click-enable td.mark-quiz").click(function() {
-		let qset_id = $(this).parent().find("td#qset-id").text();
+		let qs_id = $(this).parent().find("td#qs-id").text();
 		//build the target url
-		let query_data = encodeQueryData({"qset_id":qset_id,
+		let query_data = encodeQueryData({"qs_id":qs_id,
 										  "u_id":u_id,
-										  "s_u_id":"init", 
-										  "username":username});
+										  "username":username,
+										  "s_u_id":"init"});
 		window.location = "./mark_quiz.html" + "?" + query_data;
 	});
 
 	//assigns a click listener to the edit cells for editing the qset
 	$("#quiz-admin-table tbody tr.click-enable td.edit-quiz").click(function() {
-		let qset_id = $(this).parent().find("td#qset-id").text();
+		let qs_id = $(this).parent().find("td#qs-id").text();
 		//build the target url
-		let query_data = encodeQueryData({"qset_id":qset_id,
+		let query_data = encodeQueryData({"qs_id":qs_id,
 										  "u_id":u_id,
 										  "username":username});
 		window.location = "./edit_quiz.html" + "?" + query_data;
@@ -438,22 +474,23 @@ function build_admin_summary(u_id, username, qset_summary) {
 	$("#btn-delete-submit").on("click", function() {
 		// here you need to request that the server deletes the given quiz ids
 		//##############################################
-		let qset_id_text = $.trim($("#delete-config-text").val()).split(",");
+		let qs_id_text = $.trim($("#delete-config-text").val()).split(",");
 		
 		//get the current set of qs_ids
-		let qset_id_db = [];
+		let qs_id_db = [];
 		for (qset of qset_summary.slice(1,)) {
-			qset_id_db.push(qset[0]);
+			qs_id_db.push(String(qset[0]));
 		}
+
 		//get the clean set of requested qs_ids
-		let qset_id_req = [];
-		for (qset of qset_id_text) {
-			if (qset_id_db.includes(qset)){
-				qset_id_req.push(qset);
+		let qs_id_req = [];
+		for (qset of qs_id_text) {
+			if (qs_id_db.includes(qset)){
+				qs_id_req.push(qset);
 			}
 		}
 
-		if (qset_id_req.length != 0) {
+		if (qs_id_req.length != 0) {
 			//alert("ajax req to delete the given subset of the qs_ids from the DB:\n" + JSON.stringify(qs_id_req,null,2));
 		}
 		else{
@@ -465,7 +502,7 @@ function build_admin_summary(u_id, username, qset_summary) {
 		$.ajax({
 			type: 'POST',
 			url: '/delete_quiz',
-			data: JSON.stringify({"qset_id_req":qset_id_req}),
+			data: JSON.stringify({"qs_id_req":qs_id_req}),
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
@@ -490,26 +527,27 @@ function build_admin_summary(u_id, username, qset_summary) {
 		// here you need to request the quiz data in json format from the server
 		//it is using qset_summary whihc is the json object coming in to populate the table in this page
 		//##############################################33
-		let qset_id_text = $.trim($("#export-config-text").val()).split(",");
-		
+		let qs_id_text = $.trim($("#export-config-text").val()).split(",");
+
 		//get the current set of qs_ids
-		let qset_id_db = [];
+		let qs_id_db = [];
 		for (qset of qset_summary.slice(1,)) {
-			qset_id_db.push(qset[0]);
+			qs_id_db.push(String(qset[0]));
 		}
+
 		//get the clean set of requested qs_ids
-		let qset_id_req = [];
-		for (qset of qset_id_text) {
-			if (qset_id_db.includes(qset)){
-				qset_id_req.push(qset);
+		let qs_id_req = [];
+		for (qset of qs_id_text) {
+			if (qs_id_db.includes(qset)){
+				qs_id_req.push(qset);
 			}
 		}
 
-		if (qset_id_text[0].search(/all/i) != -1) {
-			//alert("ajax req to export all quizes:\n" + JSON.stringify(qset_id_db,null,2));
-			qset_id_req = qset_id_db;
+		if (qs_id_text[0].search(/all/i) != -1) {
+			//alert("ajax req to export all quizes:\n" + JSON.stringify(qs_id_db,null,2));
+			qs_id_req = qs_id_db;
 		}
-		else if (qset_id_req.length == 0) {
+		else if (qs_id_req.length == 0) {
 			alert("no valid quiz ids were given");
 			return;
 		}
@@ -518,7 +556,7 @@ function build_admin_summary(u_id, username, qset_summary) {
 		$.ajax({
 			type: 'POST',
 			url: '/download_quiz',
-			data: JSON.stringify({"qset_id_req":qset_id_req}),
+			data: JSON.stringify({"qs_id_req":qs_id_req}),
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
@@ -529,7 +567,7 @@ function build_admin_summary(u_id, username, qset_summary) {
 				$("#span-export-submit").text("Status: " + data["Status"] + ", msg: " + data["msg"]);
 				//write this to the DOM and trigger the download, then delete from the DOM
 				for (qset of data["data"]) {
-					let filename = "export_qset_id_" + String(qset[0]["qset_id"]) + ".quiz";
+					let filename = "export_qs_id_" + String(qset[0]["qs_id"]) + ".quiz";
 					let el = document.getElementById('a-export');
 					let href_text = "data:application/xml;charset=utf-8,";
 					href_text += JSON.stringify(qset, null, 2);
@@ -566,6 +604,12 @@ function build_admin_summary(u_id, username, qset_summary) {
 		//this code accepts multiple files, the quiz files should be .quiz and just be a text file of a json object with the correct format specifying the quiz text, answer types and images.  So we validate these files.  Any non .quiz files, are assumed to be associated image files and are just uploaded to the server, there is no crosschecking done locally, that can be done server-side later.  The quizes will still work with no image files, the images just will not render
 		
 		let files = this.files;
+		var upload_data = [];
+		let cnt = 0;
+		for (f of files) 
+			if (f["name"].search(/\.quiz/i) > -1) 
+				cnt = cnt + 1;
+
 		for (f of files){
 			//alert('you selected: ' + f["name"]);
 			if (f["name"].search(/\.quiz/i) == -1) {
@@ -594,8 +638,6 @@ function build_admin_summary(u_id, username, qset_summary) {
 					cache: false,
 					processData: false,
 					success: function(data) {
-						//testing
-						//alert(JSON.stringify(status));
 						$("#import-config").append(JSON.stringify(data,null,2) + "<br/>");
 					}
 				});
@@ -606,20 +648,20 @@ function build_admin_summary(u_id, username, qset_summary) {
 				//this uses a closure to handle all the file read and to pass the filename in, I still do not understand how it works
 				//this is for .quiz text files which contain quiz data in the specified json format.  we validate each one and reject if it fails (informing the user why)
 				let reader = new FileReader();
-				reader.onload = (function(e1,files_accept) {
+				reader.onload = (function(e1) {
 					return function(e2) {
 						let name = e1.name;
 						let file_data = e2.target.result;
-						//alert("file length is: " + file_data.length + " chars");
+						let qset_data = [];
+						let cancel_upload = true;
 						try{
-							let qs_data = JSON.parse(file_data);
+							qset_data = JSON.parse(file_data);
+							$("#import-config").append("parsed ok '" + name + "' uploading....<br/>");
+							cancel_upload = false;
 						}
 						catch(err) {
-							$("#import-config").append("failed parsing '" + name + "' not uploading....<br/>");
-							//alert('failed parsing ' + name + ' not uploading....');
-							return;
+							$("#import-config").append("!!! failed parsing '" + name + "' not uploading....<br/>");
 						}
-						//alert('parsing ' + name + ', then sending to the server');
 
 						////////////////////////////////////////////////
 						////////////////////////////////////////////////
@@ -631,24 +673,28 @@ function build_admin_summary(u_id, username, qset_summary) {
 						////////////////////////////////////////////////
 						////////////////////////////////////////////////
 
-						//send to server
-						$.ajax({
-							type: 'POST',
-							url: '/upload_quiz',
-							data: JSON.stringify({"qs_data":qs_data}),
-							contentType: "application/json",
-							data_type: "json",
-							cache: false,
-							processData: false,
-							async: true,
-							success: function(data) {
-								//for testing
-								//alert(JSON.stringify(status,null,2));
-								data["msg"] = "Server received: '" + name + "'";
-								$("#import-config").append(JSON.stringify(data,null,2) + "<br/>");
-							},
-						});
-
+						upload_data.push(qset_data);
+						
+						//check we are done and can do the upload
+						//need to upload all quizes in one array to avoid qs_id issues
+						if (upload_data.length == cnt && !cancel_upload){
+							//send to server
+							$.ajax({
+								type: 'POST',
+								url: '/upload_quiz',
+								data: JSON.stringify({"u_id":u_id,
+													"upload_data":upload_data,
+													"import_flag":true}),
+								contentType: "application/json",
+								data_type: "json",
+								cache: false,
+								processData: false,
+								async: true,
+								success: function(data) {
+									$("#import-config").append("Upload Successfull<br/>");
+								},
+							});
+						}
 					};
 				})(f);
 				reader.readAsText(f);
@@ -694,9 +740,9 @@ function build_student_summary(u_id, username, qset_summary) {
 	for (let i = 1; i < qset_summary.length; i++){
 		html_text +='       <tr class="click-enable">' + '\n';
 		
-		//html_text +='	       <td id="qset_id">' + String(i) + '</td>' + '\n';
+		//html_text +='	       <td id="qs_id">' + String(i) + '</td>' + '\n';
 		html_text +='	       <td id="qset-status">' + qset_summary[i][0] + '</td>' + '\n';
-		html_text +='	       <td id="qset-id">' + qset_summary[i][1] + '</td>' + '\n';
+		html_text +='	       <td id="qs-id">' + qset_summary[i][1] + '</td>' + '\n';
 		for (let j = 2; j < qset_summary[i].length; j++){
 			html_text +='	       <td>' + qset_summary[i][j] + '</td>' + '\n';
 		}
@@ -714,16 +760,24 @@ function build_student_summary(u_id, username, qset_summary) {
 	//assigns a click listener to the table rows
 	$("#quiz-selection-table tbody tr.click-enable").click(function() {
 		let status = $(this).find("td#qset-status").text();
-		let qset_id = $(this).find("td#qset-id").text();
-		let query_data = encodeQueryData({"qset_id":qset_id,
+		let qs_id = $(this).find("td#qs-id").text();
+		let query_data = encodeQueryData({"qs_id":qs_id,
 										"u_id":u_id,
 										"username":username});
-		if (["Completed","Marked"].includes(status))
+		if (["Completed","Marked"].includes(status)) {
 			//review the quiz sumbission and/or marks		
+			let query_data = encodeQueryData({"qs_id":qs_id,
+											"u_id":u_id,
+											"username":username});
 			window.location = "./review_quiz.html" + "?" + query_data;
-		else
+		} else {
 			//take the quiz 
+			let query_data = encodeQueryData({"qs_id":qs_id,
+											"u_id":u_id,
+											"username":username,
+											"preview_flag":false});
 			window.location = "./take_quiz.html" + "?" + query_data;
+		}
 	});
 }//end of the build_student_summary function
 
@@ -742,20 +796,22 @@ function build_student_summary(u_id, username, qset_summary) {
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
-function build_take_quiz(u_id, username, qset_data) {
+function build_take_quiz(u_id, username, qset_data, preview_flag) {
 	//this does the html building				
-	let qset_id = qset_data[0]["qset_id"];
+	let qs_id = qset_data[0]["qs_id"];
 
 	//update the username in the header
 	$("#username").text(username);
 
-	//edit the final save link
+	//disable the final save href
+	$("#final-save").attr("href","javascript:;"); 
+	//edit the cancel save link
 	let query_data = encodeQueryData({"u_id":u_id,
 									"username":username});
-	$("#final-save").attr("href","./student_summary.html" + "?" + query_data); 
+	$("#cancel-test").attr("href","./student_summary.html" + "?" + query_data); 
 
 	//do the title
-	html_text = qset_data[0]["qset_name"];
+	html_text = qset_data[0]["topic"];
 	//append to the DOM
 	$("h5#title").append(html_text);
 
@@ -830,6 +886,18 @@ function build_take_quiz(u_id, username, qset_data) {
 		$("#q_data").append(html_text);
 	}
 
+	//makes some DOM changes for the preview case
+	if (preview_flag) {
+		$("#final-save").attr("id","back2edit"); 		
+		let query_data = encodeQueryData({"qs_id":qs_id,
+										"u_id":u_id,
+										"username":username});
+		$("#back2edit").attr("href","./edit_quiz.html" + "?" + query_data); 
+		$("#back2edit").text("Back to Edit Quiz");
+		$("#cancel-test").remove();
+		$(".save-continue").prop("disabled",true);
+	}
+
 	//This assigns some listeners on the take_quiz page
 	//####################################################
 	//assigns a click listener to the question selection links so they hide on question selection when in smalll screen mode
@@ -843,13 +911,17 @@ function build_take_quiz(u_id, username, qset_data) {
 	);
 
 	//assigns a click listener to the submit button as well as the finish and submit nav choice
-	$(".save-continue, #final-save").click(function() {
-		let a_data = [{"qset_id":qset_id,"u_id":u_id}];
+	$(".save-continue, #final-save, #cancel-test").click(function() {
 		//sets the final_submit flag to indicate the user closed off the quiz, otherwise the attmpt is not complete even though interim results are saved
-		a_data[0]["final_submit"] = 0;
-		if ($(this).is('#final-save')) { 
-			a_data[0]["final_submit"] = 1;
-		}
+		let final_flag = false;
+		if ($(this).is('#final-save'))  
+			final_flag = true;
+
+		//if they cancelled, just log an attempt
+		if ($(this).is('#cancel-test'))  
+			final_flag = false;
+
+		let a_data = [];
 		//get the answers
 		for (let i=1; i < qset_data.length; i++) {
 			//this is the actual question sequence, i.e. "Q1", "Q2", "Q3" etc... you need to build this list locally, it is basically "Q" + index+1
@@ -866,15 +938,33 @@ function build_take_quiz(u_id, username, qset_data) {
 		$.ajax({
 			type: 'POST',
 			url: '/submit_answers_json',
-			data: JSON.stringify({"a_data":a_data}),
+			data: JSON.stringify({"qs_id":qs_id,
+								"u_id":u_id,
+								"final_flag":final_flag,
+								"a_data":a_data}),
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
 			processData: false,
 			async: true,
 			success: function(data) {
-				//write this to the DOM and trigger the download, then delete from the DOM
-				alert("Your answers were submitted with status: " + data["Status"]);
+				if (data["Status"] == "ok") {
+					if (!final_flag) 
+						alert("Your answers were submitted with status: ok");
+					else {
+						alert("Your answers were submitted with status: ok");
+						//back to student_summary page if no issues on final commit
+						let query_data = encodeQueryData({"u_id":u_id,
+														"username":username});
+						window.location = "./student_summary.html" + "?" + query_data;
+					}
+				} else {
+					alert(data["msg"]);
+					//back to student_summary page
+					let query_data = encodeQueryData({"u_id":u_id,
+													"username":username});
+					window.location = "./student_summary.html" + "?" + query_data;
+				}
 			},
 		});
 	});  //end of submit answers code
@@ -895,9 +985,9 @@ function build_take_quiz(u_id, username, qset_data) {
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
-function build_review_quiz(u_id, username, qset_data) {
+function build_review_quiz(u_id, username, submission_status, qset_data) {
 	//this does the html building				
-	let qset_id = qset_data[0]["qset_id"];
+	let qs_id = qset_data[0]["qs_id"];
 	let s_username = qset_data[0]["s_username"];
 	let s_u_id = qset_data[0]["s_u_id"];
 
@@ -910,7 +1000,7 @@ function build_review_quiz(u_id, username, qset_data) {
 	$("#final-save").attr("href","./student_summary.html" + "?" + query_data); 
 
 	//do the title
-	html_text = qset_data[0]["qset_name"] + '<br/> <span class="submitter">submitter: ' + s_username + ' (' + s_u_id + ')</span>';
+	html_text = qset_data[0]["topic"] + '<br/> <span class="submitter">username: ' + s_username + '<br/>user_id: ' + s_u_id + '<br/>status: ' + submission_status + '</span>';
 	//append to the DOM
 	$("h5#title").append(html_text);
 
@@ -937,10 +1027,10 @@ function build_review_quiz(u_id, username, qset_data) {
 		//#######################################
 		html_text = '<div class="tab-pane fade ' + showactive_text + '" id="' + q_seq + '-data" role="tabpanel" aria-labelledby="' + q_seq + '">' + '\n';
 		//set the grade text in the title
-		let grade_text = "Not Yet Marked";
+		let mark_text = "Not Yet Marked";
 		if (qset_data[i]["answer"]["grade"] != "-1") 
-			grade_text = qset_data[i]["answer"]["grade"] + '/' + qset_data[i]["question"][0]["marks"];
-		html_text += '<h5>' + q_seq + '&nbsp&nbsp&nbsp&nbsp(' + grade_text + ')</h5>' + '\n';
+			mark_text = qset_data[i]["answer"]["grade"] + '/' + qset_data[i]["question"][0]["marks"];
+		html_text += '<h5>' + q_seq + '&nbsp&nbsp&nbsp&nbsp(' + mark_text + ')</h5>' + '\n';
 		
 		//this goes through the question part list and adds text or image tags as specified
 		//the first index of the list is the q_id, so ignore that
@@ -1025,9 +1115,9 @@ function build_review_quiz(u_id, username, qset_data) {
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
-function build_mark_quiz(u_id, username, qset_data, submitters) {
+function build_mark_quiz(u_id, username, submission_status, qset_data, submitters) {
 	//this does the html building				
-	let qset_id = qset_data[0]["qset_id"];
+	let qs_id = qset_data[0]["qs_id"];
 	let s_u_id = qset_data[0]["s_u_id"];
 	let s_username = qset_data[0]["s_username"];
 
@@ -1040,7 +1130,7 @@ function build_mark_quiz(u_id, username, qset_data, submitters) {
 	$("#final-save").attr("href","./admin_summary.html" + "?" + query_data); 
 
 	//do the title
-	html_text = qset_data[0]["qset_name"] + '<br/> <span class="submitter">submitter: ' + s_username + ' (' + qset_data[0]["s_u_id"] + ')</span>';
+	html_text = qset_data[0]["topic"] + '<br/> <span class="submitter">username: ' + s_username + '<br/>user_id: ' + qset_data[0]["s_u_id"] + '<br/>status: ' + submission_status + '</span>';
 	//append to the DOM
 	$("h5#title").append(html_text);
 
@@ -1113,20 +1203,20 @@ function build_mark_quiz(u_id, username, qset_data, submitters) {
 		html_text += 	'</div>' + '\n';
 
 		//add assessor grade field
-		let grade_text = "";
+		let mark_text = "";
 		let mark_max = qset_data[i]["question"][0]["marks"];
 		if (qset_data[i]["answer"]["grade"] != undefined) {
-			grade_text = qset_data[i]["answer"]["grade"];
-			if (Number(grade_text) > Number(mark_max))
-				grade_text = mark_max;
-			if (Number(grade_text) < -1)
-				grade_text = "-1";
+			mark_text = qset_data[i]["answer"]["grade"];
+			if (Number(mark_text) > Number(mark_max))
+				mark_text = mark_max;
+			if (Number(mark_text) < -1)
+				mark_text = "-1";
 		} else
-			grade_text = "-1";
+			mark_text = "-1";
 
 		html_text += 	'<label for="form_group2">Mark (out of ' + qset_data[i]["question"][0]["marks"] + '):</label>' + '\n';
 		html_text += 	'<div class="form-group" id="form_group2">' + '\n';
-		html_text += 	'	<input type="number" style="max-width:80px;" class="form-control"  id="' + q_seq + '_M" value=' + grade_text + ' max="' + mark_max + '" min="0">' + '\n';
+		html_text += 	'	<input type="number" style="max-width:80px;" class="form-control"  id="' + q_seq + '_M" value=' + mark_text + ' max="' + mark_max + '" min="0">' + '\n';
 		html_text += 	'</div>' + '\n';
 		
 		//add the assessor comments text
@@ -1147,6 +1237,10 @@ function build_mark_quiz(u_id, username, qset_data, submitters) {
 	}
 
 	//does the change submitter list
+	//this resets the control
+	
+	document.getElementById("submitters").value = "";
+	
 	html_text = "";
 	for (sub of submitters)
 		html_text += '		<option value="' + sub + '"></option>' + '\n';
@@ -1164,52 +1258,35 @@ function build_mark_quiz(u_id, username, qset_data, submitters) {
 		}
 	);
 
-	//assigns a click listener to the load new submitter button
-	$("#btn-load-submitter").click(function() {
-		let new_user = $('[name="input-submitter"]').val();
-		//here we need to extract the s_u_id only
-		s_u_id = new_user.slice(0,new_user.search(":")).trim();
-
-		let query_data = encodeQueryData({"qset_id":qset_id,
-										  "u_id":u_id,
-										  "s_u_id":s_u_id,
-										  "username":username});
-		window.location = "./mark_quiz.html" + "?" + query_data;
-	});
-
 
 	//assigns a click listener to the submit button as well as the finish and submit nav choice
-	$(".save-continue, #final-save").click(function() {
-		let marking_data = [{"qset_id":qset_id,"u_id":u_id,"s_u_id":s_u_id}];
-		//sets the final_submit flag to indicate the user closed off the quiz, otherwise the attmpt is not complete even though interim results are saved
-		marking_data[0]["final_submit"] = 0;
-		if ($(this).is('#final-save')) { 
-			marking_data[0]["final_submit"] = 1;
-		}
+	$(".save-continue, \
+		#final-save, \
+		#btn-load-submitter").click(function() {
+		//set the change s_u_id flag for the case the user want to change
+		let change_flag = $(this).is("#btn-load-submitter");
+
+		let marking_data = [{"qs_id":qs_id,"u_id":u_id,"s_u_id":s_u_id}];
 		//get the marking data
-		let complete_flag = 1;
 		for (let i = 1; i < qset_data.length; i++) {
 			//this is the actual question sequence, i.e. "Q1", "Q2", "Q3" etc... you need to build this list locally, it is basically "Q" + index+1
 			let q_seq = "Q" + String(i);
-			let grade_text = $("#" + q_seq + "_M").val();
+			let mark_text = $("#" + q_seq + "_M").val();
 			let comment_text = $.trim($("#" + q_seq + "_C").val());
 			
 			//validation
 			let mark_max = qset_data[i]["question"][0]["marks"];
-			if (grade_text == "")
-				grade_text = "-1";
+			if (mark_text == "")
+				mark_text = "0";
 			else {
-				if (Number(grade_text) > Number(mark_max)) 
-					grade_text = mark_max;
-				if (Number(grade_text) < -1)
-					grade_text = "-1";
+				if (Number(mark_text) > Number(mark_max)) 
+					mark_text = mark_max;
+				if (Number(mark_text) < 0)
+					mark_text = "0";
 			}
-			$("#" + q_seq + "_M").val(grade_text);
-			marking_data.push({'grade':grade_text,"comment":comment_text});
-			if (grade_text == "-1") 
-				complete_flag = 0;
+			$("#" + q_seq + "_M").val(mark_text);
+			marking_data.push({"mark":mark_text,"comment":comment_text});
 		}
-		marking_data[0]["marking_complete"] = complete_flag;
 
 		$.ajax({
 			type: 'POST',
@@ -1221,12 +1298,21 @@ function build_mark_quiz(u_id, username, qset_data, submitters) {
 			processData: false,
 			async: true,
 			success: function(data) {
-				//write this to the DOM and trigger the download, then delete from the DOM
-				alert("Your marks were submitted with status: " + data["Status"]);
+				if (change_flag) {
+					//change the s_u_id
+					let new_user = $('[name="input-submitter"]').val();
+					s_u_id = new_user.slice(new_user.search("\\(")+1,new_user.search("\\)")).trim();
+					//go to the chosen user mark page
+					let query_data = encodeQueryData({"qs_id":qs_id,
+													"u_id":u_id,
+													"username":username,
+													"s_u_id":s_u_id});
+					window.location = "./mark_quiz.html" + "?" + query_data;
+				}
+				//alert("Your marks were submitted with status: " + data["Status"]);
 			},
 		});
 	});  //end of submit marks code
-
 } //end of the build_mark_quiz function
 
 
@@ -1243,19 +1329,24 @@ function build_edit_quiz(u_id, username, qset_data) {
 	let newfiles = [];
 	
 	//this does the html building				
-	let qset_id = qset_data[0]["qset_id"];
+	let qs_id = qset_data[0]["qs_id"];
 
 	//this does the html building				
 	//update the username in the header
 	$("#username").text(username);
 
-	//update the final save link
-	let query_data = encodeQueryData({"u_id":u_id,
-									"username":username});
-	$("#final-save").attr("href","./admin_summary.html" + "?" + query_data); 
-	
+	//edit the preview link
+	let query_data = encodeQueryData({"qs_id":qs_id,
+									"u_id":u_id,
+									"username":username,
+									"preview_flag":true});
+	$("#preview").attr("href","./take_quiz.html" + "?" + query_data); 
+
+	//disable the final save href
+	$("#final-save").attr("href","javascript:;"); 
+
 	//do the title
-	html_text = qset_data[0]["qset_name"] + ' (qset_id: ' + qset_id + ')';
+	html_text = qset_data[0]["topic"] + ' (qs_id: ' + qs_id + ')';
 	//append to the DOM
 	$("h5#title").append(html_text);
 
@@ -1312,14 +1403,20 @@ function build_edit_quiz(u_id, username, qset_data) {
 		html_text += '<form>' + '\n';
 		html_text += 	'<label for="form_group">Answer</label>' + '\n';
 		html_text += 	'<div class="form-group" id="form_group">' + '\n';
-		//add the mc choices or a textbox
-		let text = "text";
-		if ("answer" in qset_data[i] && qset_data[i]["answer"]["type"] == "mc") {
-			text = "mc:\n";
+		//add the answer specification
+		let text = "";
+		if (qset_data[i]["answer"]["type"] == "mc") {
+			text = "mc\n";
+			text += "correct: " + qset_data[i]["answer"]["correct"].trim() + "\n";
 			let mc_options = qset_data[i]["answer"]["data"];
-			mc_options.unshift("");
-			for (let j=1; j < mc_options.length; j++) 
-				text += mc_options[j] + '\n';
+			//add a blacnk item at the start of the array to get the indicies correct
+			for (let j=0; j < mc_options.length; j++) 
+				text += mc_options[j].trim() + '\n';
+			text  = text.slice(0,-1);
+		}
+		else {
+			text = "text\n";
+			text += "correct: " + qset_data[i]["answer"]["correct"].trim();
 		}
 		html_text += 		'<textarea class="form-control" id="' + q_seq + '_A" rows="3">' + text + '</textarea>' + '\n';
 		html_text += 	'</div>' + '\n';
@@ -1359,7 +1456,8 @@ function build_edit_quiz(u_id, username, qset_data) {
 	//#######################################
 	$(".add-image-btn").click(function (e) {
 		//this resets the input control (important)
-		for (el of document.getElementsByClassName("select-image")) el.value = "";
+		for (el of document.getElementsByClassName("select-image")) 
+			el.value = "";
 		$(e.target.parentNode).find(".select-image").trigger("click",e);
 	});
 
@@ -1467,14 +1565,16 @@ function build_edit_quiz(u_id, username, qset_data) {
 	//#######################################
 
 
+
 	//assigns a click listener to the submit button as well as the finish and submit nav choice
 	$(".save-continue, #final-save").click(function() {
 		//so basically here you need to build the whole qset_data object to send
-		let qset_data = [{"qset_id":qset_id,"u_id":u_id,"final_submit":0}];
-		//sets the final_submit flag to indicate the user closed off the quiz, otherwise the attmpt is not complete even though interim results are saved
-		if ($(this).is('#final-save')) qset_data[0]["final_submit"] = 1;
+		let qset_data_new = [qset_data[0]];
 		let text_data = "";
 		let blobs = {};   // will hold the DOMstrings and filenames for any added images to upload
+		let final_flag = false;
+		if ($(this).is('#final-save'))  
+			final_flag = true;
 
 		//parses the quiz after edits
 		//go through each q
@@ -1483,7 +1583,8 @@ function build_edit_quiz(u_id, username, qset_data) {
 		for (q of questions) {
 			//this is the actual question sequence, i.e. "Q1", "Q2", "Q3" etc... you need to build this list locally, it is basically "Q" + index+1
 			let q_seq = "Q" + String(i); 
-			let q_data = {"question":[{"q_id":String(i)}]};
+			//copies the question header from qset_data as this was not changed
+			let q_data = {"question":[qset_data[i]["question"][0]]};
 			//go through each element of the question
 			let q_parts = $(q).children("ul").children("li");
 			for (q_part of q_parts) {
@@ -1510,31 +1611,78 @@ function build_edit_quiz(u_id, username, qset_data) {
 					q_data["question"].push({"type":"image","data":text_data});
 				}
 			}
+		
 			//reads the data from the answer textbox
-			//do nothing if it is not "mc:...."
+			q_data["answer"] = {};
+			let header_flag = false;
+			let correct_flag = false;
+			let mc_option_flag = true;
 			text_data = $.trim($("#" + q_seq + "_A").val());
-			if (text_data.slice(0,3) == "mc:") {
-				q_data["answer"] = [];
-				text_data = text_data.slice(3,).trim();
-				for (mc_item of text_data.split(",")) 
-					q_data["answer"].push(mc_item.trim());
+			items = text_data.split("\n");
+
+			if (items[0].trim() == "mc") {
+				q_data["answer"]["type"] = "mc";
+				q_data["answer"]["data"] = [];
+				//#reject if it doesnt have at least 3 elements
+				if (items.length >= 3)
+					header_flag = true;
+					mc_option_flag = false;
+					for (item of items.slice(1,)) {
+						if (item.trim().slice(0,8) == "correct:") {
+							q_data["answer"]["correct"] = item.trim().slice(8,);
+							correct_flag = true;
+						} else {
+							q_data["answer"]["data"].push(item.trim());
+							mc_option_flag = true;
+						}
+					}
+			} else if (items[0].trim() == "text") {
+				q_data["answer"]["type"] = "text";
+				//#reject if it doesnt have at least 2 elements
+				if (items.length >= 2)
+					header_flag = true;
+					//join the elements in case they have newlines
+					let temp = items.slice(1,).join(' ').trim();
+					if (temp.slice(0,8) == "correct:") {
+						q_data["answer"]["correct"] = temp.slice(8,).trim();
+						correct_flag = true;
+				}
 			}
+
+			//check for bad input
+			if (! header_flag || ! correct_flag || ! mc_option_flag) {
+				alert("The answer specification for " + q_seq + " is not acceptable, see instructions for specification, edits not committed =>\n" + text_data);
+				return;
+			}
+
 			//write the question and answer sepcification
-			qset_data.push(q_data);
+			qset_data_new.push(q_data);
 			i += 1;
 		}
-
+		
 		$.ajax({
 			type: 'POST',
-			url: '/submit_qset_edits_json',
-			data: JSON.stringify({"qset_data":qset_data}),
+			url: '/upload_quiz',
+			data: JSON.stringify({"u_id":u_id,
+								"upload_data":[qset_data_new],
+								"import_flag":false}),
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
 			processData: false,
 			async: true,
 			success: function(data) {
-				alert("Your edits were submitted with status: " + data["Status"]);
+				if (data["Status"] == "ok") {
+					if (!final_flag) 
+						alert("Your edits were submitted with status: ok");
+					else {
+						alert("Your edits were submitted with status: ok");
+						//back to the admin page if there were no issues on final commit
+						let query_data = encodeQueryData({"u_id":u_id,
+														"username":username});
+						window.location = "./admin_summary.html" + "?" + query_data;
+					}
+				}
 			},
 		});
 
