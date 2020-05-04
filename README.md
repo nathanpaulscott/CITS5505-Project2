@@ -8,7 +8,7 @@ To run the server:
 3. Click the link that appears in the terminal
 
 ---
-## Nathan's Comments  
+## Status Comments  
 Right now, I have the main functionality of the front end of the tool working as decribed below
 
 ### Landing  
