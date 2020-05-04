@@ -970,7 +970,6 @@ def write_log(u_id,action_id,action):
                             action=action)
             db.session.add(log_entry)
             db.session.commit()
-            print('exiting...')
             break
         except Exception as e:
             print('got log primary key conflict due to time.  Rollback, wait and try again')
