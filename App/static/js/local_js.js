@@ -811,7 +811,7 @@ function build_take_quiz(u_id, username, qset_data, preview_flag) {
 	$("#cancel-test").attr("href","./student_summary.html" + "?" + query_data); 
 
 	//do the title
-	html_text = qset_data[0]["topic"];
+	html_text = qset_data[0]["topic"] + " (" + String(qs_id) + ")";
 	//append to the DOM
 	$("h5#title").append(html_text);
 
@@ -1000,7 +1000,7 @@ function build_review_quiz(u_id, username, submission_status, qset_data) {
 	$("#final-save").attr("href","./student_summary.html" + "?" + query_data); 
 
 	//do the title
-	html_text = qset_data[0]["topic"] + '<br/> <span class="submitter">username: ' + s_username + '<br/>user_id: ' + s_u_id + '<br/>status: ' + submission_status + '</span>';
+	html_text = qset_data[0]["topic"] + " (" + String(qs_id) + ")" + '<br/> <span class="submitter">username: ' + s_username + '<br/>user_id: ' + s_u_id + '<br/>status: ' + submission_status + '</span>';
 	//append to the DOM
 	$("h5#title").append(html_text);
 
@@ -1130,7 +1130,7 @@ function build_mark_quiz(u_id, username, submission_status, qset_data, submitter
 	$("#final-save").attr("href","./admin_summary.html" + "?" + query_data); 
 
 	//do the title
-	html_text = qset_data[0]["topic"] + '<br/> <span class="submitter">username: ' + s_username + '<br/>user_id: ' + qset_data[0]["s_u_id"] + '<br/>status: ' + submission_status + '</span>';
+	html_text = qset_data[0]["topic"] + " (" + String(qs_id) + ")" + '<br/> <span class="submitter">username: ' + s_username + '<br/>user_id: ' + qset_data[0]["s_u_id"] + '<br/>status: ' + submission_status + '</span>';
 	//append to the DOM
 	$("h5#title").append(html_text);
 
@@ -1343,7 +1343,7 @@ function build_edit_quiz(u_id, username, qset_data) {
 	$("#final-save").attr("href","javascript:;"); 
 
 	//do the title
-	html_text = qset_data[0]["topic"] + ' (qs_id: ' + qs_id + ')';
+	html_text = qset_data[0]["topic"] + " (" + String(qs_id) + ")";
 	//append to the DOM
 	$("h5#title").append(html_text);
 
