@@ -141,15 +141,21 @@ def get_home():
     write_log(0,1,'landing page entry')
     return render_template('landing.html')
 
+
+
 @app.route('/forgot-password.html', methods=['GET'])
 def get_forgot_password():
     write_log(0,2,'forgot password entry')
     return render_template('forgot-password.html')
 
+
+
 @app.route('/landing.html', methods=['GET'])
 def get_landing():
     write_log(0,1,'landing page entry')
     return render_template('landing.html')
+
+
 
 @app.route('/login.html', methods=['GET', 'POST'])
 def get_login():
@@ -168,8 +174,11 @@ def get_login():
         result = User.query.filter_by(username=username).first()
         if result is None:
             #no username found
-            write_log(u_id,4,'failed login from username not found')
-            return render_template('register.html')
+            write_log(0,4,'failed login from username not found')
+            error = 'Username {} not found'.format(username)
+            return jsonify ({ "Status" : error})
+            #return render_template('register.html')
+        
         #check that the login flag is set to logged in
         u_id = result.u_id
         if result.login_status is None  \
@@ -184,7 +193,9 @@ def get_login():
         elif result.login_att > 5:
             #make another page here to inform the user to stop trying and contact admin
             write_log(u_id,5,'failed login from too many failed attempts')
-            return render_template('landing.html')
+            error = 'Too many failed login attempts'
+            return jsonify ({ "Status" : error})
+            #return render_template('landing.html')
 
         #check the password
         if result.password != password:
@@ -192,7 +203,9 @@ def get_login():
             result.login_att = result.login_att + 1
             db.session.commit()
             write_log(u_id,6,'failed login from incorrect password')
-            return render_template('login.html')
+            error = 'incorrect password'
+            return jsonify ({ "Status" : error})
+            #return render_template('login.html')
         
         #user gets logged in, reset the attempts counter and set the login time
         result.login_att = 0
@@ -256,14 +269,14 @@ def register():
             #decide on destination
             write_log(u_id,7,'successful registration')
             write_log(u_id,10,'successful login')
-            if result.admin:
+            if admin:
                 return redirect(url_for('get_admin_summary',
                                         username=username,
-                                        u_id=result.u_id))  
+                                        u_id=u_id))  
             else:
                 return redirect(url_for('get_student_summary',
                                         username=username,
-                                        u_id=result.u_id))
+                                        u_id=u_id))
 
 
 
