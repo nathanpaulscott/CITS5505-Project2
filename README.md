@@ -9,7 +9,8 @@ To run the server:
 
 ---
 ## Status Comments  
-Right now, I have the main functionality of the front end of the tool working as decribed below
+All DB integration has been done.   
+Right now, the main functionality of the app is working as decribed below
 
 ### Landing  
 You can register, then login wiht yoru username and password.  You go to the student area if you are a student, go to the teacher area if you are a teacher.
