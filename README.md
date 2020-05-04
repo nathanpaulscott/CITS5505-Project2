@@ -36,7 +36,6 @@ You can register, then login wiht yoru username and password.  You go to the stu
  * add / delete / modify user code needs to be written ~ 1/2 day (Nathan)
  * timing code, need to time the user when taking a quiz and auto submit if they time-out
  * login and password, looking the lecture, all we need is some secret key mechanism, I do not think you need wtforms.  I tried some periodic checking mechanism to check the logs and the time the user has been logged in, but it works to kick dormant users out, but app.py is hard to quit, so is hard to use during testing.
-* action log, Nathan: I modified the log table, I will add code to write to the log on each action
  * refactor backend - 2 days  (Jack).  Can be done near the end.  The sample project has a more modular format, ie. breaking up the app.py file into routes, models, controllers etc.
  * refactor front-end - 3 days  (Nathan).  Clean up the code and move some of the basic page building to jinja, but I suggest staying with the current structure, just cleaning up some things and doing the basic stuff in the server to show we can do it.  Like putting the username in the template, we can do in the backend, but the looping, just do in javascript.
  * writing all quizzes and adding to database - 1 day (Jack)
