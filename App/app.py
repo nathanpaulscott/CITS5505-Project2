@@ -8,18 +8,6 @@ from datetime import datetime as dt
 import threading as th
 
 
-#from flask_migratey import Migrate
-#need to do some testing on it, that will help you id missing features 
-#need to plan auto testing too, I do not know how to start there
-#need to merge with teh master branch
-#sort out the login using a secret key
-#need to clean up the code!!!  
-#1) js to template
-#2) split js up
-#3) split app.py up  
-
-
-
 
 # initialise app
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -29,8 +17,7 @@ app = Flask(__name__)
 
 
 # Database
-#app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + os.path.join(basedir, 'db.sqlite')
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + os.path.join(basedir, 'db2.sqlite')
+app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + os.path.join(basedir, 'db.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # initialise database
 db = SQLAlchemy(app)
@@ -336,9 +323,11 @@ def admin_summary_json():
         #need to fill the rest of the fields ["Marked","Completed","Attempted","Tot Qs","MC Qs","Img.Missing","Score Mean","Score SD"]
         for qset in qsets:
             qs_id = qset.qs_id
+            
             # get num questions
             qset.tot_qs = len(Question.query.filter_by(qs_id=qs_id).all())
             qset.mc_qs = len(Question.query.filter_by(qs_id=qs_id, a_type='mc').all())
+            
             # get the status numbers for the qset
             result = Submission.query.filter_by(qs_id=qs_id, status="Completed").all()
             qset.completed = len(result)
@@ -346,9 +335,11 @@ def admin_summary_json():
             qset.marked = len(result)
             result = Submission.query.filter_by(qs_id=qs_id, status="Attempted").all()
             qset.attempted = len(result)
+            
             #get the marks available
             result = Question.query.filter_by(qs_id=qs_id).all()
             qset.marks_avail = sum([x.q_marks for x in result])
+            
             #get the marks stats
             result = Submission_Answer.query.filter_by(qs_id=qs_id).all()
             marks = []
@@ -360,25 +351,30 @@ def admin_summary_json():
                 qset.marks_mean = st.mean(marks)
             if len(marks) >= 2:
                 qset.marks_sd = st.stdev(marks)
+            
             #get the num images missing
             result = Question.query.filter_by(qs_id=qs_id).all()
             qset.img_missing = 0
             image_refs = []
+            
             #get all the images refs in all questions in the question set
             #go through each question in the qset
             for row in result:
                 #convert the question data to a json object
                 q_data = json.loads(row.q_data)
+            
                 #go through each part
                 for item in q_data:
                     #if the part is an image ref extract it
                     if item['type'] == "image":
                         image_refs.append(item['data'])
+            
             #find the image files in the static/images folder
             image_files = []
             for root,dirs,files in os.walk(basedir + '/' + image_folder, topdown=True):
                 for file in files:
                     image_files.append(file)
+            
             #does the crosschecking
             for image in image_refs:
                 if image not in image_files:
@@ -404,12 +400,16 @@ def admin_summary_json():
         return jsonify ({'Status' : 'ok',"msg":"","data":qset_summary})
 
 
+
+
 @app.route('/edit_quiz.html', methods=['GET'])
 def get_edit_quiz():
     return render_template('edit_quiz.html',
                             username=request.args['username'], 
                             u_id=request.args['u_id'],
                             qs_id=request.args['qs_id'])
+
+
 
 
 
@@ -449,10 +449,12 @@ def upload_quiz():
             topic = "Unspecified"
             if "topic" in qset_data[0]:
                 topic = qset_data[0]["topic"]
+
             #get the time
             time = -1
             if 'time' in qset_data[0]:
                 time = qset_data[0]["time"]
+
             #get enabled
             enabled = False
             if 'enabled' in qset_data[0]:
@@ -463,11 +465,14 @@ def upload_quiz():
             #remove any conflicting data from the DB first
             Question_Set.query.filter_by(qs_id=qs_id).delete()
             Question.query.filter_by(qs_id=qs_id).delete()
+
             #add qsets to the DB, ignores the author field and uses the uploader u_id
             new_qs = Question_Set(qs_id,u_id,enabled,topic,time)
             db.session.add(new_qs)
+
             # commit changes
             db.session.commit()
+
             #add questions to the DB, not reading the qs_id field, just assigning it sequentially 
             q_id = 1
             for q in qset_data[1:]:
@@ -489,6 +494,8 @@ def upload_quiz():
             db.session.commit()
 
         return jsonify ({'Status':'ok'})
+
+
 
 
 
@@ -517,6 +524,7 @@ def download_quiz():
         #so qset_data will be a list of qset jsons, each of which are a list of questions
         qset_data = []
         qsets = query2list_of_dict(Question_Set.query.all())
+
         #filter out only the ones requested, too hard to do with sqlalchemy
         qsets = [x for x in qsets if str(x['qs_id']) in qs_id_req]
         for qset in qsets:
@@ -530,12 +538,16 @@ def download_quiz():
                 temp['answer']['correct'] = question.a_correct
                 if question.a_type == "mc":
                     temp['answer']['data'] = json.loads(question.a_data)
+
                 #add to the qset list
                 data.append(temp)
+
             #add the qset list to the output list
             qset_data.append(data)
 
         return jsonify ({'Status' : 'ok','msg':qs_id_req,'data':qset_data})
+
+
 
 
 
@@ -558,11 +570,15 @@ def delete_quiz():
 
 
 
+
+
 @app.route('/manage_users.html', methods=['GET'])
 def get_manage_users():
     return render_template('manage_users.html',
                             username=request.args['username'], 
                             u_id=request.args['u_id'])
+
+
 
 
 #this is to load the manage_users json data
@@ -617,9 +633,11 @@ def submit_answers_json():
         #remove any existing submissions
         Submission.query.filter_by(qs_id=qs_id,u_id=u_id).delete()
         Submission_Answer.query.filter_by(qs_id=qs_id,u_id=u_id).delete()
+
         #add submissions to the DB
         new_sub = Submission(qs_id,u_id,status)
         db.session.add(new_sub)
+
         #add submission_answers
         q_id = 1
         for answer in a_data:
@@ -654,6 +672,7 @@ def get_mark_quiz():
                             username=request.args['username'], 
                             u_id=request.args['u_id'],
                             s_u_id=request.args['s_u_id'])
+
 
 
 # accept answer submission and save to DB
@@ -697,8 +716,10 @@ def load_qset_json():
         else:
             #for the review submission by student case
             s_u_id = u_id
+
         #for marking submission of a particular s_u_id
         include_submission = request.get_json()["include_submission"]
+
         #for the list of submissions to choose when marking
         include_submitters = request.get_json()["include_submitters"]
         submission_status = ''
@@ -754,8 +775,10 @@ def load_qset_json():
             if result is None:
                 return jsonify ({'Status':'nok', 'msg':"user " + s_u_id + " doesn't exist"})
             qset['s_username'] = result.username
+
             #add to qset_data
             qset_data.append(qset)
+
             #add the questions
             questions = Question.query.filter_by(qs_id=qs_id).all()
             if len(questions) == 0:
@@ -769,6 +792,7 @@ def load_qset_json():
                 temp['answer']['correct'] = question.a_correct
                 if question.a_type == "mc":
                     temp['answer']['data'] = json.loads(question.a_data)
+
                 #get the submission_answer data
                 result = Submission_Answer.query.filter_by(qs_id=qs_id,q_id=question.q_id,u_id=s_u_id).all()
                 answer = ''
@@ -782,16 +806,20 @@ def load_qset_json():
                 temp['answer']['answer'] = answer
                 temp['answer']['grade'] = mark
                 temp['answer']['comment'] = comment
+
                 #add to the qset list
                 qset_data.append(temp)
+
         else:
             #construct qset_data to return
             qset = query2list_of_dict(Question_Set.query.filter_by(qs_id=qs_id).all())
             if len(qset) == 0:
                 return jsonify ({'Status' : 'nok', 'msg' : "question set doesn't exist"})
             qset = qset[0]
+
             #add to qset_data
             qset_data.append(qset)
+
             #add the questions
             questions = Question.query.filter_by(qs_id=qs_id).all()
             if len(questions) == 0:
@@ -805,6 +833,7 @@ def load_qset_json():
                 temp['answer']['correct'] = question.a_correct
                 if question.a_type == "mc":
                     temp['answer']['data'] = json.loads(question.a_data)
+
                 #add to the qset list
                 qset_data.append(temp)
 
@@ -813,7 +842,8 @@ def load_qset_json():
 
 
 #########################################################
-
+#########################################################
+#########################################################
 
 def query2list_of_dict(result):
     #this converts the returned object from sqlalchemy to an Python list of dicts
@@ -839,9 +869,9 @@ def query2list_of_list(result):
 
 
 
-'''
 #this code will periodically check users login status or usage status and log them out if they are dormant
 #the issue with this is that it locks the code and you can't quit the code, the code runs, but you can't quit
+'''
 def check_login_status(cancel_flag):
     #this periodically checks users login status and kicks them out if they have been logged in too long
     if not cancel_flag.is_set():
