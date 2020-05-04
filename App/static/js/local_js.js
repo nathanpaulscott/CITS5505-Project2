@@ -502,7 +502,7 @@ function build_admin_summary(u_id, username, qset_summary) {
 		$.ajax({
 			type: 'POST',
 			url: '/delete_quiz',
-			data: JSON.stringify({"qs_id_req":qs_id_req}),
+			data: JSON.stringify({"qs_id_req":qs_id_req, "u_id":u_id}),
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
@@ -556,7 +556,7 @@ function build_admin_summary(u_id, username, qset_summary) {
 		$.ajax({
 			type: 'POST',
 			url: '/download_quiz',
-			data: JSON.stringify({"qs_id_req":qs_id_req}),
+			data: JSON.stringify({"qs_id_req":qs_id_req, "u_id":u_id}),
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
@@ -1336,12 +1336,8 @@ function build_edit_quiz(u_id, username, qset_data) {
 	//update the username in the header
 	$("#username").text(username);
 
-	//edit the preview link
-	let query_data = encodeQueryData({"qs_id":qs_id,
-									"u_id":u_id,
-									"username":username,
-									"preview_flag":true});
-	$("#preview").attr("href","./take_quiz.html" + "?" + query_data); 
+	//disable the preview link
+	$("#preview").attr("href","javascript:;"); 
 
 	//disable the final save href
 	$("#final-save").attr("href","javascript:;"); 
@@ -1568,14 +1564,19 @@ function build_edit_quiz(u_id, username, qset_data) {
 
 
 	//assigns a click listener to the submit button as well as the finish and submit nav choice
-	$(".save-continue, #final-save").click(function() {
+	$(".save-continue, #final-save, #preview").click(function() {
 		//so basically here you need to build the whole qset_data object to send
 		let qset_data_new = [qset_data[0]];
 		let text_data = "";
 		let blobs = {};   // will hold the DOMstrings and filenames for any added images to upload
+
+		//sets the final_flag and preview_flag
 		let final_flag = false;
 		if ($(this).is('#final-save'))  
 			final_flag = true;
+		let preview_flag = false;
+		if ($(this).is('#preview'))  
+			preview_flag = true;
 
 		//parses the quiz after edits
 		//go through each q
@@ -1674,10 +1675,15 @@ function build_edit_quiz(u_id, username, qset_data) {
 			async: true,
 			success: function(data) {
 				if (data["Status"] == "ok") {
-					if (!final_flag) 
-						alert("Your edits were submitted with status: ok");
-					else {
-						alert("Your edits were submitted with status: ok");
+					alert("Your edits were submitted with status: ok");
+					if (preview_flag) {
+						let query_data = encodeQueryData({"qs_id":qs_id,
+														"u_id":u_id,
+														"username":username,
+														"preview_flag":true});
+						window.location = "./take_quiz.html" + "?" + query_data;
+					} 
+					else if (final_flag) {
 						//back to the admin page if there were no issues on final commit
 						let query_data = encodeQueryData({"u_id":u_id,
 														"username":username});

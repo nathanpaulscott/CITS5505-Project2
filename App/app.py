@@ -6,7 +6,7 @@ import json
 import statistics as st
 from datetime import datetime as dt
 import threading as th
-
+import time
 
 
 # initialise app
@@ -40,6 +40,9 @@ class User(db.Model):
         self.admin = admin
         self.username = username
         self.password = password
+        self.login_status = login_status
+        self.login_att = login_att
+        self.login_time = login_time
 
 class Question_Set(db.Model):
     __tablename__ = 'question_set'
@@ -134,19 +137,23 @@ class Log(db.Model):
 # get action performed when user navigates to that url
 @app.route('/', methods=['GET'])
 def get_home():
+    write_log(0,1,'landing page entry')
     return render_template('landing.html')
 
 @app.route('/forgot-password.html', methods=['GET'])
 def get_forgot_password():
+    write_log(0,2,'forgot password entry')
     return render_template('forgot-password.html')
 
 @app.route('/landing.html', methods=['GET'])
 def get_landing():
+    write_log(0,1,'landing page entry')
     return render_template('landing.html')
 
 @app.route('/login.html', methods=['GET', 'POST'])
 def get_login():
     if request.method == 'GET':
+        write_log(0,3,'login page entry')
         return render_template('login.html')
     
     elif request.method == 'POST':
@@ -160,8 +167,10 @@ def get_login():
         result = User.query.filter_by(username=username).first()
         if result is None:
             #no username found
+            write_log(u_id,4,'failed login from username not found')
             return render_template('register.html')
         #check that the login flag is set to logged in
+        u_id = result.u_id
         if result.login_status is None  \
         or result.login_status == 'logged in'  \
         or (int(dt.now().timestamp()) - result.login_time) > login_timeout:
@@ -173,6 +182,7 @@ def get_login():
             db.session.commit()
         elif result.login_att > 5:
             #make another page here to inform the user to stop trying and contact admin
+            write_log(u_id,5,'failed login from too many failed attempts')
             return render_template('landing.html')
 
         #check the password
@@ -180,6 +190,7 @@ def get_login():
             #wrong password
             result.login_att = result.login_att + 1
             db.session.commit()
+            write_log(u_id,6,'failed login from incorrect password')
             return render_template('login.html')
         
         #user gets logged in, reset the attempts counter and set the login time
@@ -189,14 +200,15 @@ def get_login():
         db.session.commit()
 
         #decide on destination
+        write_log(u_id,7,'successful login')
         if result.admin:
             return redirect(url_for('get_admin_summary',
                                     username=username,
-                                    u_id=result.u_id))  
+                                    u_id=u_id))  
         else:
             return redirect(url_for('get_student_summary',
                                     username=username,
-                                    u_id=result.u_id))
+                                    u_id=u_id))
 
 
 
@@ -204,38 +216,66 @@ def get_login():
 def register():
     # navigate to register page
     if request.method == 'GET':
+        write_log(0,8,'registration page entry')
         return render_template('register.html')
 
     # add new user
     elif request.method == 'POST':
-        print(request.form)
-        admin = int(request.form["admin"])
         username = request.form["username"]
         password = request.form["password"]
-
-        new_user = User(admin, username, password)
+        admin = False
+        if request.form["admin"] == "1":      
+            admin = True
 
         # check if username taken
-        if db.engine.execute(
-            'SELECT user_id FROM user WHERE username = ?', (username,)
-        ).fetchone() is not None:
+        result = User.query.filter_by(username=username).first()
+        if result is not None:
             error = 'User {} is already registered.'.format(username)
+            write_log(0,9,'failed registration as username "' + username + '" is taken')
             return jsonify ({ "Status" : error})
         else:
+            #determines the next unused u_id from database
+            #this is not a real world soluton, but works for the project
+            u_id = 1
+            result = db.engine.execute('SELECT MAX(u_id) FROM user;').fetchone()[0]
+            if result is not None:
+                u_id = result + 1
+    
             # add new user to database
+            new_user = User(u_id, 
+                            admin, 
+                            username, 
+                            password, 
+                            'logged in', 
+                            0, 
+                            int(dt.now().timestamp()))
             db.session.add(new_user)
             db.session.commit()
 
-            return jsonify ({ "Status" : "New User Created"})
+            #decide on destination
+            write_log(u_id,7,'successful registration')
+            write_log(u_id,10,'successful login')
+            if result.admin:
+                return redirect(url_for('get_admin_summary',
+                                        username=username,
+                                        u_id=result.u_id))  
+            else:
+                return redirect(url_for('get_student_summary',
+                                        username=username,
+                                        u_id=result.u_id))
+
 
 
 
 #this is to load the student_summary basic template
 @app.route('/student_summary.html', methods=['GET'])
 def get_student_summary():
+    u_id = request.args['u_id']
+    username = request.args['username']
+    write_log(u_id,11,'student summary entry')
     return render_template('student_summary.html',
-                            username=request.args['username'], 
-                            u_id=request.args['u_id'])
+                            username=username, 
+                            u_id=u_id)
 
 
 #this is to load the student_summary json data
@@ -295,6 +335,7 @@ def student_summary_json():
                                 qset.marks_sd])
 
         #if all was ok
+        write_log(u_id,12,'student summary json req successful')
         return jsonify ({'Status' : 'ok',
                         'msg':'',
                         'data':qset_summary})
@@ -303,9 +344,12 @@ def student_summary_json():
 
 @app.route('/admin_summary.html', methods=['GET'])
 def get_admin_summary():
+    u_id = request.args['u_id']
+    username = request.args['username']
+    write_log(u_id,13,'admin summary entry')
     return render_template('admin_summary.html',
-                            username=request.args['username'], 
-                            u_id=request.args['u_id'])
+                            username=username, 
+                            u_id=u_id)
 
 
 #this is to load the admin_summary json data
@@ -397,6 +441,7 @@ def admin_summary_json():
                                 qset.marks_sd])
 
         #if all was ok
+        write_log(u_id,14,'admin summary json req success')
         return jsonify ({'Status' : 'ok',"msg":"","data":qset_summary})
 
 
@@ -404,10 +449,14 @@ def admin_summary_json():
 
 @app.route('/edit_quiz.html', methods=['GET'])
 def get_edit_quiz():
+    u_id = request.args['u_id']
+    username = request.args['username']
+    qs_id = request.args['qs_id']
+    write_log(u_id,15,'edit quiz entry')
     return render_template('edit_quiz.html',
-                            username=request.args['username'], 
-                            u_id=request.args['u_id'],
-                            qs_id=request.args['qs_id'])
+                            username=username, 
+                            u_id=u_id,
+                            qs_id=qs_id)
 
 
 
@@ -492,6 +541,11 @@ def upload_quiz():
 
             # commit changes
             db.session.commit()
+    
+        if import_flag:
+            write_log(u_id,16,'quiz data import success')
+        else:
+            write_log(u_id,17,'quiz data edits upload success')
 
         return jsonify ({'Status':'ok'})
 
@@ -503,13 +557,16 @@ def upload_quiz():
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
     if 'file' not in request.files:
+        write_log(0,18,'image upload fail: bad form format')
         return jsonify ({ 'Status' : 'error', 'msg':'bad form format'})
     file = request.files['file']
     if file.filename == '':
+        write_log(0,19,'image upload fail: no file selected')
         return jsonify ({ 'Status' : 'error', 'msg':'no file selected'})
     file = request.files['file']
     filename = secure_filename(file.filename)
     file.save(basedir + '/' + image_folder + '/' + filename)
+    write_log(0,20,'image upload success: ' + filename)
     return jsonify ({ 'Status' : 'ok', 'msg':'Server recieved: ' + filename})
 
 
@@ -519,7 +576,8 @@ def upload_image():
 def download_quiz():
     if request.method == 'POST':
         qs_id_req = request.get_json()["qs_id_req"]
-        
+        u_id = request.get_json()["u_id"]
+
         #get the standard qset_json format for each requested qs_id and put in a list to send back to the user
         #so qset_data will be a list of qset jsons, each of which are a list of questions
         qset_data = []
@@ -545,6 +603,7 @@ def download_quiz():
             #add the qset list to the output list
             qset_data.append(data)
 
+        write_log(u_id,21,'export quizes success')
         return jsonify ({'Status' : 'ok','msg':qs_id_req,'data':qset_data})
 
 
@@ -556,6 +615,7 @@ def download_quiz():
 def delete_quiz():
     if request.method == 'POST':
         qs_id_req = request.get_json()["qs_id_req"]
+        u_id = request.get_json()["u_id"]
 
         #deletes the requested qsets and questions from the DB
         for qs_id in qs_id_req:
@@ -566,6 +626,7 @@ def delete_quiz():
         db.session.commit()
 
         #if all was ok
+        write_log(u_id,22,'delete quizes success')
         return jsonify ({'Status' : 'ok',"msg":qs_id_req})
 
 
@@ -574,9 +635,12 @@ def delete_quiz():
 
 @app.route('/manage_users.html', methods=['GET'])
 def get_manage_users():
+    u_id = request.args['u_id']
+    username = request.args['username']
+    write_log(u_id,23,'manage users entry')
     return render_template('manage_users.html',
-                            username=request.args['username'], 
-                            u_id=request.args['u_id'])
+                            username=username, 
+                            u_id=u_id)
 
 
 
@@ -597,6 +661,7 @@ def manage_users_json():
                               user.password])
 
         #if all was ok
+        write_log(u_id,24,'get manage users json data success')
         return jsonify ({'Status' : 'ok',"msg":"","data":users_data})
 
 
@@ -606,10 +671,20 @@ def manage_users_json():
 #for a student to actually do the quiz and make a submission
 @app.route('/take_quiz.html', methods=['GET'])
 def get_take_quiz():
+    u_id = request.args['u_id']
+    username = request.args['username']
+    qs_id = request.args['qs_id']
+    preview_flag = request.args['preview_flag']
+    
+    if preview_flag == 'false':
+        write_log(u_id,25,'take quiz entry')
+    else:
+        write_log(u_id,39,'preview quiz entry')
     return render_template('take_quiz.html',
-                            username=request.args['username'], 
-                            u_id=request.args['u_id'],
-                            qs_id=request.args['qs_id'])
+                            username=username, 
+                            u_id=u_id,
+                            qs_id=qs_id,
+                            preview_flag=preview_flag)
 
 
 
@@ -628,6 +703,7 @@ def submit_answers_json():
         #check that the submission is legal
         result = Submission.query.filter_by(qs_id=qs_id,u_id=u_id).all()
         if len(result) > 0 and result[0].status in ['Completed','Marked']:
+            write_log(u_id,26,'submit answers failure: quiz status is already complete or marked')
             return jsonify ({'Status' : 'nok', 'msg' : 'no further submissions possible'})
 
         #remove any existing submissions
@@ -649,6 +725,7 @@ def submit_answers_json():
         db.session.commit()
 
         #if all was ok
+        write_log(u_id,27,'submit answers success, quiz status: ' + status)
         return jsonify ({'Status' : 'ok', "msg" : ""})
 
 
@@ -657,21 +734,30 @@ def submit_answers_json():
 #for student to review a submission and marks if available
 @app.route('/review_quiz.html', methods=['GET'])
 def get_review_quiz():
+    u_id = request.args['u_id']
+    username = request.args['username']
+    qs_id = request.args['qs_id']
+    write_log(u_id,28,'review quiz entry')
     return render_template('review_quiz.html',
-                            username=request.args['username'], 
-                            u_id=request.args['u_id'],
-                            qs_id=request.args['qs_id'])
+                            username=username, 
+                            u_id=u_id,
+                            qs_id=qs_id)
 
 
 
 #you load the qset via json with the include_submission = true
 @app.route('/mark_quiz.html', methods=['GET'])
 def get_mark_quiz():
+    u_id = request.args['u_id']
+    username = request.args['username']
+    qs_id = request.args['qs_id']
+    s_u_id = request.args['s_u_id']
+    write_log(u_id,29,'mark quiz entry')
     return render_template('mark_quiz.html',
-                            qs_id=request.args['qs_id'],
-                            username=request.args['username'], 
-                            u_id=request.args['u_id'],
-                            s_u_id=request.args['s_u_id'])
+                            qs_id=qs_id,
+                            username=username, 
+                            u_id=u_id,
+                            s_u_id=s_u_id)
 
 
 
@@ -696,6 +782,7 @@ def submit_marks_json():
                     db.session.commit()
 
         #if all was ok
+        write_log(u_id,30,'submit marks success, quiz status')
         return jsonify ({'Status' : 'ok', "msg" : ""})
 
 
@@ -754,6 +841,7 @@ def load_qset_json():
                 s_u_id = get_user_by_status(qs_id, True)
                 #check if we have a suitable s_u_id
                 if s_u_id is None:
+                    write_log(u_id,31,'load quiz with submission json failure: no submissions for that qs_id yet')
                     return jsonify ({'Status':'nok', "msg":"no submissions yet for that question set"})
             
             #get the status
@@ -766,6 +854,7 @@ def load_qset_json():
             #construct qset_data to return
             qset = query2list_of_dict(Question_Set.query.filter_by(qs_id=qs_id).all())
             if len(qset) == 0:
+                write_log(u_id,32,'load quiz with submissions json failure: question set does not exist')
                 return jsonify ({'Status':'nok', 'msg':"question set doesn't exist"})
             qset = qset[0]
             
@@ -773,6 +862,7 @@ def load_qset_json():
             qset['s_u_id'] = s_u_id
             result = User.query.filter_by(u_id=s_u_id).first()
             if result is None:
+                write_log(u_id,33,"load quiz with submissions json failure: user " + s_u_id + " doesn't exist")
                 return jsonify ({'Status':'nok', 'msg':"user " + s_u_id + " doesn't exist"})
             qset['s_username'] = result.username
 
@@ -782,6 +872,7 @@ def load_qset_json():
             #add the questions
             questions = Question.query.filter_by(qs_id=qs_id).all()
             if len(questions) == 0:
+                write_log(u_id,34,"load quiz with submissions json failure: no questions in that question set")
                 return jsonify ({'Status' : 'nok', 'msg' : "no questions in that question set"})
             for question in questions:
                 #this is the regular question data
@@ -814,6 +905,7 @@ def load_qset_json():
             #construct qset_data to return
             qset = query2list_of_dict(Question_Set.query.filter_by(qs_id=qs_id).all())
             if len(qset) == 0:
+                write_log(u_id,35,'load quiz json failure: question set does not exist')
                 return jsonify ({'Status' : 'nok', 'msg' : "question set doesn't exist"})
             qset = qset[0]
 
@@ -823,6 +915,7 @@ def load_qset_json():
             #add the questions
             questions = Question.query.filter_by(qs_id=qs_id).all()
             if len(questions) == 0:
+                write_log(u_id,36,"load quiz json failure: no questions in that question set")
                 return jsonify ({'Status' : 'nok', 'msg' : "no questions in that question set"})
             for question in questions:
                 #this is the regular question data
@@ -838,12 +931,41 @@ def load_qset_json():
                 qset_data.append(temp)
 
         #if all was ok
+        if include_submission == '1':
+            write_log(u_id,37,"load quiz with submissions json success")
+        else:
+            write_log(u_id,38,"load quiz json success")
         return jsonify ({'Status' : 'ok', "msg" : "", "data" : qset_data, "submitters" : submitters, "submission_status":submission_status})
 
 
 #########################################################
 #########################################################
 #########################################################
+
+def write_log(u_id,action_id,action):
+    #this makes a log entry
+    #need to check for errors from the timestamp being the same as the last log entry of the same type (primary key constraint => if get error wait and try again)
+    cnt = 0
+    while True:
+        try:
+            log_entry = Log(time=int(dt.now().timestamp()), 
+                            u_id=u_id, 
+                            action_id=action_id, 
+                            action=action)
+            db.session.add(log_entry)
+            db.session.commit()
+            break
+        except Exception as e:
+            print('got log primary key conflict due to time.  Rollback, wait and try again')
+            db.session.rollback()
+            time.sleep(1)
+        cnt += 1
+        if cnt > 3:
+            #try 3x then give up
+            break
+
+
+
 
 def query2list_of_dict(result):
     #this converts the returned object from sqlalchemy to an Python list of dicts
