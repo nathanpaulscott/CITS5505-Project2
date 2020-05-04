@@ -1298,6 +1298,8 @@ function build_mark_quiz(u_id, username, submission_status, qset_data, submitter
 			processData: false,
 			async: true,
 			success: function(data) {
+				alert("Your marks were submitted with status: " + data["Status"]);
+
 				if (change_flag) {
 					//change the s_u_id
 					let new_user = $('[name="input-submitter"]').val();
@@ -1309,7 +1311,6 @@ function build_mark_quiz(u_id, username, submission_status, qset_data, submitter
 													"s_u_id":s_u_id});
 					window.location = "./mark_quiz.html" + "?" + query_data;
 				}
-				//alert("Your marks were submitted with status: " + data["Status"]);
 			},
 		});
 	});  //end of submit marks code
