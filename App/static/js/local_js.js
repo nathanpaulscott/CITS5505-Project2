@@ -805,10 +805,9 @@ function build_take_quiz(u_id, username, qset_data, preview_flag) {
 
 	//disable the final save href
 	$("#final-save").attr("href","javascript:;"); 
-	//edit the cancel save link
-	let query_data = encodeQueryData({"u_id":u_id,
-									"username":username});
-	$("#cancel-test").attr("href","./student_summary.html" + "?" + query_data); 
+
+	//disable the cancel-test href
+	$("#cancel-test").attr("href","javascript:;"); 
 
 	//do the title
 	html_text = qset_data[0]["topic"] + " (" + String(qs_id) + ")";
@@ -913,12 +912,10 @@ function build_take_quiz(u_id, username, qset_data, preview_flag) {
 	//assigns a click listener to the submit button as well as the finish and submit nav choice
 	$(".save-continue, #final-save, #cancel-test").click(function() {
 		//sets the final_submit flag to indicate the user closed off the quiz, otherwise the attmpt is not complete even though interim results are saved
-		let final_flag = false;
-		if ($(this).is('#final-save'))  
-			final_flag = true;
 
-		//if they cancelled, just log an attempt
-		if ($(this).is('#cancel-test'))  
+		let final_flag = $(this).is("#final-save");
+		let cancel_flag = $(this).is("#cancel-test");
+		if (cancel_flag) 
 			final_flag = false;
 
 		let a_data = [];
@@ -949,11 +946,9 @@ function build_take_quiz(u_id, username, qset_data, preview_flag) {
 			async: true,
 			success: function(data) {
 				if (data["Status"] == "ok") {
-					if (!final_flag) 
-						alert("Your answers were submitted with status: ok");
-					else {
-						alert("Your answers were submitted with status: ok");
-						//back to student_summary page if no issues on final commit
+					alert("Your answers were submitted with status: ok");
+					if (final_flag || cancel_flag) {
+						//back to student_summary page if no issues
 						let query_data = encodeQueryData({"u_id":u_id,
 														"username":username});
 						window.location = "./student_summary.html" + "?" + query_data;
@@ -1124,10 +1119,8 @@ function build_mark_quiz(u_id, username, submission_status, qset_data, submitter
 	//update the username in the header
 	$("#username").text(username);
 
-	//edit the final save link
-	let query_data = encodeQueryData({"u_id":u_id,
-									  "username":username});
-	$("#final-save").attr("href","./admin_summary.html" + "?" + query_data); 
+	//disable the final-save link
+	$("#final-save").attr("href","javascript:;"); 
 
 	//do the title
 	html_text = qset_data[0]["topic"] + " (" + String(qs_id) + ")" + '<br/> <span class="submitter">username: ' + s_username + '<br/>user_id: ' + qset_data[0]["s_u_id"] + '<br/>status: ' + submission_status + '</span>';
@@ -1266,6 +1259,8 @@ function build_mark_quiz(u_id, username, submission_status, qset_data, submitter
 		//set the change s_u_id flag for the case the user want to change
 		let change_flag = $(this).is("#btn-load-submitter");
 
+		let final_flag = $(this).is("#final-save");
+
 		let marking_data = [{"qs_id":qs_id,"u_id":u_id,"s_u_id":s_u_id}];
 		//get the marking data
 		for (let i = 1; i < qset_data.length; i++) {
@@ -1299,6 +1294,12 @@ function build_mark_quiz(u_id, username, submission_status, qset_data, submitter
 			async: true,
 			success: function(data) {
 				alert("Your marks were submitted with status: " + data["Status"]);
+
+				if (final_flag) {
+					let query_data = encodeQueryData({"u_id":u_id,
+													"username":username});
+					window.location = "./admin_summary.html" + "?" + query_data;
+				}
 
 				if (change_flag) {
 					//change the s_u_id

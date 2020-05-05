@@ -120,7 +120,7 @@ class Submission_Answer(db.Model):
 
 class Log(db.Model):
     __tablename__ = 'log'
-    time = db.Column(db.Integer, primary_key=True)
+    time = db.Column(db.Integer, primary_key=True)    #ms since epoch
     u_id = db.Column(db.Integer, db.ForeignKey('user.u_id'), primary_key=True)
     action_id = db.Column(db.Integer, primary_key=True)
     action = db.Column(db.Text)
@@ -327,14 +327,14 @@ def student_summary_json():
             #get the marks stats
             result = Submission_Answer.query.filter_by(qs_id=qs_id).all()
             marks = []
-            qset.marks_mean = -1
-            qset.marks_sd = -1
+            qset.marks_mean = 0
+            qset.marks_sd = 0
             for user in set([x.u_id for x in result]):
                 marks.append(sum([x.mark for x in result if x.u_id == user]))
             if len(marks) >= 1:
-                qset.marks_mean = st.mean(marks)
+                qset.marks_mean = round(st.mean(marks),2)
             if len(marks) >= 2:
-                qset.marks_sd = st.stdev(marks)
+                qset.marks_sd = round(st.stdev(marks),2)
 
             #fill the output list with data
             qset_summary.append([qset.status, 
@@ -401,14 +401,14 @@ def admin_summary_json():
             #get the marks stats
             result = Submission_Answer.query.filter_by(qs_id=qs_id).all()
             marks = []
-            qset.marks_mean = -1
-            qset.marks_sd = -1
+            qset.marks_mean = 0
+            qset.marks_sd = 0
             for user in set([x.u_id for x in result]):
                 marks.append(sum([x.mark for x in result if x.u_id == user]))
             if len(marks) >= 1:
-                qset.marks_mean = st.mean(marks)
+                qset.marks_mean = round(st.mean(marks),2)
             if len(marks) >= 2:
-                qset.marks_sd = st.stdev(marks)
+                qset.marks_sd = round(st.stdev(marks),2)
             
             #get the num images missing
             result = Question.query.filter_by(qs_id=qs_id).all()
@@ -486,6 +486,7 @@ def upload_quiz():
         import_flag = request.get_json()["import_flag"]
 
         #go through the qset data that is not blank
+        qs_id_req = []
         for qset_data in [x for x in upload_data if x != []]:
             #if we are just updating quiz edits, we know the qs_id
             if not import_flag:
@@ -543,7 +544,7 @@ def upload_quiz():
             #add questions to the DB, not reading the qs_id field, just assigning it sequentially 
             q_id = 1
             for q in qset_data[1:]:
-                q_marks = -1
+                q_marks = 0
                 if 'marks' in q["question"][0]:
                     q_marks = q["question"][0]["marks"]
                 q_data = json.dumps(q["question"][1:])
@@ -565,11 +566,12 @@ def upload_quiz():
 
             # commit changes
             db.session.commit()
-    
+            qs_id_req.append(qs_id)
+
         if import_flag:
-            write_log(u_id,16,'quiz data import success')
+            write_log(u_id,16,'quiz data import success, qs_id: ' + str(qs_id_req))
         else:
-            write_log(u_id,17,'quiz data edits upload success')
+            write_log(u_id,17,'quiz data edits upload success, qs_id: ' + str(qs_id_req))
 
         return jsonify ({'Status':'ok'})
 
@@ -590,6 +592,7 @@ def upload_image():
     file = request.files['file']
     filename = secure_filename(file.filename)
     file.save(basedir + '/' + image_folder + '/' + filename)
+
     write_log(0,20,'image upload success: ' + filename)
     return jsonify ({ 'Status' : 'ok', 'msg':'Server recieved: ' + filename})
 
@@ -627,7 +630,7 @@ def download_quiz():
             #add the qset list to the output list
             qset_data.append(data)
 
-        write_log(u_id,21,'export quizes success')
+        write_log(u_id,21,'export quiz success, qs_id: ' + str(qs_id_req))
         return jsonify ({'Status' : 'ok','msg':qs_id_req,'data':qset_data})
 
 
@@ -645,12 +648,14 @@ def delete_quiz():
         for qs_id in qs_id_req:
             Question_Set.query.filter_by(qs_id=qs_id).delete()
             Question.query.filter_by(qs_id=qs_id).delete()
-
+            Submission.query.filter_by(qs_id=qs_id).delete()
+            Submission_Answer.query.filter_by(qs_id=qs_id).delete()
+            
         # commit changes
         db.session.commit()
 
         #if all was ok
-        write_log(u_id,22,'delete quizes success')
+        write_log(u_id,22,'delete quiz success, qs_ids: ' + str(qs_id_req))
         return jsonify ({'Status' : 'ok',"msg":qs_id_req})
 
 
@@ -961,9 +966,9 @@ def load_qset_json():
 
         #if all was ok
         if include_submission == '1':
-            write_log(u_id,37,"load quiz with submissions json success")
+            write_log(u_id,37,"load quiz with submissions json success, qs_id: " + str(qs_id))
         else:
-            write_log(u_id,38,"load quiz json success")
+            write_log(u_id,38,"load quiz json success, qs_id: " + str(qs_id))
         return jsonify ({'Status' : 'ok', "msg" : "", "data" : qset_data, "submitters" : submitters, "submission_status":submission_status})
 
 
@@ -974,10 +979,11 @@ def load_qset_json():
 def write_log(u_id,action_id,action):
     #this makes a log entry
     #need to check for errors from the timestamp being the same as the last log entry of the same type (primary key constraint => if get error wait and try again)
+    #NOTE: log entry time is in ms since epoch
     cnt = 0
     while True:
         try:
-            log_entry = Log(time=int(dt.now().timestamp()), 
+            log_entry = Log(time=int(dt.now().timestamp()*1000), 
                             u_id=u_id, 
                             action_id=action_id, 
                             action=action)
