@@ -308,9 +308,7 @@ def get_admin_stats():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_admin_stats')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -330,9 +328,7 @@ def get_student_stats():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_student_stats')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -353,10 +349,7 @@ def get_student_summary():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_student_summary')
     if not result['status'] == 'ok':
-        #return render_template('login.html')
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
     
     u_id = result['data'].u_id
     username = result['data'].username
@@ -428,9 +421,7 @@ def get_admin_summary():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_admin_summary')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -534,9 +525,7 @@ def get_edit_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_edit_quiz')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -563,9 +552,7 @@ def get_manage_users():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_manage_users')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -596,9 +583,7 @@ def get_take_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_take_quiz')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -631,9 +616,7 @@ def submit_answers_json():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_take_quiz')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -686,9 +669,7 @@ def get_review_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_review_quiz')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
     
     u_id = result['data'].u_id
     username = result['data'].username
@@ -717,9 +698,7 @@ def get_mark_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_mark_quiz')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
   
     u_id = result['data'].u_id
     username = result['data'].username
@@ -747,9 +726,7 @@ def submit_marks_json():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_mark_quiz')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -783,9 +760,7 @@ def upload_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_admin_summary')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
     
     u_id = result['data'].u_id
     username = result['data'].username
@@ -892,9 +867,7 @@ def upload_image():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_admin_summary')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
 
     if 'file' not in request.files:
         write_log(0,18,'image upload fail: bad form format')
@@ -920,9 +893,7 @@ def download_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_admin_summary')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
     
     u_id = result['data'].u_id
     username = result['data'].username
@@ -965,9 +936,7 @@ def delete_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request, 'get_admin_summary')
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error',
-                        'msg':result['msg'],
-                        'target':'/login.html'})
+        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
 
     u_id = result['data'].u_id
     username = result['data'].username

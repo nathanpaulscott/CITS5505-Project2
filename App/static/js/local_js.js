@@ -1,3 +1,21 @@
+function encodeQueryData(data) {
+	//encodes a dict to an HTTP GET string
+	const ret = [];
+	for (let d in data)
+		ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(data[d]));
+	return ret.join('&');
+}
+
+
+//this is messing up, giving + for a space!!!
+ function findGetParameter(param) {
+	let url = new URL(window.location.href);
+	let result = url.searchParams.get(param);
+    return result;
+}
+
+
+
 function fix_header(username){
 	//update the username in the header
 	$("#username").text(username);
@@ -11,16 +29,15 @@ function fix_header(username){
 
 function load_new_html(url, html) {
 	//this loads a new html document from an html string
-
-	//1)
-	//this loads js
-	////we loose local vars
+	//you have 2 options 
+	//1) reload the js, it wipes the document, loose local vars, some say its bad
+	//all I know is that chrome and edge give a bunch of warnings
 	//document.open();
 	//document.write(html);
 	//document.close();
 	
-	//2)
-	//this doesn't load js
+	//2) this doesn't load js after the login page, just replaces the document structure
+	//doesn't give warnings, works fine
 	var newdoc = document.implementation.createHTMLDocument();   //or this
 	newdoc.documentElement.innerHTML = html;
 	document.replaceChild(newdoc.documentElement, document.documentElement);
@@ -36,6 +53,11 @@ function ajax_authorized_get(target, target_fn, args) {
 	//args["sesssion_data"] has the token and some other info
 	//args also contains parameters to send in the get request(any key that is not session_data or data)
 	//args["data"] is added with the json from the get request
+
+	//this changes the address in the address bar of the browser, it is purely cosmetic
+	//if the user presses reload, they will get an error as no token is sent
+	//comment out to just show the login address (the real address) the whole time
+	//window.history.replaceState({}, "", target);
 
 	//get the list of get params to send (not the session_data)
 	let get_params = {};
@@ -72,23 +94,6 @@ function ajax_authorized_get(target, target_fn, args) {
 }
 
 
-
-
-function encodeQueryData(data) {
-	//encodes a dict to an HTTP GET string
-	const ret = [];
-	for (let d in data)
-		ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(data[d]));
-	return ret.join('&');
-}
-
-
-//this is messing up, giving + for a space!!!
- function findGetParameter(param) {
-	let url = new URL(window.location.href);
-	let result = url.searchParams.get(param);
-    return result;
-}
  
 
 $(document).ready(function() {
