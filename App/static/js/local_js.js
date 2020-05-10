@@ -471,12 +471,88 @@ function build_admin_summary(args) {
 		$("#import-config").text("");
 		document.getElementById('input-import').click();
 	});
+
+
+	function validate_import(qset_data, name) {
+		if (! Array.isArray(qset_data)) 
+			return {"status":"error","msg":"!!! outer object should be an array '" + name + "', not uploading....<br/>"};
+
+		let keys = ["enabled","qs_id","time","topic","u_id"]
+		for (key of keys){
+			if (! key in qset_data[0])
+				return {"status":"error","msg":key + " doesn't exist in the first element of the array: '" + name + "', not uploading....<br/>"};
+		}
+		
+		for (q of qset_data.slice(1,)){
+			if (! "question" in q)
+				return {"status":"error","msg":"A question key needs to be in each array element except first one: '" + name + "', not uploading....<br/>"};
+
+			if (! "answer" in q)
+				return {"status":"error","msg":"An answer key needs to be in each array element except first one: '" + name + "', not uploading....<br/>"};
+
+			if (! "correct" in q["answer"])
+				return {"status":"error","msg":"The answer object needs to have a key: 'correct' with the correct answer: '" + name + "', not uploading....<br/>"};
+
+			if (! "type" in q["answer"])
+				return {"status":"error","msg":"The answer object needs to have a key: 'type' with the answer type ('mc' or 'text'): '" + name + "', not uploading....<br/>"};
+
+			if (! ["text","mc"].includes(q["answer"]["type"]))
+				return {"status":"error","msg":"The answer object type element needs to be either 'text' or 'mc': '" + name + "', not uploading....<br/>"};
+
+			if (q["answer"]["type"] == "mc" && 
+				! "data" in q["answer"])
+				return {"status":"error","msg":"The answer object needs to have a data element with a list of multi choice options if the answer type is 'mc': '" + name + "', not uploading....<br/>"};
+
+			if (q["answer"]["type"] == "mc" && 
+				! q["answer"]["data"].includes(q["answer"]["correct"]))
+				return {"status":"error","msg":"The mc correct answer needs to be one of the given options: '" + name + "', not uploading....<br/>"};
+
+			/*
+			//this is when we specify mc correct as the index (,2,3,4,5 etc)
+			if (q["answer"]["type"] == "mc" && 
+				Number.isNaN(parseInt(q["answer"]["correct"])))
+				return {"status":"error","msg":"As the answer is multi-choice, the correct element needs to parse to an integer: '" + name + "', not uploading....<br/>"};
+
+			if (q["answer"]["type"] == "mc" && 
+				parseInt(q["answer"]["correct"]) >= 1 && 
+				parseInt(q["answer"]["correct"]) <= q["answer"]["data"].length )
+				return {"status":"error","msg":"As the answer is multi-choice, the correct element needs to be a relevant integer mapping to a given option: '" + name + "', not uploading....<br/>"};
+			*/
+			
+			if (q["answer"]["type"] == "text" && 
+				String(q["answer"]["correct"]).length == 0)
+				return {"status":"error","msg":"The answer object needs to have a correct answer in the correct element, not just blank: '" + name + "', not uploading....<br/>"};
+
+			if (! Array.isArray(q["question"])) 
+				return {"status":"error","msg":"!!! the question element needs to contain an array [header, part1...partn]: '" + name + "', not uploading....<br/>"};
+
+			if (! "marks" in q["question"][0])
+				return {"status":"error","msg":"The question needs to have a marks element with the available marks for the question: '" + name + "', not uploading....<br/>"};
+
+			//if (! "q_id" in q["question"][0])
+			//	return {"status":"error","msg":"The question needs to have a q_id element: '" + name + "', not uploading....<br/>"};
+
+			for (q_part of q["question"].slice(1,)){
+				if (! "type" in q_part || 
+					! ["text","image"].includes(q_part["type"]))
+					return {"status":"error","msg":"Each question part of a question needs to have a type element valued 'text' or 'image' depending on the part type: '" + name + "', not uploading....<br/>"};
+	
+				if (! "data" in q_part ||
+					q_part["data"].length == 0)
+					return {"status":"error","msg":"Each question part of a question needs to have a data element with the text data or the image filename and it can not be blank: '" + name + "', not uploading....<br/>"};
+			}
+
+		}
+		return {"status":"ok"}
+	}
+
 	//this is the onchange evenet handler for the hidden input file selection dialog
 	$("#input-import").on("change", function() {
 		//this code accepts multiple files, the quiz files should be .quiz and just be a text file of a json object with the correct format specifying the quiz text, answer types and images.  So we validate these files.  Any non .quiz files, are assumed to be associated image files and are just uploaded to the server, there is no crosschecking done locally, that can be done server-side later.  The quizes will still work with no image files, the images just will not render
 		
 		let files = this.files;
 		var upload_data = [];
+		let cancel_upload = true;
 		let cnt = 0;
 		for (f of files) 
 			if (f["name"].search(/\.quiz/i) > -1) 
@@ -487,7 +563,7 @@ function build_admin_summary(args) {
 			if (f["name"].search(/\.quiz/i) == -1) {
 				//this is for images, upload them 
 
-				//do som evalidation here if you want t avoid non-image files etc...
+				//do some validation here if you want t avoid non-image files etc...
 				let img_allowed = ['image/gif', 'image/jpeg', 'image/png'];
 				if (! img_allowed.includes(f["type"])) {
 					$("#import-config").append("Your file '" + f["name"] + "' needs to be an image file (jpg, png, gif).  Not uploading it....<br/>");
@@ -523,34 +599,32 @@ function build_admin_summary(args) {
 				let reader = new FileReader();
 				reader.onload = (function(e1) {
 					return function(e2) {
+						cnt = cnt-1;
+						let error_msg = "";
 						let name = e1.name;
 						let file_data = e2.target.result;
 						let qset_data = [];
-						let cancel_upload = true;
 						try{
+							//parse data, this can throw
 							qset_data = JSON.parse(file_data);
-							$("#import-config").append(name + ":  parse success<br/>");
-							cancel_upload = false;
+							//validate data
+							result = validate_import(qset_data, name);
+							if (result["status"] == "ok") {
+								upload_data.push(qset_data);
+								cancel_upload = false;   //need just one good quiz to not cancel the upload
+								$("#import-config").append(name + ":  validation success<br/>");
+							}
+							else 
+								$("#import-config").append(result["msg"]);							
 						}
 						catch(err) {
-							$("#import-config").append("!!! failed parsing '" + name + "' not uploading....<br/>");
+							$("#import-config").append("!!! bad json format '" + name + "', not uploading....<br/>");
 						}
 
-						////////////////////////////////////////////////
-						////////////////////////////////////////////////
-						////////////////////////////////////////////////
-						////////////////////////////////////////////////
-						//NEED TO WRITE THE VALIDATION 
-						////////////////////////////////////////////////
-						////////////////////////////////////////////////
-						////////////////////////////////////////////////
-						////////////////////////////////////////////////
-
-						upload_data.push(qset_data);
-						
 						//check we are done and can do the upload
 						//need to upload all quizes in one array to avoid qs_id issues
-						if (upload_data.length == cnt && !cancel_upload){
+						//cnt == 0 means we are at the last quiz file
+						if (cnt == 0 && ! cancel_upload){
 							//send to server
 							$.ajax({
 								type: 'POST',
