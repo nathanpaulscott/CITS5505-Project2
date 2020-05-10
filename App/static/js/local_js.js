@@ -2,8 +2,8 @@ function fix_header(username){
 	//update the username in the header
 	$("#username").text(username);
 	//change the home link because of fontawsome screwup
-	$("#home i").removeAttr("class"); 
-	$("#home i").text("exit");
+	//$("#home i").removeAttr("class"); 
+	//$("#home i").text("exit");
 }
 
 
