@@ -1,10 +1,85 @@
+function fix_header(username){
+	//update the username in the header
+	$("#username").text(username);
+	//change the home link because of fontawsome screwup
+	$("#home i").removeAttr("class"); 
+	$("#home i").text("exit");
+}
+
+
+
+function load_new_html(url, html) {
+	//this loads a new html document from an html string
+
+	//1)
+	//this loads js
+	////we loose local vars
+	//document.open();
+	//document.write(html);
+	//document.close();
+	
+	//2)
+	//this doesn't load js
+	var newdoc = document.implementation.createHTMLDocument();   //or this
+	newdoc.documentElement.innerHTML = html;
+	document.replaceChild(newdoc.documentElement, document.documentElement);
+}
+
+
+
+function ajax_authorized_get(target, target_fn, args) {
+	//this does a jwt authorized get for the given target
+	// and passes control to the html building function (target_fn)
+
+	//note on args
+	//args["sesssion_data"] has the token and some other info
+	//args also contains parameters to send in the get request(any key that is not session_data or data)
+	//args["data"] is added with the json from the get request
+
+	//get the list of get params to send (not the session_data)
+	let get_params = {};
+	let ignore = ["session_data"];
+	for (key in args) {
+		if (! ignore.includes(key)) {
+			get_params[key] = args[key];
+		}
+	}
+
+	//this does the ajax get request
+	$.ajax({
+		type: 'GET',
+		url: target,
+		data: get_params,
+		headers: {'Authorization':args["session_data"]["token"]},
+		contentType: 'application/json',
+		dataType: 'json',
+		success: function (data) {
+			if (data['status'] == "ok"){
+				//load new base template page
+				load_new_html(target, data["html"]);
+				//add data to args
+				args["data"] = data["data"];
+				//pass to the target_fn to build the page
+				target_fn(args);
+			}
+			else {
+				alert(data["msg"]);
+				window.location = data['target'];
+			}
+		}
+	});
+}
+
+
+
+
 function encodeQueryData(data) {
 	//encodes a dict to an HTTP GET string
 	const ret = [];
 	for (let d in data)
 		ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(data[d]));
 	return ret.join('&');
- }
+}
 
 
 //this is messing up, giving + for a space!!!
@@ -15,270 +90,52 @@ function encodeQueryData(data) {
 }
  
 
- $(document).ready(function() {
+$(document).ready(function() {
+	//alert('document ready triggered');
 	//these are the regex page selectors to isolate js code to specific pages
 	let regex = {};
-	regex["admin_summary"] = /\/admin_summary\.html/i;
-	regex["student_summary"] = /\/student_summary\.html/i;
-	regex["take_quiz"] = /\/take_quiz\.html/i;
-	regex["review_quiz"] = /\/review_quiz\.html/i;
-	regex["mark_quiz"] = /\/mark_quiz\.html/i;
-	regex["edit_quiz"] = /\/edit_quiz\.html/i;
-	regex["admin_stats"] = /\/admin_stats\.html/i;
-	regex["student_stats"] = /\/student_stats\.html/i;
-	regex["manage_users"] = /\/manage_users\.html/i;
+	regex["login"] = /\/login\.html/i;
 		
+	//##########################
+	//Login page
+	if (window.location.pathname.search(regex["login"]) != -1) {
+		//handles the login and the returned token, then routes to admin or student area
+		//this sets up the listeners for the form submit and sends the ajax req
+		$("#submit").click(function() {
+			let username = $("#username").val();
+			let password = $("#password").val();
 
-	if (window.location.pathname.search(regex["admin_stats"]) != -1) {
-		//the user id comes form the previous page
-		let u_id = findGetParameter('u_id');
-		let username = findGetParameter('username');
+			//do some validation here?
 
-		//update the username in the header
-		$("#username").text(username);
-	}
-	if (window.location.pathname.search(regex["student_stats"]) != -1) {
-		//the user id comes form the previous page
-		let u_id = findGetParameter('u_id');
-		let username = findGetParameter('username');
-
-		//update the username in the header
-		$("#username").text(username);
-	}
-	
-	
-	//##########################3
-	//Manage Users page
-	if (window.location.pathname.search(regex["manage_users"]) != -1) {
-		//this builds the table of users to administer
-		//the user id comes form the previous page
-		let u_id = findGetParameter('u_id');
-		let username = findGetParameter('username');
-
-		//Do the Ajax Request here to fetch the users
-		$.ajax({
-			type: 'POST',
-			url: '/manage_users_json',
-			data: JSON.stringify({"u_id":u_id}),
-			contentType: "application/json",
-			data_type: "json",
-			cache: false,
-			processData: false,
-			async: true,
-			success: function(data) {
-				build_manage_users(u_id, username, data["data"]);
-			},
-		});
-	} 
-
-
-
-	//Admin summary page
-	//This will go to the admin_summary page which shows a summary table of all quizes
-    //this page allows the admin to click on a quiz to edit it, or use the bulk import/export/delete buttons
-	if (window.location.pathname.search(regex["admin_summary"]) != -1) {
-		//this builds the table of quizes to administer
-		//the user id comes form the previous page
-		let u_id = findGetParameter('u_id');
-		let username = findGetParameter('username');
-
-		//Do the Ajax Request here to fetch the admin summary table data (qset_summary)
-		$.ajax({
-			type: 'POST',
-			url: '/admin_summary_json',
-			data: JSON.stringify({"u_id":u_id}),
-			contentType: "application/json",
-			data_type: "json",
-			cache: false,
-			processData: false,
-			async: true,
-			success: function(data) {
-				build_admin_summary(u_id, username, data["data"]);
-			},
-		});
-	} 
-
-
-
-	//student_summary page
-	//This will go to the student quiz summary page, the student can see the staus of the quizes and select a quiz t take
-	if (window.location.pathname.search(regex["student_summary"]) != -1) {
-		//this builds the table of quizes to take
-		//the user id comes form the previous page
-		let u_id = findGetParameter('u_id');
-		let username = findGetParameter('username');
-		let qset_summary = findGetParameter('data');
-
-		//Do the Ajax Request here to fetch the student summary table data (qset_summary)
-		$.ajax({
-			type: 'POST',
-			url: '/student_summary_json',
-			data: JSON.stringify({'u_id':u_id}),
-			contentType: "application/json",
-			data_type: "json",
-			cache: false,
-			processData: false,
-			async: true,
-			success: function(data) {
-				build_student_summary(u_id, username, data["data"]);
-			},
-		});
-	} 
-
-
-
-	//Take Quiz page
-	//This loads the selected quiz and allows the student to answer the questions, the student can save as they go, the link for final commit is the top left nav bar
-	if (window.location.pathname.search(regex["take_quiz"]) != -1) {
-		//the user id comes form the previous page
-		let u_id = findGetParameter('u_id');
-		let username = findGetParameter('username');
-		let qs_id = findGetParameter('qs_id');
-		preview_flag = false;
-		if (findGetParameter('preview_flag') == 'true') 
-			preview_flag = true;
-
-		//Do the Ajax Request here to fetch the take_quiz data
-		$.ajax({
-			type: 'POST',
-			url: '/load_qset_json',
-			data: JSON.stringify({"u_id":u_id,
-								  "username":username,
-								  "qs_id":qs_id,
-								  "include_submission":"0",
-								  "include_submitters":"0"}),
-			contentType: "application/json",
-			data_type: "json",
-			cache: false,
-			processData: false,
-			async: true,
-			success: function(data) {
-				if (data["Status"] == "nok") {
-					alert(data["msg"]);
-					let query_data = encodeQueryData({"u_id":u_id,
-													"username":username});
-					window.location = "./student_summary.html" + "?" + query_data;
+			form_data  = new FormData();
+			form_data.append("username", username);
+			form_data.append("password", password);
+			let target = "/login.html";
+			$.ajax({
+				type: 'POST',
+				url: target,
+				data: form_data,
+				contentType: false,
+				cache: false,
+				processData: false,
+				async: true,
+				success: function(data) {
+					if (data["status"] == "ok") {
+						let session_data = data['data'];
+						//calls the summary page for admin or student
+						let args = {"session_data":session_data};
+						if (data["admin"])
+							ajax_authorized_get(data["target"], build_admin_summary, args);
+						else
+							ajax_authorized_get(data["target"], build_student_summary, args);
+					} else {
+						alert(data["msg"]);
+						window.location = data['target'];
+					}
 				}
-
-				build_take_quiz(u_id, username, data["data"], preview_flag);
-			},
-		});
+			});	
+		}); 
 	}
-
-
-
-	//Review Quiz page
-	//This loads the selected quiz and any submission related data, the user can not actually edit anything here
-	if (window.location.pathname.search(regex["review_quiz"]) != -1) {
-		//the user id comes form the previous page
-		let u_id = findGetParameter('u_id');
-		let username = findGetParameter('username');
-		let qs_id = findGetParameter('qs_id');
-
-		//Do the Ajax Request here to fetch the review_quiz data
-		$.ajax({
-			type: 'POST',
-			url: '/load_qset_json',
-			data: JSON.stringify({"u_id":u_id,
-								  "username":username,
-								  "qs_id":qs_id,
-								  "include_submission":"1",
-								  "include_submitters":"0"}),
-			contentType: "application/json",
-			data_type: "json",
-			cache: false,
-			processData: false,
-			async: true,
-			success: function(data) {
-				if (data["Status"] == "nok") {
-					alert(data["msg"]);
-					let query_data = encodeQueryData({"u_id":u_id,
-													"username":username});
-					window.location = "./student_summary.html" + "?" + query_data;
-				}
-
-				build_review_quiz(u_id, username, data["submission_status"], data["data"]);
-			},
-		});
-	}
-
-
-
-
-	//mark Quiz page
-	//This loads the selected quiz and any submission related data for marking
-	if (window.location.pathname.search(regex["mark_quiz"]) != -1) {
-		//the user id comes form the previous page
-		let u_id = findGetParameter('u_id');
-		let username = findGetParameter('username');
-		let qs_id = findGetParameter('qs_id');
-		let s_u_id = findGetParameter('s_u_id');
-
-		//Do the Ajax Request here to fetch the mark_quiz data
-		$.ajax({
-			type: 'POST',
-			url: '/load_qset_json',
-			data: JSON.stringify({"u_id":u_id,
-								"username":username,
-								"qs_id":qs_id,
-								"s_u_id":s_u_id,
-								"include_submission":"1",
-								"include_submitters":"1"}),
-			contentType: "application/json",
-			data_type: "json",
-			cache: false,
-			processData: false,
-			async: true,
-			success: function(data) {
-				if (data["Status"] == "nok") {
-					alert(data["msg"]);
-					let query_data = encodeQueryData({"u_id":u_id,
-													"username":username});
-					window.location = "./admin_summary.html" + "?" + query_data;
-				}
-
-				build_mark_quiz(u_id, username, data["submission_status"], data["data"], data["submitters"]);
-			},
-		});
-	}
-
-
-
-
-	//edit_quiz page
-	//This allows the admin to edit a quiz: adjust the order of text/image elements, set the answer type, add/delete text/image elements, import new .quiz spec to overwrite
-	if (window.location.pathname.search(regex["edit_quiz"]) != -1) {
-		//the user id comes form the previous page
-		let u_id = findGetParameter('u_id');
-		let username = findGetParameter('username');
-		let qs_id = findGetParameter('qs_id');
-
-		//Do the Ajax Request here to fetch the edit_quiz data
-		$.ajax({
-			type: 'POST',
-			url: '/load_qset_json',
-			data: JSON.stringify({"u_id":u_id,
-								  "username":username,
-								  "qs_id":qs_id,
-								  "include_submission":"0",
-								  "include_submitters":"0"}),
-			contentType: "application/json",
-			data_type: "json",
-			cache: false,
-			processData: false,
-			async: true,
-			success: function(data) {
-				if (data["Status"] == "nok") {
-					alert(data["msg"]);
-					let query_data = encodeQueryData({"u_id":u_id,
-													"username":username});
-					window.location = "./admin_summary.html" + "?" + query_data;
-				}
-
-				build_edit_quiz(u_id, username, data["data"]);
-			},
-		});
-	} //end of the edit_quiz code
 }); //end of the on_load section
 
 
@@ -295,15 +152,17 @@ function encodeQueryData(data) {
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
-function build_manage_users(u_id, username, users_data) {
+function build_manage_users(args) {
 	//this does the html table building				
-	//update the username in the header
-	$("#username").text(username);
+	let users_data = args["data"]["data"];
+	let session_data = args['session_data'];
+	let username = session_data["username"];
+	let u_id = 	session_data["u_id"];
 
-	//edit the finish link
-	let query_data = encodeQueryData({"u_id":u_id,
-									  "username":username});
-	$("#finish").attr("href","./admin_summary.html" + "?" + query_data); 
+	//fix the header
+	fix_header(username);
+	//disable the finish href
+	$("#finish").attr("href","javascript:;"); 
 
 	//does the table header
 	let html_text = ""; 
@@ -362,6 +221,11 @@ function build_manage_users(u_id, username, users_data) {
 		//build the target url
 		alert("need to write code to edit the user");
 	});
+
+	$("#finish").click(function() {
+		let args = {"session_data":session_data};
+		ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
+	});
 } //end of the build_manage_users function
 
 
@@ -379,20 +243,19 @@ function build_manage_users(u_id, username, users_data) {
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
-function build_admin_summary(u_id, username, qset_summary) {
+function build_admin_summary(args) {
 	//this does the html table building				
-	//update the username in the header
-	$("#username").text(username);
+	let qset_summary = args["data"]["data"];
+	let session_data = args['session_data'];
+	let username = session_data["username"];
+	let u_id = 	session_data["u_id"];
 
-	//edit the manage_users link
-	let query_data = encodeQueryData({"u_id":u_id,
-									  "username":username});
-	$("#manage-users").attr("href","./manage_users.html" + "?" + query_data); 
-	
-	//edit the admin stats link
-	query_data = encodeQueryData({"u_id":u_id,
-				     			  "username":username});
-	$("#admin-stats").attr("href","./admin_stats.html" + "?" + query_data); 
+	//fix the header
+	fix_header(username);
+	//disable the manage users href
+	$("#manage-users").attr("href","javascript:;"); 
+	//disable the admin stats href
+	$("#admin-stats").attr("href","javascript:;"); 
 
 	//does the table header
 	let html_text = ""; 
@@ -435,24 +298,35 @@ function build_admin_summary(u_id, username, qset_summary) {
 	//assigns a click listener to the mark cells for marking and review
 	$("#quiz-admin-table tbody tr.click-enable td.mark-quiz").click(function() {
 		let qs_id = $(this).parent().find("td#qs-id").text();
-		//build the target url
-		let query_data = encodeQueryData({"qs_id":qs_id,
-										  "u_id":u_id,
-										  "username":username,
-										  "s_u_id":"init"});
-		window.location = "./mark_quiz.html" + "?" + query_data;
+		let args = {"session_data":session_data,
+					"qs_id":qs_id,
+					"s_u_id":"init",
+					"include_submission":"1",
+					"include_submitters":"1"};
+		ajax_authorized_get("./mark_quiz.html", build_mark_quiz, args);
 	});
 
 	//assigns a click listener to the edit cells for editing the qset
 	$("#quiz-admin-table tbody tr.click-enable td.edit-quiz").click(function() {
 		let qs_id = $(this).parent().find("td#qs-id").text();
-		//build the target url
-		let query_data = encodeQueryData({"qs_id":qs_id,
-										  "u_id":u_id,
-										  "username":username});
-		window.location = "./edit_quiz.html" + "?" + query_data;
+		let args = {"session_data":session_data,
+					"qs_id":qs_id,
+					"include_submission":"0",
+					"include_submitters":"0"};
+		ajax_authorized_get("./edit_quiz.html", build_edit_quiz, args);
 	});
 
+	//assigns a click listener to the manage-users link
+	$("#manage-users").click(function() {
+		let args = {"session_data":session_data} 
+		ajax_authorized_get("./manage_users.html", build_manage_users, args);
+	});
+	
+	//assigns a click listener to the admin-stats link
+	$("#admin-stats").click(function() {
+		let args = {"session_data":session_data} 
+		ajax_authorized_get("./admin_stats.html", build_admin_stats, args);
+	});
 
 	//###############################
 	//This controls the export and delete collapse areas so only one is showing at a time
@@ -502,18 +376,15 @@ function build_admin_summary(u_id, username, qset_summary) {
 		$.ajax({
 			type: 'POST',
 			url: '/delete_quiz',
-			data: JSON.stringify({"qs_id_req":qs_id_req, "u_id":u_id}),
+			data: JSON.stringify({"qs_id_req":qs_id_req}),
+			headers: {'Authorization':session_data["token"]},
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
 			processData: false,
 			async: true,
 			success: function(data) {
-				//for testing
-				//alert(JSON.stringify(data,null,2));
-				//give a status msg
-				//$("#btn-delete-submit").after("<span>&nbsp&nbspStatus: " + JSON.stringify(data) + "</span>");
-				$("#span-delete-submit").text("Status: " + data["Status"] + ", msg: " + data["msg"]);
+				$("#span-delete-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
 			},
 		});
 		
@@ -556,7 +427,8 @@ function build_admin_summary(u_id, username, qset_summary) {
 		$.ajax({
 			type: 'POST',
 			url: '/download_quiz',
-			data: JSON.stringify({"qs_id_req":qs_id_req, "u_id":u_id}),
+			data: JSON.stringify({"qs_id_req":qs_id_req}),
+			headers: {'Authorization':session_data["token"]},
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
@@ -564,7 +436,7 @@ function build_admin_summary(u_id, username, qset_summary) {
 			async: true,
 			success: function(data) {
 				//give a status msg
-				$("#span-export-submit").text("Status: " + data["Status"] + ", msg: " + data["msg"]);
+				$("#span-export-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
 				//write this to the DOM and trigger the download, then delete from the DOM
 				for (qset of data["data"]) {
 					let filename = "export_qs_id_" + String(qset[0]["qs_id"]) + ".quiz";
@@ -593,7 +465,7 @@ function build_admin_summary(u_id, username, qset_summary) {
 		$('#delete-config').collapse('hide');
 		$('#import-config').collapse('show');
 
-		//this resets the control
+		//this resets the control (VIP)
 		document.getElementById("input-import").value = "";
 
 		$("#import-config").text("");
@@ -632,13 +504,14 @@ function build_admin_summary(u_id, username, qset_summary) {
 				$.ajax({
 					type: 'POST',
 					url: '/upload_image',
+					headers: {'Authorization':session_data["token"]},
 					data: form_data,
 					async: true,
 					contentType: false,
 					cache: false,
 					processData: false,
 					success: function(data) {
-						$("#import-config").append(JSON.stringify(data,null,2) + "<br/>");
+						$("#import-config").append(data["msg"] + "<br/>");
 					}
 				});
 
@@ -656,7 +529,7 @@ function build_admin_summary(u_id, username, qset_summary) {
 						let cancel_upload = true;
 						try{
 							qset_data = JSON.parse(file_data);
-							$("#import-config").append("parsed ok '" + name + "' uploading....<br/>");
+							$("#import-config").append(name + ":  parse success<br/>");
 							cancel_upload = false;
 						}
 						catch(err) {
@@ -682,16 +555,16 @@ function build_admin_summary(u_id, username, qset_summary) {
 							$.ajax({
 								type: 'POST',
 								url: '/upload_quiz',
-								data: JSON.stringify({"u_id":u_id,
-													"upload_data":upload_data,
+								data: JSON.stringify({"upload_data":upload_data,
 													"import_flag":true}),
+								headers: {'Authorization':session_data["token"]},
 								contentType: "application/json",
 								data_type: "json",
 								cache: false,
 								processData: false,
 								async: true,
 								success: function(data) {
-									$("#import-config").append("Upload Successfull<br/>");
+									$("#import-config").append(data["msg"] + "<br/>");
 								},
 							});
 						}
@@ -713,15 +586,17 @@ function build_admin_summary(u_id, username, qset_summary) {
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
-function build_student_summary(u_id, username, qset_summary) {
+function build_student_summary(args) {
 	//this does the html table building				
-	//update the username in the header
-	$("#username").text(username);
+	let qset_summary = args["data"]["data"];
+	let session_data = args['session_data'];
+	let username = session_data["username"];
+	let u_id = 	session_data["u_id"];
 
-	//edit the student stats link
-	let query_data = encodeQueryData({"u_id":u_id,
-									  "username":username});
-	$("#student-stats").attr("href","./student_stats.html" + "?" + query_data); 
+	//fix the header
+	fix_header(username);
+	//disable the admin stats href
+	$("#student-stats").attr("href","javascript:;"); 
 
 	//does the table header
 	let html_text = ""; 
@@ -757,26 +632,32 @@ function build_student_summary(u_id, username, qset_summary) {
 	//runs the datatable plugin on the table to make it sortable etc...
 	$('#quiz-selection-table').DataTable();
 
+	//assigns a click listener to the student-stats link
+	$("#student-stats").click(function() {
+		let args = {"session_data":session_data} 
+		ajax_authorized_get("./student_stats.html", build_student_stats, args);
+	});
+	
 	//assigns a click listener to the table rows
 	$("#quiz-selection-table tbody tr.click-enable").click(function() {
 		let status = $(this).find("td#qset-status").text();
 		let qs_id = $(this).find("td#qs-id").text();
-		let query_data = encodeQueryData({"qs_id":qs_id,
-										"u_id":u_id,
-										"username":username});
+
 		if (["Completed","Marked"].includes(status)) {
 			//review the quiz sumbission and/or marks		
-			let query_data = encodeQueryData({"qs_id":qs_id,
-											"u_id":u_id,
-											"username":username});
-			window.location = "./review_quiz.html" + "?" + query_data;
+			let args = {"session_data":session_data, 
+						"qs_id":qs_id, 
+						"include_submission":"1",
+						"include_submitters":"0"};
+			ajax_authorized_get("./review_quiz.html", build_review_quiz, args);
 		} else {
 			//take the quiz 
-			let query_data = encodeQueryData({"qs_id":qs_id,
-											"u_id":u_id,
-											"username":username,
-											"preview_flag":false});
-			window.location = "./take_quiz.html" + "?" + query_data;
+			let args = {"session_data":session_data, 
+						"qs_id":qs_id, 
+						"preview_flag":false,
+						"include_submission":"0",
+						"include_submitters":"0"};
+			ajax_authorized_get("./take_quiz.html", build_take_quiz, args);
 		}
 	});
 }//end of the build_student_summary function
@@ -796,16 +677,23 @@ function build_student_summary(u_id, username, qset_summary) {
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
-function build_take_quiz(u_id, username, qset_data, preview_flag) {
+function build_take_quiz(args) { 
 	//this does the html building				
+	let qset_data = args["data"]["data"];
+	let session_data = args["session_data"];
+	let username = session_data["username"];
+	let u_id = 	session_data["u_id"];
+	let preview_flag = args["preview_flag"];
+	//let qs_id = args["qs_id"];     ///this was not used previously
+
 	let qs_id = qset_data[0]["qs_id"];
+	let s_username = qset_data[0]["s_username"];
+	let s_u_id = qset_data[0]["s_u_id"];
 
-	//update the username in the header
-	$("#username").text(username);
-
+	//fix the header
+	fix_header(username);
 	//disable the final save href
 	$("#final-save").attr("href","javascript:;"); 
-
 	//disable the cancel-test href
 	$("#cancel-test").attr("href","javascript:;"); 
 
@@ -888,14 +776,22 @@ function build_take_quiz(u_id, username, qset_data, preview_flag) {
 	//makes some DOM changes for the preview case
 	if (preview_flag) {
 		$("#final-save").attr("id","back2edit"); 		
-		let query_data = encodeQueryData({"qs_id":qs_id,
-										"u_id":u_id,
-										"username":username});
-		$("#back2edit").attr("href","./edit_quiz.html" + "?" + query_data); 
+		$("#back2edit").attr("href","javascript:;"); 
 		$("#back2edit").text("Back to Edit Quiz");
 		$("#cancel-test").remove();
 		$(".save-continue").prop("disabled",true);
+
+		//assigns a click listener to the back to edit link (preview case)
+		$("#back2edit").click(function() {
+			//go back to the edit quiz page
+			let args = {"session_data":session_data,
+						"qs_id":qs_id,
+						"include_submission":"0",
+						"include_submitters":"0"};
+			ajax_authorized_get("./edit_quiz.html", build_edit_quiz, args);
+		});
 	}
+	
 
 	//This assigns some listeners on the take_quiz page
 	//####################################################
@@ -912,7 +808,6 @@ function build_take_quiz(u_id, username, qset_data, preview_flag) {
 	//assigns a click listener to the submit button as well as the finish and submit nav choice
 	$(".save-continue, #final-save, #cancel-test").click(function() {
 		//sets the final_submit flag to indicate the user closed off the quiz, otherwise the attmpt is not complete even though interim results are saved
-
 		let final_flag = $(this).is("#final-save");
 		let cancel_flag = $(this).is("#cancel-test");
 		if (cancel_flag) 
@@ -936,29 +831,27 @@ function build_take_quiz(u_id, username, qset_data, preview_flag) {
 			type: 'POST',
 			url: '/submit_answers_json',
 			data: JSON.stringify({"qs_id":qs_id,
-								"u_id":u_id,
 								"final_flag":final_flag,
 								"a_data":a_data}),
+			headers: {'Authorization':session_data["token"]},
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
 			processData: false,
 			async: true,
 			success: function(data) {
-				if (data["Status"] == "ok") {
+				if (data["status"] == "ok") {
 					alert("Your answers were submitted with status: ok");
 					if (final_flag || cancel_flag) {
-						//back to student_summary page if no issues
-						let query_data = encodeQueryData({"u_id":u_id,
-														"username":username});
-						window.location = "./student_summary.html" + "?" + query_data;
+						//go back to the student_summary page
+						let args = {"session_data":session_data};
+						ajax_authorized_get("./student_summary.html", build_student_summary, args);
 					}
 				} else {
 					alert(data["msg"]);
-					//back to student_summary page
-					let query_data = encodeQueryData({"u_id":u_id,
-													"username":username});
-					window.location = "./student_summary.html" + "?" + query_data;
+					//go back to the student_summary page
+					let args = {"session_data":session_data};
+					ajax_authorized_get("./student_summary.html", build_student_summary, args);
 				}
 			},
 		});
@@ -970,8 +863,6 @@ function build_take_quiz(u_id, username, qset_data, preview_flag) {
 
 
 
-
-
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -980,19 +871,22 @@ function build_take_quiz(u_id, username, qset_data, preview_flag) {
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
-function build_review_quiz(u_id, username, submission_status, qset_data) {
+function build_review_quiz(args) {
 	//this does the html building				
+	let qset_data = args["data"]["data"];
+	let submission_status = args["data"]["submission_status"];
+	let session_data = args["session_data"];
+	let username = session_data["username"];
+	let u_id = session_data["u_id"];
+	
 	let qs_id = qset_data[0]["qs_id"];
 	let s_username = qset_data[0]["s_username"];
 	let s_u_id = qset_data[0]["s_u_id"];
 
-	//update the username in the header
-	$("#username").text(username);
-
-	//edit the final save link
-	let query_data = encodeQueryData({"u_id":u_id,
-									"username":username});
-	$("#final-save").attr("href","./student_summary.html" + "?" + query_data); 
+	//fix the header
+	fix_header(username);
+	//disable the final save href
+	$("#final-save").attr("href","javascript:;"); 
 
 	//do the title
 	html_text = qset_data[0]["topic"] + " (" + String(qs_id) + ")" + '<br/> <span class="submitter">username: ' + s_username + '<br/>user_id: ' + s_u_id + '<br/>status: ' + submission_status + '</span>';
@@ -1095,6 +989,13 @@ function build_review_quiz(u_id, username, submission_status, qset_data) {
 			}
 		}
 	);
+
+	//assigns a click listener to the finish link
+	$("#final-save").click(function() {
+		//go back to the student_summary page
+		let args = {"session_data":session_data};
+		ajax_authorized_get("./student_summary.html", build_student_summary, args);
+	});
 } //end of the build_review_quiz function
 
 
@@ -1110,15 +1011,21 @@ function build_review_quiz(u_id, username, submission_status, qset_data) {
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
-function build_mark_quiz(u_id, username, submission_status, qset_data, submitters) {
+function build_mark_quiz(args) { 
 	//this does the html building				
+	let qset_data = args["data"]["data"];
+	let submitters = args["data"]["submitters"];
+	let submission_status = args["data"]["submission_status"];
+	let session_data = args["session_data"];
+	let username = session_data["username"];
+	let u_id = session_data["u_id"];
+
 	let qs_id = qset_data[0]["qs_id"];
 	let s_u_id = qset_data[0]["s_u_id"];
 	let s_username = qset_data[0]["s_username"];
 
-	//update the username in the header
-	$("#username").text(username);
-
+	//fix the header
+	fix_header(username);
 	//disable the final-save link
 	$("#final-save").attr("href","javascript:;"); 
 
@@ -1287,18 +1194,17 @@ function build_mark_quiz(u_id, username, submission_status, qset_data, submitter
 			type: 'POST',
 			url: '/submit_marks_json',
 			data: JSON.stringify({"data":marking_data}),
+			headers: {'Authorization':session_data["token"]},
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
 			processData: false,
 			async: true,
 			success: function(data) {
-				alert("Your marks were submitted with status: " + data["Status"]);
-
+				alert("Your marks were submitted with status: " + data["status"]);
 				if (final_flag) {
-					let query_data = encodeQueryData({"u_id":u_id,
-													"username":username});
-					window.location = "./admin_summary.html" + "?" + query_data;
+					let args = {"session_data":session_data};
+					ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
 				}
 
 				if (change_flag) {
@@ -1306,11 +1212,12 @@ function build_mark_quiz(u_id, username, submission_status, qset_data, submitter
 					let new_user = $('[name="input-submitter"]').val();
 					s_u_id = new_user.slice(new_user.search("\\(")+1,new_user.search("\\)")).trim();
 					//go to the chosen user mark page
-					let query_data = encodeQueryData({"qs_id":qs_id,
-													"u_id":u_id,
-													"username":username,
-													"s_u_id":s_u_id});
-					window.location = "./mark_quiz.html" + "?" + query_data;
+					let args = {"session_data":session_data,
+								"qs_id":qs_id,
+								"s_u_id":s_u_id,
+								"include_submission":"1",
+								"include_submitters":"1"};
+					ajax_authorized_get("./mark_quiz.html", build_mark_quiz, args);
 				}
 			},
 		});
@@ -1321,25 +1228,28 @@ function build_mark_quiz(u_id, username, submission_status, qset_data, submitter
 
 
 
+
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
-function build_edit_quiz(u_id, username, qset_data) {
+function build_edit_quiz(args) {
+	let qset_data = args["data"]["data"];
+	let session_data = args["session_data"];
+	let username = session_data["username"];
+	let u_id = session_data["u_id"];
+
 	let newfiles = [];
 	
 	//this does the html building				
 	let qs_id = qset_data[0]["qs_id"];
 
-	//this does the html building				
-	//update the username in the header
-	$("#username").text(username);
-
+	//fix the header
+	fix_header(username);
 	//disable the preview link
 	$("#preview").attr("href","javascript:;"); 
-
 	//disable the final save href
 	$("#final-save").attr("href","javascript:;"); 
 
@@ -1591,11 +1501,12 @@ function build_edit_quiz(u_id, username, qset_data) {
 			//go through each element of the question
 			let q_parts = $(q).children("ul").children("li");
 			for (q_part of q_parts) {
-				text_data = $(q_part).find("textarea").val();
-				if (text_data != undefined) {
+				if ($(q_part).find("textarea").length > 0) {
 					//the item is a textbox
+					text_data = $(q_part).find("textarea").val();
 					q_data["question"].push({"type":"text","data":$.trim(text_data)});
-				} else {
+				} 
+				else if ($(q_part).find("img").length > 0) {
 					//the item is an image
 					let target = $(q_part).find("img");
 					if (target.attr("src").slice(0,5) == "blob:") {
@@ -1666,29 +1577,29 @@ function build_edit_quiz(u_id, username, qset_data) {
 		$.ajax({
 			type: 'POST',
 			url: '/upload_quiz',
-			data: JSON.stringify({"u_id":u_id,
-								"upload_data":[qset_data_new],
+			data: JSON.stringify({"upload_data":[qset_data_new],
 								"import_flag":false}),
+			headers: {'Authorization':session_data["token"]},
 			contentType: "application/json",
 			data_type: "json",
 			cache: false,
 			processData: false,
 			async: true,
 			success: function(data) {
-				if (data["Status"] == "ok") {
+				if (data["status"] == "ok") {
 					alert("Your edits were submitted with status: ok");
 					if (preview_flag) {
-						let query_data = encodeQueryData({"qs_id":qs_id,
-														"u_id":u_id,
-														"username":username,
-														"preview_flag":true});
-						window.location = "./take_quiz.html" + "?" + query_data;
+						let args = {"session_data":session_data, 
+									"qs_id":qs_id, 
+									"preview_flag":true,
+									"include_submission":"0",
+									"include_submitters":"0"};
+						ajax_authorized_get("./take_quiz.html", build_take_quiz, args);
 					} 
 					else if (final_flag) {
 						//back to the admin page if there were no issues on final commit
-						let query_data = encodeQueryData({"u_id":u_id,
-														"username":username});
-						window.location = "./admin_summary.html" + "?" + query_data;
+						let args = {"session_data":session_data};
+						ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
 					}
 				}
 			},
@@ -1702,6 +1613,7 @@ function build_edit_quiz(u_id, username, qset_data) {
 			$.ajax({
 				type: 'POST',
 				url: '/upload_image',
+				headers: {'Authorization':session_data["token"]},
 				data: form_data,
 				async: true,
 				contentType: false,
@@ -1714,4 +1626,61 @@ function build_edit_quiz(u_id, username, qset_data) {
 		}
 	});
 }
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+function build_student_stats(args) {
+	//this does the html table building				
+	let stats_data = args["data"]["data"];
+	let session_data = args['session_data'];
+	let username = session_data["username"];
+	let u_id = 	session_data["u_id"];
+
+	//fix the header
+	fix_header(username);
+	//disable the finish href
+	$("#finish").attr("href","javascript:;"); 
+
+	//to be done
+
+	$("#finish").click(function() {
+		let args = {"session_data":session_data};
+		ajax_authorized_get("./student_summary.html", build_student_summary, args);
+	});
+}//end of the build_student_stats function
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+function build_admin_stats(args) {
+	//this does the html table building				
+	let stats_data = args["data"]["data"];
+	let session_data = args['session_data'];
+	let username = session_data["username"];
+	let u_id = 	session_data["u_id"];
+
+	//fix the header
+	fix_header(username);
+	//disable the finish href
+	$("#finish").attr("href","javascript:;"); 
+
+	//to be done
+
+	$("#finish").click(function() {
+		let args = {"session_data":session_data};
+		ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
+	});
+}//end of the build_admin_stats function
 

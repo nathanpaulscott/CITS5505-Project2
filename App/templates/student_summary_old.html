@@ -10,6 +10,9 @@
         <!-- bootstrap -->
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
+        <!--datatables-->
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css">
+        
         <!-- local css imports-->
         <link rel="stylesheet" type="text/css" href="./static/css/local_css.css"/>
 
@@ -18,17 +21,17 @@
         <title>Quiz App</title>
     </head>
 
+
     <body>
         <div class="container-fluid">
-            <!--header row-->
             <div class="row header">
                 <div class="col-sm-1 header_left align-self-start" id="username"></div>
                 <div class="col-sm-10 header_main align-self-center">Quiz App</div>
                 <div class="col-sm-1 header_right align-self-start"><a id="home" href="./landing.html"><i class="fas fa-sign-out-alt"></i></a></div>
-            </div>
+            </div> <!--end of row-->
 
-            <!-- header nav row -->
-            <div class="row">
+
+            <div class="row sticky-top">
                 <div class="col-sm-12 header_nav">
                     <nav class="navbar navbar-dark navbar-expand-sm">
                         <div class="navbar-header">
@@ -38,97 +41,57 @@
                         </div>
                         <div class="collapse navbar-collapse" id="myNavbar">
                             <ul class="nav navbar-nav">
-                                <!--this sends the request with the admin user id and the qs_id, so a link back to here is given too-->
-                                <li><a id="preview" href="./preview_quiz.html">Preview Edits</a></li>
-                                <li><a id="final-save" href="./admin_summary.html">Finish and Submit Edits</a></li>
+                                <li><a id="student-stats" href="./student_stats.html">Statistics</a></li>
                             </ul>
                         </div>
                     </nav>
                 </div>
-            </div> 
+            </div>
 
-            <!-- main content row -->
             <div class="row">
-                <!-- left side section -->
-                <div class="col-sm-2 l_side sticky-top">
-                    <div class="row">
-                        <div class="col-sm-12" id="q_nav_main">
-                            <nav class="navbar navbar-dark navbar-expand-sm">
-                                <div class="navbar-header">
-                                    <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#q_nav">
-                                        <span class="navbar-toggler-icon"></span>
-                                    </button>
-                                </div>
-                                <div class="collapse navbar-collapse" id="q_nav">
-                                    <ul class="nav nav-pills flex-column">
-                                        <!--filled by js-->
-                                    </ul>
-                                </div>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
+                <div class="col-sm-2 l_side">
+                </div> <!--end of l_side-->
 
-                <!-- content section -->
                 <div class="col-sm-8 content">
-                    <h2>Edit Quiz</h2>
+                    <h2>Quiz Selection</h2>
                     
-                    <h5 id="title">
-                        <!-- filled by js -->
+                    <h5>
+                        Quiz List
                     </h5>
-
                     <h6 data-toggle="collapse" data-target="#instructions" aria-expanded="false" aria-controls="instructions">
                         Instructions
                     </h6>
                     <div class="collapse multicollapse" id="instructions">             
                         <i class="instructions">
-                            Choose the question to edit on the left manu bar<br/>
-                            Click and drag the text/image elements of the quesiton to change the order<br/>
-                            Click the red X to delete an element<br/>
-                            Click the add text/add image buttons to add a new text or image element<br/><br/>
-                            Answer section, use the following format:<br/>
-                            NOTE: mc answers should be on separate lines<br/> 
-                            -------------------------------------<br/>
-                            1) multi-choice answer<br/>
-                            mc<br/>
-                            correct: 3<br/>
-                            London<br/>
-                            Madrid<br/>
-                            ....<br/>
-                            New York<br/>
-                            -------------------------------------<br/>
-                            2) text answer<br/>
-                            correct: the correct text for the answer<br/>
+                            Click on a quiz to take it<br/>
+                            If you have already completed the quiz you will be able to review your submission and any grades and comments
                         </i>
                     </div>
                     <hr>
-                    <p>
-                        <!-- Question Data -->
-                        <div class="tab-content" id="q_data">
-                            <!-- filled by JS -->
-
-                        </div>
+                    
+                    <p id="p-quiz-selection-table">
+                        <!-- filled by js -->
                     </p>
 
                     <i class="dev-comments">
-                        -this loads the question set selected via HTTP get with params (qs_id, u_id)<br/>
+                        -it will update on page load from the DB<br/>
+                        -the user_id will be in the top left corner<br/>
+                        -only status = "no attempts" will link to taking the quiz<br/>
+                        -change to a more exotic table type with sortable cols, scrolling and pagination
                     </i>
+                </div> <!--end of content-->
 
-                </div> 
-
-                <!-- right side section -->
                 <div class="col-sm-2 r_side">
-                </div>
+                </div> <!--end of r_side-->
 
-            </div>
+            </div>  <!--end of main row-->
 
-            <!-- footer row -->
             <div class="row">
                 <div class="col-sm-12 footer">
                 </div>
-            </div>
+            </div> <!--end of row-->
 
-        </div>
+        </div> <!--end of container-->
 
         <!--################################################################-->
         <!--js imports-->
@@ -143,16 +106,21 @@
             integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
             crossorigin="anonymous">
         </script>
-
-        <!--This fix hosted on the website locally fixes the jquery-ui sortable with touch devices issue-->
-        <script src="./static/js/jquery.ui.touch-punch.min.js"></script>
-
+        
         <script 
             src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous">
         </script>
         
         <script 
             src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
+        </script>
+
+        <!-- DataTables -->
+        <script 
+            src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js">
+        </script>
+        <script 
+            src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js">
         </script>
 
         <!-- fontawsome icons-->

@@ -10,6 +10,9 @@
         <!-- bootstrap -->
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
+        <!--datatables (https://datatables.net/examples/styling/bootstrap4.html)-->
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css">
+
         <!-- local css imports-->
         <link rel="stylesheet" type="text/css" href="./static/css/local_css.css"/>
 
@@ -22,15 +25,9 @@
     <body>
         <div class="container-fluid">
             <div class="row header">
-                <div class="col-sm-1 header_left align-self-start">
-                    
-                </div>
-                <div class="col-sm-10 header_main align-self-center">
-                    Quiz App
-                </div>
-                <div class="col-sm-1 header_right align-self-start">
-                <a href="./landing.html"><i class="fas fa-home"></i></a>
-                </div>
+                <div class="col-sm-1 header_left align-self-start"></div>
+                <div class="col-sm-10 header_main align-self-center">Quiz App</div>
+                <div class="col-sm-1 header_right align-self-start"><a id="home" href="./landing.html"><i class="fas fa-home"></i></a></div>
             </div> <!--end of row-->
 
 
@@ -62,7 +59,7 @@
                         some subtitle here
                     </h5>
                     <p>
-                        <form>
+                        <form id="form" onsubmit="return false;">
                             <div class="form-group">
                                 <label for="username">Username</label>
                                 <input type="text" class="form-control" id="username" name="username">
@@ -71,9 +68,8 @@
                                 <label for="password">Password</label>
                                 <input type="password" class="form-control" id="password" name="password">
                             </div>
-                            <button type="submit" class="btn btn-success" formaction="./login.html" formmethod="POST">Submit</button>
+                            <button id="submit" type="submit" class="btn btn-success">Submit</button>
                             <br/>                            
-                            <i class="dev-comments">if you enter username = admin, it will go to the admin pages, otherwise it goes to the student pages</i>
                         </form>
                     </p>
                     <div>
@@ -112,6 +108,9 @@
             crossorigin="anonymous">
         </script>
         
+        <!--This fix hosted on the website locally fixes the jquery-ui sortable with touch devices issue-->
+        <script src="./static/js/jquery.ui.touch-punch.min.js"></script>
+
         <script 
             src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous">
         </script>
@@ -120,12 +119,19 @@
             src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
         </script>
 
+        <!-- DataTables -->
+        <script 
+            src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js">
+        </script>
+        <script 
+            src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js">
+        </script>
+
         <!-- fontawsome icons-->
         <script src="https://kit.fontawesome.com/029e93a038.js" crossorigin="anonymous"></script>
 
         <!-- local js imports-->
         <script src="./static/js/local_js.js"></script>
-
     </body>
 </html>
 
