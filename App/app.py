@@ -159,7 +159,8 @@ def verify_token(request):
     if re.search("take_quiz\.html$", request.path):
         user.last_req = json.dumps({'path':request.path, 
                                     'args':request.args,
-                                    'time':time_now()})
+                                    'time':time_now(),
+                                    'expired':False})
         db.session.commit()
     
     #set the token length from login, it uses the value set by app for all cases except
@@ -183,7 +184,8 @@ def verify_token(request):
         if re.search("\.html$", request.path):
             user.last_req = json.dumps({'path':request.path, 
                                         'args':request.args,
-                                        'time':time_now()})
+                                        'time':time_now(),
+                                        'expired':True})
             db.session.commit()
         write_log(0,103,'verification failure: expired token')
         return {'status':'error','msg': 'expired token'}
@@ -262,7 +264,10 @@ def get_login():
         app.config['SECRET_KEY'])
                             
     user.login_att = 0
-    user.last_req = json.dumps({'fn':'init'})
+    #if I was to implement memory to go back to the last attempted page, you would do it here, 
+    #but because I am rendering in js, it becomes a little difficult to do that as I need to tell it 
+    #the js function to go to, its not impossible, but a bit of a pain, so, instead, I just reset this field in the db
+    user.last_req = ''
     db.session.commit()
 
     #return the session token to the client
