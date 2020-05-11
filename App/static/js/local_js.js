@@ -59,11 +59,14 @@ function ajax_authorized_get(target, target_fn, args) {
 	//comment out to just show the login address (the real address) the whole time
 	//window.history.replaceState({}, "", target);
 
+	//the response here is to call the calling function with args if status==ok
+	//goes back to login.html if status == error
+	//goes to student_summary or admin summary if the status is cancel
+
 	//get the list of get params to send (not the session_data)
 	let get_params = {};
-	let ignore = ["session_data"];
 	for (key in args) {
-		if (! ignore.includes(key)) {
+		if (! ["session_data"].includes(key)) {
 			get_params[key] = args[key];
 		}
 	}
@@ -85,9 +88,17 @@ function ajax_authorized_get(target, target_fn, args) {
 				//pass to the target_fn to build the page
 				target_fn(args);
 			}
-			else {
+			else if (data["status"] == "error") {
 				alert(data["msg"]);
 				window.location = data['target'];
+			}
+			else if (data["status"] == "cancel") {
+				alert(data["msg"]);
+				let args_new = {};args_new["session_data"] = args["session_data"];
+				if (data["target"] == '/admin_summary.html')
+					ajax_authorized_get(data['target'], build_admin_summary, args_new);
+				else
+					ajax_authorized_get(data['target'], build_student_summary, args_new);
 			}
 		}
 	});
@@ -130,14 +141,15 @@ $(document).ready(function() {
 						let session_data = data['data'];
 						//calls the summary page for admin or student
 						let args = {"session_data":session_data};
-						if (data["admin"])
+						if (data["target"] == '/admin_summary.html')
 							ajax_authorized_get(data["target"], build_admin_summary, args);
 						else
 							ajax_authorized_get(data["target"], build_student_summary, args);
-					} else {
+					} 
+					else {
 						alert(data["msg"]);
 						window.location = data['target'];
-					}
+					} 
 				}
 			});	
 		}); 

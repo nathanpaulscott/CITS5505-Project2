@@ -134,11 +134,15 @@ class Log(db.Model):
 # #run this if request is for a protected page, 
 #verify the user from the token
 def verify_token(request):
+    error_target = '/login.html'
+
     #read token from request header
     token = None
     if not 'Authorization' in request.headers:
         write_log(0,100,'verification failure: no token')
-        return {'status':'error','msg': 'no token'}
+        return {'status':'error',
+                'msg': 'no token',
+                'target':error_target}
 
     #try to decode the token
     token = request.headers['Authorization'].encode()
@@ -146,13 +150,17 @@ def verify_token(request):
         data = jwt.decode(token, app.config['SECRET_KEY'])
     except:
         write_log(0,101,'verification failure: bad token encoding')
-        return {'status':'error','msg': 'bad token encoding'}
+        return {'status':'error',
+                'msg': 'bad token encoding', 
+                'target':error_target}
 
     #verify the token data: u_id
     user = User.query.filter_by(u_id=data['u_id']).first()
     if user is None:
         write_log(0,102,'verification failure: bad token u_id')
-        return {'status':'error','msg': 'bad token u_id'}
+        return {'status':'error',
+                'msg': 'bad token u_id', 
+                'target':error_target}
 
     #verify the token data: expiry
     #save entry time for take_quiz (exam start time)    
@@ -188,10 +196,13 @@ def verify_token(request):
                                         'expired':True})
             db.session.commit()
         write_log(0,103,'verification failure: expired token')
-        return {'status':'error','msg': 'expired token'}
+        return {'status':'error',
+                'msg':'expired token', 
+                'target':error_target}
 
     #verification success
-    return {'status':'ok','data':user}
+    return {'status':'ok',
+            'data':user}
 #########################################################
 #########################################################
 
@@ -217,7 +228,8 @@ def get_forgot_password():
 
 @app.route('/login.html', methods=['GET', 'POST'])
 def get_login():
-    login_timeout = 30*3600
+    error_target = '/login.html'
+
     if request.method == 'GET':
         write_log(0,3,'login page entry')
         return render_template('login.html')
@@ -233,8 +245,9 @@ def get_login():
     if user is None:
         #no username found
         write_log(0,4,'failed login from username not found')
-        error = 'Username {} not found'.format(username)
-        return jsonify ({"status":"error", "msg":error,"target":"./register.html"})
+        return jsonify ({"status":"error", 
+                        "msg":'Username {} not found'.format(username),
+                        "target":"./register.html"})
     
     if user.login_att is None:
         user.login_att = 1
@@ -242,8 +255,9 @@ def get_login():
     elif user.login_att > 5:
         #make another page here to inform the user to stop trying and contact admin
         write_log(user.u_id,5,'failed login from too many failed attempts')
-        error = 'Too many failed login attempts'
-        return jsonify ({"status":"error", "msg":error,"target":"./landing.html"})
+        return jsonify ({"status":"error", 
+                        "msg":'Too many failed login attempts',
+                        "target":"./landing.html"})
 
     #check the password
     if not check_password_hash(user.password, password):
@@ -251,8 +265,9 @@ def get_login():
         user.login_att = user.login_att + 1
         db.session.commit()
         write_log(user.u_id,6,'failed login from incorrect password')
-        error = 'incorrect password'
-        return jsonify ({"status":"error", "msg":error,"target":"./login.html"})
+        return jsonify ({"status":"error", 
+                        "msg":'incorrect password',
+                        "target":"./login.html"})
 
     #user gets logged in, reset the attempts counter and set the login time in the session token
     t_now = time_now()
@@ -280,7 +295,6 @@ def get_login():
 
     return jsonify({'status':'ok',
                     'target':target,
-                    'admin':user.admin,
                     'data':{'token':token.decode('utf-8'),
                             'username':user.username,
                             'u_id':user.u_id}})
@@ -305,9 +319,10 @@ def register():
         # check if username taken
         result = User.query.filter_by(username=username).first()
         if result is not None:
-            error = 'User {} is already registered.'.format(username)
             write_log(0,9,'failed registration as username "' + username + '" is taken')
-            return jsonify ({ "status" : error})
+            return jsonify ({"status":'error',
+                            'msg':'User {} is already registered.'.format(username),
+                            'target':'/login.html'})
         else:
             #determines the next unused u_id from database
             #this is not a real world soluton, but works for the project
@@ -340,7 +355,7 @@ def get_admin_stats():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -360,7 +375,7 @@ def get_student_stats():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -381,7 +396,7 @@ def get_student_summary():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
     
     u_id = result['data'].u_id
     username = result['data'].username
@@ -453,7 +468,7 @@ def get_admin_summary():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -557,7 +572,7 @@ def get_edit_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -568,7 +583,7 @@ def get_edit_quiz():
     
     result = load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_submitters)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
 
     write_log(u_id,15,'edit quiz success')
     return jsonify ({'status' : 'ok',
@@ -586,7 +601,7 @@ def get_manage_users():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -617,7 +632,7 @@ def get_take_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -629,7 +644,7 @@ def get_take_quiz():
     
     result = load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_submitters)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
     
     if preview_flag == 'false':
         write_log(u_id,25,'take quiz success')
@@ -652,7 +667,7 @@ def submit_answers_json():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -705,7 +720,7 @@ def get_review_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
     
     u_id = result['data'].u_id
     username = result['data'].username
@@ -716,7 +731,7 @@ def get_review_quiz():
 
     result = load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_submitters)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
     
     write_log(u_id,28,'review quiz success')
     return jsonify ({'status' : 'ok',
@@ -736,7 +751,7 @@ def get_mark_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
   
     u_id = result['data'].u_id
     username = result['data'].username
@@ -747,7 +762,7 @@ def get_mark_quiz():
 
     result = load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_submitters)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
 
     write_log(u_id,29,'mark quiz success')
     return jsonify ({'status' : 'ok',
@@ -766,7 +781,7 @@ def submit_marks_json():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -800,7 +815,7 @@ def upload_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
     
     u_id = result['data'].u_id
     username = result['data'].username
@@ -907,7 +922,7 @@ def upload_image():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
 
     if 'file' not in request.files:
         write_log(0,18,'image upload fail: bad form format')
@@ -933,7 +948,7 @@ def download_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
     
     u_id = result['data'].u_id
     username = result['data'].username
@@ -976,7 +991,7 @@ def delete_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
-        return jsonify ({'status' : 'error', 'msg':result['msg'], 'target':'/login.html'})
+        return jsonify (result)
 
     u_id = result['data'].u_id
     username = result['data'].username
@@ -1010,6 +1025,12 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
     submission_status = ''
     qset_data = []
     submitters = []
+    #set the cancel target
+    user = User.query.filter_by(u_id=u_id).first()
+    cancel_target = '/student_summary.html'
+    if user.admin:
+        cancel_target = '/admin_summary.html'
+    error_target = '/login.html'
 
     def get_user_by_status(qs_id, get_one):
         submitters = []
@@ -1040,7 +1061,9 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
             #check if we have a suitable s_u_id
             if s_u_id is None:
                 write_log(u_id,31,'load quiz with submission json failure: no submissions for that qs_id yet')
-                return {'status':'error', 'msg':'no submissions yet for that question set'}
+                return {'status':'cancel', 
+                        'msg':'no submissions yet for that question set', 
+                        'target':cancel_target}
 
         #get the status
         result = Submission.query.filter_by(qs_id=qs_id,u_id=s_u_id).first()
@@ -1053,7 +1076,9 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
         qset = query2list_of_dict(Question_Set.query.filter_by(qs_id=qs_id).all())
         if len(qset) == 0:
             write_log(u_id,32,'load quiz with submissions json failure: question set does not exist')
-            return {'status':'error', 'msg':"question set doesn't exist"}
+            return {'status':'cancel', 
+                    'msg':"question set doesn't exist", 
+                    'target':cancel_target}
         qset = qset[0]
         
         #add s_u_id and s_unsername
@@ -1061,7 +1086,9 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
         result = User.query.filter_by(u_id=s_u_id).first()
         if result is None:
             write_log(u_id,33,"load quiz with submissions json failure: user " + s_u_id + " doesn't exist")
-            return {'status':'error', 'msg':"user " + s_u_id + " doesn't exist"}
+            return {'status':'cancel', 
+                    'msg':"user " + s_u_id + " doesn't exist", 
+                    'target':cancel_target}
         qset['s_username'] = result.username
 
         #add to qset_data
@@ -1071,7 +1098,9 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
         questions = Question.query.filter_by(qs_id=qs_id).all()
         if len(questions) == 0:
             write_log(u_id,34,"load quiz with submissions json failure: no questions in that question set")
-            return {'status' : 'error', 'msg' : "no questions in that question set"}
+            return {'status' : 'cancel', 
+                    'msg' : "no questions in that question set",
+                    'target':cancel_target}
         for question in questions:
             #this is the regular question data
             temp = {'question':[], 'answer':{}}
@@ -1104,7 +1133,9 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
         qset = query2list_of_dict(Question_Set.query.filter_by(qs_id=qs_id).all())
         if len(qset) == 0:
             write_log(u_id,35,'load quiz json failure: question set does not exist')
-            return {'status' : 'error', 'msg' : "question set doesn't exist"}
+            return {'status' : 'cancel', 
+                    'msg' : "question set doesn't exist",
+                    'target':cancel_target}
         qset = qset[0]
 
         #add to qset_data
@@ -1114,7 +1145,9 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
         questions = Question.query.filter_by(qs_id=qs_id).all()
         if len(questions) == 0:
             write_log(u_id,36,"load quiz json failure: no questions in that question set")
-            return {'status' : 'error', 'msg' : "no questions in that question set"}
+            return {'status' : 'cancel', 
+                    'msg' : "no questions in that question set",
+                    'target':cancel_target}
         for question in questions:
             #this is the regular question data
             temp = {'question':[], 'answer':{}}
