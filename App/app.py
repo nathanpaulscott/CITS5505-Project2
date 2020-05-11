@@ -359,7 +359,7 @@ def get_admin_stats():
             return redirect(result['target'])
         return jsonify (result)
 
-    u_id = result['data'].u_id
+    u_id  = result['data'].u_id
     username = result['data'].username
 
     write_log(u_id,15,'admin stats success')
