@@ -1,50 +1,59 @@
-function encodeQueryData(data) {
-	//encodes a dict to an HTTP GET string
-	const ret = [];
-	for (let d in data)
-		ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(data[d]));
-	return ret.join('&');
-}
+ /////////////////////////////////////////////////////////////////////////////////
+ //this runs specific code on the login page load, this basically starts off the app
+ /////////////////////////////////////////////////////////////////////////////////
+ $(document).ready(function() {
+	//alert('document ready triggered');
+	//these are the regex page selectors to isolate js code to specific pages
+	let regex = {};
+	regex["login"] = /\/login\.html/i;
+		
+	//##########################
+	//Login page
+	if (window.location.pathname.search(regex["login"]) != -1) {
+		//handles the login and the returned token, then routes to admin or student area
+		//this sets up the listeners for the form submit and sends the ajax req
+		$("#submit").click(function() {
+			let username = $("#username").val();
+			let password = $("#password").val();
+
+			//do some validation here?
+
+			form_data  = new FormData();
+			form_data.append("username", username);
+			form_data.append("password", password);
+			let target = "/login.html";
+			$.ajax({
+				type: 'POST',
+				url: target,
+				data: form_data,
+				contentType: false,
+				cache: false,
+				processData: false,
+				async: true,
+				success: function(data) {
+					if (data["status"] == "ok") {
+						let session_data = data['data'];
+						//calls the summary page for admin or student
+						let args = {"session_data":session_data};
+						if (data["target"] == '/admin_summary.html')
+							ajax_authorized_get(data["target"], build_admin_summary, args);
+						else
+							ajax_authorized_get(data["target"], build_student_summary, args);
+					} 
+					else {
+						alert(data["msg"]);
+						window.location = data['target'];
+					} 
+				}
+			});	
+		}); 
+	}
+}); //end of the on_load section
 
 
-//this is messing up, giving + for a space!!!
- function findGetParameter(param) {
-	let url = new URL(window.location.href);
-	let result = url.searchParams.get(param);
-    return result;
-}
-
-
-
-function fix_header(username){
-	//update the username in the header
-	$("#username").text(username);
-
-	//change the home link because of fontawsome screwup
-	//$("#home i").removeAttr("class"); 
-	//$("#home i").text("exit");
-}
-
-
-
-function load_new_html(url, html) {
-	//this loads a new html document from an html string
-	//you have 2 options 
-	//1) reload the js, it wipes the document, loose local vars, some say its bad
-	//all I know is that chrome and edge give a bunch of warnings
-	//document.open();
-	//document.write(html);
-	//document.close();
-	
-	//2) this doesn't load js after the login page, just replaces the document structure
-	//doesn't give warnings, works fine
-	var newdoc = document.implementation.createHTMLDocument();   //or this
-	newdoc.documentElement.innerHTML = html;
-	document.replaceChild(newdoc.documentElement, document.documentElement);
-}
-
-
-
+ /////////////////////////////////////////////////////////////////////////////////
+ //this runs a token protected ajax get request, used for each page request
+ /////////////////////////////////////////////////////////////////////////////////
 function ajax_authorized_get(target, target_fn, args) {
 	//this does a jwt authorized get for the given target
 	// and passes control to the html building function (target_fn)
@@ -105,153 +114,70 @@ function ajax_authorized_get(target, target_fn, args) {
 }
 
 
- 
-
-$(document).ready(function() {
-	//alert('document ready triggered');
-	//these are the regex page selectors to isolate js code to specific pages
-	let regex = {};
-	regex["login"] = /\/login\.html/i;
-		
-	//##########################
-	//Login page
-	if (window.location.pathname.search(regex["login"]) != -1) {
-		//handles the login and the returned token, then routes to admin or student area
-		//this sets up the listeners for the form submit and sends the ajax req
-		$("#submit").click(function() {
-			let username = $("#username").val();
-			let password = $("#password").val();
-
-			//do some validation here?
-
-			form_data  = new FormData();
-			form_data.append("username", username);
-			form_data.append("password", password);
-			let target = "/login.html";
-			$.ajax({
-				type: 'POST',
-				url: target,
-				data: form_data,
-				contentType: false,
-				cache: false,
-				processData: false,
-				async: true,
-				success: function(data) {
-					if (data["status"] == "ok") {
-						let session_data = data['data'];
-						//calls the summary page for admin or student
-						let args = {"session_data":session_data};
-						if (data["target"] == '/admin_summary.html')
-							ajax_authorized_get(data["target"], build_admin_summary, args);
-						else
-							ajax_authorized_get(data["target"], build_student_summary, args);
-					} 
-					else {
-						alert(data["msg"]);
-						window.location = data['target'];
-					} 
-				}
-			});	
-		}); 
-	}
-}); //end of the on_load section
+/////////////////////////////////////////////////////////////////////////////////
+//utility functions
+/////////////////////////////////////////////////////////////////////////////////
+function encodeQueryData(data) {
+	//encodes a dict to an HTTP GET string
+	const ret = [];
+	for (let d in data)
+		ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(data[d]));
+	return ret.join('&');
+}
 
 
+//this is messing up, giving + for a space!!!
+ function findGetParameter(param) {
+	let url = new URL(window.location.href);
+	let result = url.searchParams.get(param);
+    return result;
+}
 
 
+function fix_header(username){
+	//update the username in the header
+	$("#username").text(username);
+
+	//change the home link because of fontawsome screwup
+	//$("#home i").removeAttr("class"); 
+	//$("#home i").text("exit");
+}
 
 
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-function build_manage_users(args) {
-	//this does the html table building				
-	let users_data = args["data"]["data"];
-	let session_data = args['session_data'];
-	let username = session_data["username"];
-	let u_id = 	session_data["u_id"];
-
-	//fix the header
-	fix_header(username);
-	//disable the finish href
-	$("#finish").attr("href","javascript:;"); 
-
-	//does the table header
-	let html_text = ""; 
-	html_text = '<table class="table table-hover table-striped table-responsive" id="user-admin-table">' + '\n';
-	html_text +='	<thead>' + '\n';
-	html_text +='		<tr>' + '\n';
-	html_text +='          <th scope="col"></th>' + '\n';
-	html_text +='          <th scope="col"></th>' + '\n';
-	for (header_item of users_data[0]) {
-		html_text +='          <th scope="col">'+ header_item +'</th>' + '\n';
-	}
-	html_text +='     	</tr>' + '\n';
-	html_text +='   </thead>' + '\n';
-
-	//does the table body
-	html_text +='   <tbody>' + '\n';
-	for (i = 1; i < users_data.length; i++){
-		html_text +='       <tr class="click-enable">' + '\n';
-		html_text +='	       <td class="del-user">Del</td>' + '\n';
-		html_text +='	       <td class="edit-user">Edit</td>' + '\n';
-		html_text +='	       <td id="u-id">' + users_data[i][0] + '</td>' + '\n';
-		for (j = 1; j < users_data[i].length; j++){
-			html_text +='	       <td>' + users_data[i][j] + '</td>' + '\n';
-		}
-		html_text +='       </tr>' + '\n';
-	}
-	html_text +='   </tbody>' + '\n';
-	html_text += '</table>' + '\n';
-	html_text += '<i class="dev-comments">NEed to write add/edit/delete code, ideally delete just rmeoves the row on the spot\nadd just adds a row to the start of the tabel and edit => maybe do not have, just allow clicking on a ell and editing the uername and role</i>' + '\n';
+function load_new_html(url, html) {
+	//this loads a new html document from an html string
+	//you have 2 options 
+	//1) reload the js, it wipes the document, loose local vars, some say its bad
+	//all I know is that chrome and edge give a bunch of warnings
+	//document.open();
+	//document.write(html);
+	//document.close();
 	
-	//append to the DOM
-	$("#p-user-admin-table").append(html_text);
-
-	//runs the datatable plugin on the table to make it sortable etc...
-	$('#user-admin-table').DataTable({
-		"paging":true,
-		"ordering":true,
-		columnDefs: [{"orderable": false,"targets":[0,1]}],"order": [] 
-	});
-
-	//assigns a click listener to the add user button
-	$("#btn-add-user").click(function() {
-		alert("need to write code to add the user");
-	});
-
-	//assigns a click listener to the delete user
-	$("#user-admin-table tbody tr.click-enable td.del-user").click(function() {
-		let u_id_del = $(this).parent().find("td#u-id").text();
-		//build the target url
-		alert("need to write code to delete the user");
-	});
-
-	//assigns a click listener to the edit cells
-	$("#user-admin-table tbody tr.click-enable td.edit-user").click(function() {
-		let u_ud_edit = $(this).parent().find("td#u-id").text();
-		//build the target url
-		alert("need to write code to edit the user");
-	});
-
-	$("#finish").click(function() {
-		let args = {"session_data":session_data};
-		ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
-	});
-} //end of the build_manage_users function
+	//2) this doesn't load js after the login page, just replaces the document structure
+	//doesn't give warnings, works fine
+	var newdoc = document.implementation.createHTMLDocument();   //or this
+	newdoc.documentElement.innerHTML = html;
+	document.replaceChild(newdoc.documentElement, document.documentElement);
+}
 
 
 
-
-
-
-
+//////////////////////////////////////////////////////////////////////////////////
+//HTML building code
+//////////////////////////////////////////////////////////////////////////////////
+//all the functions after this point are used to build the dynamic content of each page
+//the most complex being the admin_summary due to the various buttons and add-on functions
+///////////////////////////////////////////////////////////////////////////////////
+//admin_summary
+//student_summary
+//take_quiz
+//review_quiz
+//mark_quiz
+//edit_quiz
+//student_stats
+//admin_stats
+//manage_users
+//////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
@@ -1823,3 +1749,88 @@ function build_admin_stats(args) {
 	});
 }//end of the build_admin_stats function
 
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+function build_manage_users(args) {
+	//this does the html table building				
+	let users_data = args["data"]["data"];
+	let session_data = args['session_data'];
+	let username = session_data["username"];
+	let u_id = 	session_data["u_id"];
+
+	//fix the header
+	fix_header(username);
+	//disable the finish href
+	$("#finish").attr("href","javascript:;"); 
+
+	//does the table header
+	let html_text = ""; 
+	html_text = '<table class="table table-hover table-striped table-responsive" id="user-admin-table">' + '\n';
+	html_text +='	<thead>' + '\n';
+	html_text +='		<tr>' + '\n';
+	html_text +='          <th scope="col"></th>' + '\n';
+	html_text +='          <th scope="col"></th>' + '\n';
+	for (header_item of users_data[0]) {
+		html_text +='          <th scope="col">'+ header_item +'</th>' + '\n';
+	}
+	html_text +='     	</tr>' + '\n';
+	html_text +='   </thead>' + '\n';
+
+	//does the table body
+	html_text +='   <tbody>' + '\n';
+	for (i = 1; i < users_data.length; i++){
+		html_text +='       <tr class="click-enable">' + '\n';
+		html_text +='	       <td class="del-user">Del</td>' + '\n';
+		html_text +='	       <td class="edit-user">Edit</td>' + '\n';
+		html_text +='	       <td id="u-id">' + users_data[i][0] + '</td>' + '\n';
+		for (j = 1; j < users_data[i].length; j++){
+			html_text +='	       <td>' + users_data[i][j] + '</td>' + '\n';
+		}
+		html_text +='       </tr>' + '\n';
+	}
+	html_text +='   </tbody>' + '\n';
+	html_text += '</table>' + '\n';
+	html_text += '<i class="dev-comments">NEed to write add/edit/delete code, ideally delete just rmeoves the row on the spot\nadd just adds a row to the start of the tabel and edit => maybe do not have, just allow clicking on a ell and editing the uername and role</i>' + '\n';
+	
+	//append to the DOM
+	$("#p-user-admin-table").append(html_text);
+
+	//runs the datatable plugin on the table to make it sortable etc...
+	$('#user-admin-table').DataTable({
+		"paging":true,
+		"ordering":true,
+		columnDefs: [{"orderable": false,"targets":[0,1]}],"order": [] 
+	});
+
+	//assigns a click listener to the add user button
+	$("#btn-add-user").click(function() {
+		alert("need to write code to add the user");
+	});
+
+	//assigns a click listener to the delete user
+	$("#user-admin-table tbody tr.click-enable td.del-user").click(function() {
+		let u_id_del = $(this).parent().find("td#u-id").text();
+		//build the target url
+		alert("need to write code to delete the user");
+	});
+
+	//assigns a click listener to the edit cells
+	$("#user-admin-table tbody tr.click-enable td.edit-user").click(function() {
+		let u_ud_edit = $(this).parent().find("td#u-id").text();
+		//build the target url
+		alert("need to write code to edit the user");
+	});
+
+	$("#finish").click(function() {
+		let args = {"session_data":session_data};
+		ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
+	});
+} //end of the build_manage_users function
