@@ -9,8 +9,6 @@ To run the server:
 
 ---
 ## Status Comments  
-All DB integration has been done.   
-The login and session management is mostly done.
 Right now, the main functionality of the app is working as decribed below
 
 ### Landing  
