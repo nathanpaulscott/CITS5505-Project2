@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template, redirect, send_from_
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash, safe_str_cmp
-import jwt
+import jwt    #pip install pyjwt   (do not install jwt or python-jwt, install them first)
 #---------------------------
 import re
 import os
