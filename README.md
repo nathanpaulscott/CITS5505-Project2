@@ -35,7 +35,6 @@ You can register, then login wiht yoru username and password.  You go to the stu
  The following are outstanding items that are required for the project to be submittable:  
  
  * add / delete / modify user code needs to be written ~ 1/2 day (Nathan)
- * timing code, need to time the user when taking a quiz and auto submit if they time-out and redirect to student summary
  * refactor backend - 2 days  (Jack).  Can be done near the end.  The sample project has a more modular format, ie. breaking up the app.py file into routes, models, controllers etc.
  * refactor front-end - 3 days  (Nathan).  Clean up the code and move some of the basic page building to jinja, but I suggest staying with the current structure, just cleaning up some things and doing the basic stuff in the server to show we can do it.  Like putting the username in the template, we can do in the backend, but the looping, just do in javascript.
  * writing all quizzes and adding to database - 1 day (Jack)
@@ -55,4 +54,4 @@ Done
 * admin updating/deleting quizzes => done
 * admin viewing submissions => done
 * admin writing feedback => done
-
+* timing code => the token will expire after 30mins (settable in app.py).  The next server request from the user after token expiry will cause them to be kicked out to the login screen.  If the request was to submit quiz edits, or marking data, that data will be lost (I can change it, but how long to give them, better to just give them a submit button so they can submit regularly along the way.  In the case of taking a quiz, the token expiry is set to the allotted test time after the test has started, so that the user can submit their answers as long as they do so within the test time + a 2 minute buffer.  If they try to submit answers 2 mins after the test close, the answers will be lost and the user kicked out to the login page.  This adjusted token expiry time only applies to answer submissions, the next request to load the student summary page will use the normal token expiry time, thus if the normal token has expired at the point of submission, the user will then (after results being accepted) be redirected to the login page as with every other expiry case.  No page memory was implemented, i.e. a user gets kicked out to the login page as the token has expired and on re-login, they go back to the last page they were at.  This was not implemented as the app page structure is too simple, it is more clear just to go back to the summary page on login.
