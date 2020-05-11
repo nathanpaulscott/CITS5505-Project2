@@ -359,7 +359,7 @@ def get_admin_stats():
             return redirect(result['target'])
         return jsonify (result)
 
-    u_id  = result['data'].u_id
+    u_id = result['data'].u_id
     username = result['data'].username
 
     write_log(u_id,15,'admin stats success')
@@ -1287,4 +1287,5 @@ check_login_status(cancel_flag)
 # runs server
 if __name__ == "__main__":
     # switch debug to false before assignment submission
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
+    #app.run(debug=True)
