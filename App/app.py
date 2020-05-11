@@ -27,6 +27,12 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False   #True  #?
 # initialise database
 db = SQLAlchemy(app)
 
+
+
+#############################################################################
+#Models
+#############################################################################
+
 # tables in database - move each to separate file
 class User(db.Model):
     __tablename__ = 'user'
@@ -127,14 +133,10 @@ class Log(db.Model):
         self.action = action
 
 
-            
-
 #############################################################################
 #GET/POST pre-entry route functions, everything that is pre-login
 #############################################################################
 
-# url routing
-# get action performed when user navigates to that url
 @app.route('/', methods=['GET'])
 @app.route('/landing.html', methods=['GET'])
 def get_home():
@@ -142,13 +144,10 @@ def get_home():
     return render_template('landing.html')
 
 
-
 @app.route('/forgot-password.html', methods=['GET'])
 def get_forgot_password():
     write_log(0,2,'forgot password entry')
     return render_template('forgot-password.html')
-
-
 
 
 @app.route('/login.html', methods=['GET', 'POST'])
@@ -223,7 +222,6 @@ def get_login():
                             'u_id':user.u_id}})
         
 
-
 @app.route('/register.html', methods=['GET','POST'])
 def register():
     # navigate to register page
@@ -269,7 +267,6 @@ def register():
 
             #now log the user in
             return redirect(url_for('get_login'))
-
 
 
 #############################################################################
@@ -349,9 +346,6 @@ def get_student_summary():
                     'msg':'',
                     'html':render_template('student_summary.html'),
                     'data':{'data':qset_summary}})
-
-
-
 
 
 @app.route('/admin_summary.html', methods=['GET'])
@@ -459,10 +453,6 @@ def get_admin_summary():
                     'data':{'data':qset_summary}})
 
 
-
-
-
-
 @app.route('/edit_quiz.html', methods=['GET'])
 def get_edit_quiz():
     #does the jwt verification => input is the token, output is the user object
@@ -495,10 +485,6 @@ def get_edit_quiz():
                     'data':{'data':result['data']}})
 
 
-
-
-
-
 @app.route('/manage_users.html', methods=['GET'])
 def get_manage_users():
     #does the jwt verification => input is the token, output is the user object
@@ -526,9 +512,6 @@ def get_manage_users():
                     'msg':'',
                     'html':render_template('manage_users.html'),
                     'data':{'data':users_data}})
-
-
-
 
 
 #for a student to actually do the quiz and make a submission
@@ -571,8 +554,6 @@ def get_take_quiz():
                             'submission_status':result['submission_status']}})
 
 
-
-
 #for student to review a submission and marks if available
 @app.route('/review_quiz.html', methods=['GET'])
 def get_review_quiz():
@@ -606,9 +587,6 @@ def get_review_quiz():
                     'data':{'data':result['data'],
                             'submitters':result['submitters'],
                             'submission_status':result['submission_status']}})
-
-
-
 
 
 #you load the qset via json with the include_submission = true
@@ -646,7 +624,6 @@ def get_mark_quiz():
                             'submission_status':result['submission_status']}})
 
 
-
 @app.route('/admin_stats.html', methods=['GET'])
 def get_admin_stats():
     #does the jwt verification => input is the token, output is the user object
@@ -666,9 +643,6 @@ def get_admin_stats():
                     'data':{'data':{}}})
 
 
-
-
-
 @app.route('/student_stats.html', methods=['GET'])
 def get_student_stats():
     #does the jwt verification => input is the token, output is the user object
@@ -686,9 +660,6 @@ def get_student_stats():
                     'msg':'',
                     'html':render_template('student_stats.html'),
                     'data':{'data':{}}})
-
-
-
 
 
 #############################################################################
@@ -753,7 +724,6 @@ def submit_answers_json():
                     "msg":""})
 
 
-
 #accept marking of submission and save to DB
 @app.route('/submit_marks_json', methods=['POST'])
 def submit_marks_json():
@@ -789,9 +759,6 @@ def submit_marks_json():
     write_log(u_id,30,'submit marks success')
     return jsonify ({'status':'ok', 
                      'msg':''})
-
-
-
 
 
 #import quiz function for the admin_summary page import feature and the submit edit quiz page
@@ -903,9 +870,6 @@ def upload_quiz():
                      'msg':'quiz data upload success, qs_id: ' + str(qs_id_req)})
 
 
-
-
-
 #this is for the import image function in the admin_summary page
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
@@ -932,9 +896,6 @@ def upload_image():
     write_log(0,20,'image upload success: ' + filename)
     return jsonify ({'status':'ok', 
                      'msg':'Server recieved: ' + filename})
-
-
-
 
 
 #this is for the export quiz function in the admin_summary page
@@ -979,9 +940,6 @@ def download_quiz():
                      'data':qset_data})
 
 
-
-
-
 #this is for the delete quiz function in the admin_summary page
 @app.route('/delete_quiz', methods=['POST'])
 def delete_quiz():
@@ -1012,15 +970,10 @@ def delete_quiz():
                      'msg':qs_id_req})
 
 
-
-
-
 #########################################################
 #Non Route functions
 #########################################################
 
-#########################################################
-#########################################################
 #########################################################
 #token verification
 def verify_token():
@@ -1094,9 +1047,6 @@ def verify_token():
     return {'status':'ok',
             'data':user}
 #########################################################
-#########################################################
-
-
 
 #this is to load a qset questions via json
 #this is used by all the pages that need to load the question set data
@@ -1249,7 +1199,6 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
             "submission_status":submission_status}
 
 
-
 def write_log(u_id,action_id,action):
     #this makes a log entry
     #need to check for errors from the timestamp being the same as the last log entry of the same type (primary key constraint => if get error wait and try again)
@@ -1274,8 +1223,6 @@ def write_log(u_id,action_id,action):
             break
 
 
-
-
 def query2list_of_dict(result):
     #this converts the returned object from sqlalchemy to an Python list of dicts
     #the field names are in the dict of each element
@@ -1283,7 +1230,6 @@ def query2list_of_dict(result):
         return []
     fields = [x.name for x in result[0].__table__.columns]
     return [{field:vars(row)[field] for field in fields} for row in result]
-
 
 
 def query2list_of_list(result):
@@ -1299,11 +1245,9 @@ def query2list_of_list(result):
     return output
 
 
-
 def time_now():
     #returns the seconds since epoch
     return int(dt.now().timestamp())
-
 
 
 # runs server
