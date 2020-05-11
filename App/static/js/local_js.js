@@ -304,12 +304,20 @@ function build_admin_summary(args) {
 	//assigns a click listener to the mark cells for marking and review
 	$("#quiz-admin-table tbody tr.click-enable td.mark-quiz").click(function() {
 		let qs_id = $(this).parent().find("td#qs-id").text();
-		let args = {"session_data":session_data,
-					"qs_id":qs_id,
-					"s_u_id":"init",
-					"include_submission":"1",
-					"include_submitters":"1"};
-		ajax_authorized_get("./mark_quiz.html", build_mark_quiz, args);
+		//gets the total submissions available from the next 3 elements in the table
+		//if there are no submissions, do not proceed
+		let qs_avail = Number($(this).parent().find("td#qs-id").next().text()) +
+						Number($(this).parent().find("td#qs-id").next().next().text()) +
+						Number($(this).parent().find("td#qs-id").next().next().next().text());
+
+		if (qs_avail > 0) {						
+			let args = {"session_data":session_data,
+						"qs_id":qs_id,
+						"s_u_id":"init",
+						"include_submission":"1",
+						"include_submitters":"1"};
+			ajax_authorized_get("./mark_quiz.html", build_mark_quiz, args);
+		}	
 	});
 
 	//assigns a click listener to the edit cells for editing the qset
@@ -378,7 +386,7 @@ function build_admin_summary(args) {
 			return
 		}
 
-		//Do the Ajax Request here to send the delte list to the server
+		//Do the Ajax Request here to send the delete list to the server
 		$.ajax({
 			type: 'POST',
 			url: '/delete_quiz',
@@ -390,7 +398,13 @@ function build_admin_summary(args) {
 			processData: false,
 			async: true,
 			success: function(data) {
-				$("#span-delete-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
+				if (data['status'] == 'ok') {
+					$("#span-delete-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
+				}
+				else {
+					alert(data["msg"]);
+					window.location = data['target'];	
+				}
 			},
 		});
 		
@@ -441,19 +455,25 @@ function build_admin_summary(args) {
 			processData: false,
 			async: true,
 			success: function(data) {
-				//give a status msg
-				$("#span-export-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
-				//write this to the DOM and trigger the download, then delete from the DOM
-				for (qset of data["data"]) {
-					let filename = "export_qs_id_" + String(qset[0]["qs_id"]) + ".quiz";
-					let el = document.getElementById('a-export');
-					let href_text = "data:application/xml;charset=utf-8,";
-					href_text += JSON.stringify(qset, null, 2);
-					el.setAttribute("href", href_text);
-					el.setAttribute("download", filename);
-					el.click();
-					el.setAttribute("href", "");
-					el.setAttribute("download", "");
+				if (data['status'] == 'ok') {
+					//give a status msg
+					$("#span-export-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
+					//write this to the DOM and trigger the download, then delete from the DOM
+					for (qset of data["data"]) {
+						let filename = "export_qs_id_" + String(qset[0]["qs_id"]) + ".quiz";
+						let el = document.getElementById('a-export');
+						let href_text = "data:application/xml;charset=utf-8,";
+						href_text += JSON.stringify(qset, null, 2);
+						el.setAttribute("href", href_text);
+						el.setAttribute("download", filename);
+						el.click();
+						el.setAttribute("href", "");
+						el.setAttribute("download", "");
+					}
+				}
+				else {
+					alert(data["msg"]);
+					window.location = data['target'];	
 				}
 			},
 		});
@@ -593,7 +613,13 @@ function build_admin_summary(args) {
 					cache: false,
 					processData: false,
 					success: function(data) {
-						$("#import-config").append(data["msg"] + "<br/>");
+						if (data['result'] == 'ok') {
+							$("#import-config").append(data["msg"] + "<br/>");
+						}
+						else {
+							alert(data["msg"]);
+							window.location = data['target'];	
+						}
 					}
 				});
 
@@ -644,7 +670,13 @@ function build_admin_summary(args) {
 								processData: false,
 								async: true,
 								success: function(data) {
-									$("#import-config").append(data["msg"] + "<br/>");
+									if (data['status'] == 'ok') {
+										$("#import-config").append(data["msg"] + "<br/>");
+									}
+									else {
+										alert(data["msg"]);
+										window.location = data['target'];	
+									}
 								},
 							});
 						}
@@ -927,11 +959,10 @@ function build_take_quiz(args) {
 						let args = {"session_data":session_data};
 						ajax_authorized_get("./student_summary.html", build_student_summary, args);
 					}
-				} else {
+				} 
+				else {
 					alert(data["msg"]);
-					//go back to the student_summary page
-					let args = {"session_data":session_data};
-					ajax_authorized_get("./student_summary.html", build_student_summary, args);
+					window.location = data['target'];	
 				}
 			},
 		});
@@ -1281,23 +1312,29 @@ function build_mark_quiz(args) {
 			processData: false,
 			async: true,
 			success: function(data) {
-				alert("Your marks were submitted with status: " + data["status"]);
-				if (final_flag) {
-					let args = {"session_data":session_data};
-					ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
-				}
+				if (data['status'] == 'ok') {
+					alert("Your marks were submitted with status: " + data["status"]);
+					if (final_flag) {
+						let args = {"session_data":session_data};
+						ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
+					}
 
-				if (change_flag) {
-					//change the s_u_id
-					let new_user = $('[name="input-submitter"]').val();
-					s_u_id = new_user.slice(new_user.search("\\(")+1,new_user.search("\\)")).trim();
-					//go to the chosen user mark page
-					let args = {"session_data":session_data,
-								"qs_id":qs_id,
-								"s_u_id":s_u_id,
-								"include_submission":"1",
-								"include_submitters":"1"};
-					ajax_authorized_get("./mark_quiz.html", build_mark_quiz, args);
+					if (change_flag) {
+						//change the s_u_id
+						let new_user = $('[name="input-submitter"]').val();
+						s_u_id = new_user.slice(new_user.search("\\(")+1,new_user.search("\\)")).trim();
+						//go to the chosen user mark page
+						let args = {"session_data":session_data,
+									"qs_id":qs_id,
+									"s_u_id":s_u_id,
+									"include_submission":"1",
+									"include_submitters":"1"};
+						ajax_authorized_get("./mark_quiz.html", build_mark_quiz, args);
+					}
+				}
+				else {
+					alert(data["msg"]);
+					window.location = data['target'];	
 				}
 			},
 		});
@@ -1682,6 +1719,10 @@ function build_edit_quiz(args) {
 						ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
 					}
 				}
+				else {
+					alert(data["msg"]);
+					window.location = data['target'];	
+				}
 			},
 		});
 
@@ -1700,7 +1741,13 @@ function build_edit_quiz(args) {
 				cache: false,
 				processData: false,
 				success: function(data) {
-					console.log(JSON.stringify(data,null,2));
+					if (data['status'] == 'ok') {
+						console.log(JSON.stringify(data,null,2));
+					}
+					else {
+						alert(data["msg"]);
+						window.location = data['target'];	
+					}
 				}
 			});
 		}
