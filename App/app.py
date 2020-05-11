@@ -355,6 +355,8 @@ def get_admin_stats():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -375,6 +377,8 @@ def get_student_stats():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -396,6 +400,8 @@ def get_student_summary():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
     
     u_id = result['data'].u_id
@@ -468,6 +474,8 @@ def get_admin_summary():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -572,6 +580,8 @@ def get_edit_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -601,6 +611,8 @@ def get_manage_users():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -632,6 +644,8 @@ def get_take_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -667,6 +681,8 @@ def submit_answers_json():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -720,6 +736,8 @@ def get_review_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
     
     u_id = result['data'].u_id
@@ -751,6 +769,8 @@ def get_mark_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
   
     u_id = result['data'].u_id
@@ -781,6 +801,8 @@ def submit_marks_json():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -815,6 +837,8 @@ def upload_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
     
     u_id = result['data'].u_id
@@ -922,6 +946,8 @@ def upload_image():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
 
     if 'file' not in request.files:
@@ -948,6 +974,8 @@ def download_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
     
     u_id = result['data'].u_id
@@ -991,6 +1019,8 @@ def delete_quiz():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token(request)
     if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
         return jsonify (result)
 
     u_id = result['data'].u_id

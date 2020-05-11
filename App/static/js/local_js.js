@@ -57,7 +57,7 @@ function ajax_authorized_get(target, target_fn, args) {
 	//this changes the address in the address bar of the browser, it is purely cosmetic
 	//if the user presses reload, they will get an error as no token is sent
 	//comment out to just show the login address (the real address) the whole time
-	//window.history.replaceState({}, "", target);
+	window.history.replaceState({}, "", target);
 
 	//the response here is to call the calling function with args if status==ok
 	//goes back to login.html if status == error
