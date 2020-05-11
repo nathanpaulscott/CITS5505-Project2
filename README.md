@@ -40,6 +40,7 @@ You can register, then login wiht yoru username and password.  You go to the stu
  * refactor front-end - 3 days  (Nathan).  Clean up the code and move some of the basic page building to jinja, but I suggest staying with the current structure, just cleaning up some things and doing the basic stuff in the server to show we can do it.  Like putting the username in the template, we can do in the backend, but the looping, just do in javascript.
  * writing all quizzes and adding to database - 1 day (Jack)
  * write testing code, I do not know how to do that, how can you write testing code for a gui based tool?!?!?  Really needs human testing, but this is a major requirement in the project spec
+ * writing README (mainly Jack, revising by Nathan)
  * minor fixes: when a quiz is submitted, show "success" popup and redirect to student summary
  
 
