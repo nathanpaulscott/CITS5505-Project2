@@ -53,7 +53,7 @@ README of project
 ---
 Running the application:
 1. Open a terminal.
-2. Navigate to the "app" folder by typing "cd app".
+2. Navigate to the "app" folder of the application.
 3. Type "python app.py".
 4. Click the link in the terminal to open "http://127.0.0.1:5000/".
 
