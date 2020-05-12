@@ -1253,5 +1253,5 @@ def time_now():
 # runs server
 if __name__ == "__main__":
     # switch debug to false before assignment submission
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=True)
     #app.run(debug=True)
