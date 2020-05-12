@@ -1,12 +1,6 @@
 # CITS5505-Project2
  Quiz System
 
-
-To run the server: 
-1. In a terminal, navigate to Back End
-2. Type "python app.py"
-3. Click the link that appears in the terminal
-
 ---
 ## Status Comments  
 Right now, the main functionality of the app is working as decribed below
@@ -53,3 +47,38 @@ Done
 * admin viewing submissions => done
 * admin writing feedback => done
 * timing code => the token will expire after 30mins (settable in app.py).  The next server request from the user after token expiry will cause them to be kicked out to the login screen.  If the request was to submit quiz edits, or marking data, that data will be lost (I can change it, but how long to give them, better to just give them a submit button so they can submit regularly along the way.  In the case of taking a quiz, the token expiry is set to the allotted test time after the test has started, so that the user can submit their answers as long as they do so within the test time + a 2 minute buffer.  If they try to submit answers 2 mins after the test close, the answers will be lost and the user kicked out to the login page.  This adjusted token expiry time only applies to answer submissions, the next request to load the student summary page will use the normal token expiry time, thus if the normal token has expired at the point of submission, the user will then (after results being accepted) be redirected to the login page as with every other expiry case.  No page memory was implemented, i.e. a user gets kicked out to the login page as the token has expired and on re-login, they go back to the last page they were at.  This was not implemented as the app page structure is too simple, it is more clear just to go back to the summary page on login.
+
+
+README of project
+---
+Running the application:
+1. Open a terminal.
+2. Navigate to the "app" folder by typing "cd app".
+3. Type "python app.py".
+4. Click the link in the terminal to open "http://127.0.0.1:5000/".
+
+Using the application as an administrator:
+Administrators have various privileges not available to students including managing users, modifying quizzes and marking quizzes.
+
+Admin summary:
+On the admin summary page, administrator accounts may import new quizzes using the .quiz format, export quizzes from the database for local download or delete quizzes using the coloured buttons above the quiz table. Administrators can also edit or mark quizzes by selecting the relevant buttons in the table. 
+
+*include image of admin_summary
+
+Editing quizzes:
+Administrators can access the edit quiz page by clicking "edit" on a quiz in the admin summary. On the edit quiz page, administrators can add additional question text or images, change the response type ("text" for short answer or "mc" for multiple choice) and change the options for multiple choice questions.
+
+*include image of edit quiz page
+
+Managing users:
+
+*include screenshot of manage users page
+
+
+Using the application as a student:
+Student accounts have limited privileges allowing them to take quizzes and view results.
+
+Student summary:
+The student summary page shows information about available quizzes including their completion status and awarded mark. Students can click on completed quizzes to view feedback or click on other quizzes to complete them. Students have a limited amount of time to complete a quiz and may submit at any time. If time runs out, the quiz will automatically be submitted with the student's answers. Quizzes may contain multiple choice questions, short answer questions and images.
+
+*include screenshot of student summary
