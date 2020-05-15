@@ -8,7 +8,7 @@ import re
 import os
 import json
 import statistics as st
-from datetime import datetime as dt
+from datetime import datetime as dt 
 import time
 
 
@@ -223,7 +223,7 @@ def get_login():
         
 
 @app.route('/register.html', methods=['GET','POST'])
-def register():
+def register_request():
     # navigate to register page
     if request.method == 'GET':
         write_log(0,8,'registration page entry')
@@ -236,17 +236,24 @@ def register():
         admin = False
         if request.form["admin"] == "1":      
             admin = True
+        
+        if register(username, password, admin) == True:
+            #log the user in
+            return redirect(url_for('get_login'))
+        else:
+            return jsonify ({"status":'error',
+                            'msg':'User {} is already registered.'.format(username),
+                            'target':'/login.html'})
 
+# separated from function above to allow testability
+def register(username, password, admin):
         # check if username taken
         result = User.query.filter_by(username=username).first()
         if result is not None:
             write_log(0,9,'failed registration as username "' + username + '" is taken')
-            return jsonify ({"status":'error',
-                            'msg':'User {} is already registered.'.format(username),
-                            'target':'/login.html'})
+            return False
         else:
-            #determines the next unused u_id from database
-            #this is not a real world soluton, but works for the project
+            # determines the next unused u_id from database
             u_id = 1
             result = db.engine.execute('SELECT MAX(u_id) FROM user;').fetchone()[0]
             if result is not None:
@@ -264,9 +271,8 @@ def register():
                             login_att=0)
             db.session.add(new_user)
             db.session.commit()
+            return True
 
-            #now log the user in
-            return redirect(url_for('get_login'))
 
 
 #############################################################################
@@ -942,7 +948,7 @@ def download_quiz():
 
 #this is for the delete quiz function in the admin_summary page
 @app.route('/delete_quiz', methods=['POST'])
-def delete_quiz():
+def delete_quiz_request():
     #does the jwt verification => input is the token, output is the user object
     result = verify_token()
     if not result['status'] == 'ok':
@@ -951,11 +957,18 @@ def delete_quiz():
         return jsonify (result)
 
     u_id = result['data'].u_id
-    username = result['data'].username
-    qs_id_req = request.get_json()["qs_id_req"]
+    qs_ids = request.get_json()["qs_id_req"]
 
-    #deletes the requested qsets and questions from the DB
-    for qs_id in qs_id_req:
+    delete_quiz(qs_ids)
+
+    # if all was ok
+    write_log(u_id,22,'delete quiz success, qs_ids: ' + str(qs_ids))
+    return jsonify ({'status':'ok',
+                     'msg':qs_ids})
+
+def delete_quiz(qs_ids):
+    # deletes the requested qsets and questions from the DB
+    for qs_id in qs_ids:
         Question_Set.query.filter_by(qs_id=qs_id).delete()
         Question.query.filter_by(qs_id=qs_id).delete()
         Submission.query.filter_by(qs_id=qs_id).delete()
@@ -963,11 +976,6 @@ def delete_quiz():
 
     # commit changes
     db.session.commit()
-
-    #if all was ok
-    write_log(u_id,22,'delete quiz success, qs_ids: ' + str(qs_id_req))
-    return jsonify ({'status':'ok',
-                     'msg':qs_id_req})
 
 
 #########################################################
