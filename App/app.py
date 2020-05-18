@@ -163,7 +163,6 @@ def get_login():
         password = request.form["password"]
 
     #verify the user exists and the password is correct 
-    # and log them in with a login flag in the DB
     #also get the admin status and u_id from the DB
     user = User.query.filter_by(username=username).first()
     if user is None:
@@ -171,7 +170,7 @@ def get_login():
         write_log(0,4,'failed login from username not found')
         return jsonify ({"status":"error", 
                         "msg":'Username {} not found'.format(username),
-                        "target":"./register.html"})
+                        "target":error_target})
     
     if user.login_att is None:
         user.login_att = 1
@@ -239,11 +238,11 @@ def register_request():
         
         if register(username, password, admin) == True:
             #log the user in
-            return redirect(url_for('get_login'))
+            return jsonify ({'status':'ok'})
         else:
             return jsonify ({"status":'error',
                             'msg':'User {} is already registered.'.format(username),
-                            'target':'/login.html'})
+                            'target':'./register.html'})
 
 # separated from function above to allow testability
 def register(username, password, admin):

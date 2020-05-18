@@ -2,21 +2,62 @@
  //this runs specific code on the login page load, this basically starts off the app
  /////////////////////////////////////////////////////////////////////////////////
  $(document).ready(function() {
-	//alert('document ready triggered');
-	//these are the regex page selectors to isolate js code to specific pages
-	let regex = {};
-	regex["login"] = /\/login\.html/i;
-		
-	//##########################
-	//Login page
-	if (window.location.pathname.search(regex["login"]) != -1) {
-		//handles the login and the returned token, then routes to admin or student area
+
+	///////////////////////////////////////////////////////////////////
+	//handles the registration
+	if (window.location.pathname.search(/register\.html$/) != -1) {
+		//this sets up the listeners for the form submit and sends the ajax req
+		$("#submit").click(function() {
+			let username = $("#username").val();
+			let password = $("#password").val();
+			let admin = $("#admin").val();
+
+			//validation
+			result = input_validation({"username":{"value":username}, 
+										"password":{"value":password}});
+			if (! result) return;
+
+			form_data  = new FormData();
+			form_data.append("username", username);
+			form_data.append("password", password);
+			form_data.append("admin", admin);
+			let target = "/register.html";
+			$.ajax({
+				type: 'POST',
+				url: target,
+				data: form_data,
+				contentType: false,
+				cache: false,
+				processData: false,
+				async: true,
+				success: function(data) {
+					if (data["status"] == "error") {
+						alert(data["msg"]);
+						//only reload if it's another page
+						if (data["target"].search(/register\.html$/) == -1) {
+							window.location = data['target'];
+						}
+					} else {
+						alert('Registration Success')
+						window.location = '/login.html';
+					}
+				}
+			});	
+		}); 
+	}
+
+
+	//////////////////////////////////////////////////////////////////
+	//handles the login and the returned token, then routes to admin or student area
+	if (window.location.pathname.search(/login\.html$/) != -1) {
 		//this sets up the listeners for the form submit and sends the ajax req
 		$("#submit").click(function() {
 			let username = $("#username").val();
 			let password = $("#password").val();
 
-			//do some validation here?
+			//validation
+			//result = input_validation({"username":{"value":username}, "password":{"value":password}});
+			//if (! result) return;
 
 			form_data  = new FormData();
 			form_data.append("username", username);
@@ -42,7 +83,9 @@
 					} 
 					else {
 						alert(data["msg"]);
-						window.location = data['target'];
+						//only reload if it's another page
+						if (data["target"].search(/login\.html$/) == -1) 
+							window.location = data['target'];
 					} 
 				}
 			});	
@@ -50,7 +93,35 @@
 	}
 }); //end of the on_load section
 
- /////////////////////////////////////////////////////////////////////////////////
+
+
+//this has all the registration and login validation code
+function input_validation(form) {
+	username = form.username.value;
+	password = form.password.value;
+
+	success = true;
+	msg = "";
+	if (username.search(/[A-Za-z0-9]{1,30}/) == -1) {
+		msg +="!!Username needs to be between 1 and 30 characters and be comprised of alphabetcial and numeric characters only\n\n";
+		success = false;
+	}
+	if (password.search(/.{8,30}/) == -1 ||
+		password.search(/[A-Z]{1,30}/) == -1 ||
+		password.search(/[a-z]{1,30}/) == -1 ||
+		password.search(/[0-9]{1,30}/) == -1 ||
+		password.search(/[!@#$%^&*]{1,30}/) == -1) {
+			msg +="!!Password needs to be between 8 and 30 characters and be comprised of at least one capital letter, one lower case letter, one number and one special character from (!@#$%^&*)\nThis non conformant password will now be accepted as long as it is not blank, but msg was just to show that validation could be enabled\n\n";
+			//disable actual blocking of non conformant passwords for testing as it is too painful to enter in long passwords
+			//success = false;
+	}
+
+	if (msg.length > 0) alert(msg);
+	return success;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////
  //this runs a token protected ajax get request, used for each page request
  /////////////////////////////////////////////////////////////////////////////////
 function ajax_authorized_get(target, target_fn, args) {
@@ -1753,7 +1824,6 @@ function build_manage_users(args) {
 	}
 	html_text +='   </tbody>' + '\n';
 	html_text += '</table>' + '\n';
-	html_text += '<i class="dev-comments">NEed to write add/edit/delete code, ideally delete just rmeoves the row on the spot\nadd just adds a row to the start of the tabel and edit => maybe do not have, just allow clicking on a ell and editing the uername and role</i>' + '\n';
 	
 	//append to the DOM
 	$("#p-user-admin-table").append(html_text);
