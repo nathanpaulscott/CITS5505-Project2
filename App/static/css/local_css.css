@@ -527,7 +527,7 @@ span.ajax_text {
 #quiz-admin-table tbody tr.click-enable td.edit-quiz:hover,
 #quiz-admin-table tbody tr.click-enable td.mark-quiz:hover,
 #user-admin-table tbody tr.click-enable td.edit-user:hover,
-#user-admin-table tbody tr.click-enable td.mark-user:hover {
+#user-admin-table tbody tr.click-enable td.del-user:hover {
 	cursor: pointer;
 }
 

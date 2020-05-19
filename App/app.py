@@ -273,6 +273,83 @@ def register(username, password, admin):
             return True
 
 
+#used by the manage users functions to add/edit/delete
+@app.route('/edit_user', methods=['POST'])
+def edit_user():
+    #does the jwt verification => input is the token, output is the user object
+    result = verify_token()
+    if not result['status'] == 'ok':
+        if result['msg'] == 'no token': 
+            return redirect(result['target'])
+        return jsonify (result)
+    
+    #these are the admin details
+    u_id = result['data'].u_id
+    username = result['data'].username
+    #these are the edited user details
+    u_id_edit = request.get_json()["u_id"]
+    username_edit = request.get_json()["username"]
+    password_edit = request.get_json()["password"]
+    admin_edit = False
+    if request.get_json()["admin"] == "1":
+        admin_edit = True
+    
+    #DELETE USER CASE
+    elif request.get_json()["admin"] == "":
+        User.query.filter_by(u_id=u_id_edit).delete()
+        db.session.commit()
+        write_log(0,103,'user delete success, u_id = ' + u_id_edit)
+        return jsonify ({'status':'ok',
+                        'msg':'The user was deleted successfully',
+                        'target':'/manage_users.html'})
+
+    #ADD USER CASE
+    if u_id_edit == "":
+        if register(username_edit, password_edit, admin_edit) == True:
+            write_log(0,101,'Add user success')
+            return jsonify ({'status':'ok',
+                            'msg':'Add user success',
+                            'target':'/manage_users.html'})
+        else:
+            write_log(0,101,'Add user failed due to username conflict')
+            return jsonify ({'status':'error',
+                            'msg':'Username {} is already taken.'.format(username_edit)})
+    
+    #EDIT USER CASE
+    else:
+        #get the current user details
+        result = User.query.filter_by(u_id=u_id_edit).first()
+        #do the username
+        if result.username != username_edit:
+            # check if username taken
+            temp_result = User.query.filter_by(username=username_edit).first()
+            if temp_result is not None:
+                write_log(0,100,'failed as username "' + username_edit + '" is taken')
+                return jsonify ({'status':'error',
+                                'msg':'Username {} is already taken.'.format(username_edit)})
+
+        #do the password
+        password_h = result.password
+        if password_edit != "":
+            #only hashes the new password if it has changed (blank means it has not changed)
+            password_h = generate_password_hash(password_edit)
+
+        #edit user in the DB
+        result.admin=admin_edit 
+        result.username=username_edit
+        result.password=password_h 
+        result.last_req=json.dumps({'fn':'init'})
+        result.login_att=0
+        db.session.commit()
+        write_log(0,102,'user edit success, u_id = ' + u_id_edit)
+        return jsonify ({'status':'ok',
+                        'msg':'Your edit was successfull',
+                        'target':'/manage_users.html'})
+
+
+
+
+
 
 #############################################################################
 #GET route functions, correspond to the different web pages
@@ -509,7 +586,7 @@ def get_manage_users():
         users_data.append([ user.u_id, 
                             "Teacher" if user.admin else "Student", 
                             user.username,
-                            user.password])
+                            "***"])   #user.password])
 
     #if all was ok
     write_log(u_id,23,'manage users success')

@@ -77,19 +77,61 @@
 
                 <!-- content section -->
                 <div class="col-sm-8 content">
-                    <h2>Manage Users</h2>
+                    <h2>Manage Users<button type="button" id="btn-add-user" class="btn btn-primary" style="float:right;" data-toggle="collapse" data-target="#add-user" aria-expanded="false" aria-controls="add-user">Add User</button></h2>
                     
-                    <h5>
-                        Users List
-                    </h5>
+                    <div id="add-user" class="collapse multicollapse">
+                        <hr>
+                        <h5>Add User</h5>
+                        <form onsubmit="return false">
+                            <div class="form-group">
+                                <label for="add-admin">Role</label><br>
+                                <select id = "add-admin" name = "add-admin">
+                                    <option value = "0">Student</option>
+                                    <option value = "1">Teacher</option>
+                                  </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="add-username">Username</label>
+                                <input type="text" class="form-control" id="add-username" name="add-username">
+                            </div>
+                            <div class="form-group">
+                                <label for="add-password">Password</label>
+                                <input type="password" class="form-control" id="add-password" name="add-password">
+                            </div>
+                            <button type="submit" id="add-submit" class="btn btn-success">Submit</button>
+                            <button type="cancel" class="btn btn-danger" data-toggle="collapse" data-target="#add-user" aria-expanded="false" aria-controls="add-user">Cancel</button>
+                        </form>
+                    </div>
+                    
+                    <div id="mod-user" class="collapse multicollapse">
+                        <hr>
+                        <h5>Edit User</h5>
+                        <form onsubmit="return false">
+                            <p id="mod-uid" hidden></p>
+                            <div class="form-group">
+                                <label for="mod-admin">Role</label><br>
+                                <select id = "mod-admin" name = "mod-admin">
+                                    <option value = "0">Student</option>
+                                    <option value = "1">Teacher</option>
+                                  </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="mod-username">Username</label>
+                                <input type="text" class="form-control" id="mod-username" name="mod-username">
+                            </div>
+                            <div class="form-group">
+                                <label for="mod-password">Password</label>
+                                <input type="password" class="form-control" id="mod-password" name="mod-password">
+                            </div>
+                            <button type="submit" id="mod-submit" class="btn btn-success">Submit</button>
+                            <button type="cancel" class="btn btn-danger" data-toggle="collapse" data-target="#mod-user" aria-expanded="false" aria-controls="mod-user">Cancel</button>
+                        </form>
+                    </div>
 
                     <hr>
-                   
-                    <p>
-                        <button type="button" id="btn-add-user" class="btn btn-primary">Add User</button>
-                    </p>
-                    <hr>
-                    
+
+                    <h5>Users List</h5>
+
                     <p id="p-user-admin-table">                   
                         <!-- filled by js-->
                     </p>

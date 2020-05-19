@@ -124,7 +124,7 @@ function input_validation(form) {
 /////////////////////////////////////////////////////////////////////////////////
  //this runs a token protected ajax get request, used for each page request
  /////////////////////////////////////////////////////////////////////////////////
-function ajax_authorized_get(target, target_fn, args) {
+ function ajax_authorized_get(target, target_fn, args) {
 	//this does a jwt authorized get for the given target
 	// and passes control to the html building function (target_fn)
 
@@ -1816,10 +1816,10 @@ function build_manage_users(args) {
 		html_text +='       <tr class="click-enable">' + '\n';
 		html_text +='	       <td class="del-user">Del</td>' + '\n';
 		html_text +='	       <td class="edit-user">Edit</td>' + '\n';
-		html_text +='	       <td id="u-id">' + users_data[i][0] + '</td>' + '\n';
-		for (j = 1; j < users_data[i].length; j++){
-			html_text +='	       <td>' + users_data[i][j] + '</td>' + '\n';
-		}
+		html_text +='	       <td class="tab-uid">' + users_data[i][0] + '</td>' + '\n';
+		html_text +='	       <td class="tab-admin">' + users_data[i][1] + '</td>' + '\n';
+		html_text +='	       <td class="tab-username">' + users_data[i][2] + '</td>' + '\n';
+		html_text +='	       <td class="tab-password">' + users_data[i][3] + '</td>' + '\n';
 		html_text +='       </tr>' + '\n';
 	}
 	html_text +='   </tbody>' + '\n';
@@ -1828,34 +1828,136 @@ function build_manage_users(args) {
 	//append to the DOM
 	$("#p-user-admin-table").append(html_text);
 
-	//runs the datatable plugin on the table to make it sortable etc...
-	$('#user-admin-table').DataTable({
-		"paging":true,
-		"ordering":true,
-		columnDefs: [{"orderable": false,"targets":[0,1]}],"order": [] 
-	});
+	//assigns a click listener to the edit user cell of the table
+	$(".edit-user").click(function (e) {handle_edit_user(e)});
+	//assigns a click listener to the delete user cell of the table
+	$(".del-user").click(function (e) {handle_delete_user(e)});
 
-	//assigns a click listener to the add user button
+	function handle_edit_user(e) {
+		$('#add-user').collapse('hide');
+		$('#mod-user').collapse('show');
+
+		$("#mod-uid").val($(e.target).parent().find(".tab-uid").text());
+		$("#mod-username").val($(e.target).parent().find(".tab-username").text());
+		if ($(e.target).parent().find(".tab-admin").text()=="Teacher") 
+			$("#mod-admin").val(1); 
+		else 
+			$("#mod-admin").val(0);
+	}
+
+	function handle_delete_user(e) {
+		$('#add-user').collapse('hide');
+		$('#mod-user').collapse('hide');
+
+		let u_id_edit = $(e.target).parent().find(".tab-uid").text();
+		//for this request
+		let args = {"session_data":session_data,
+					"u_id":u_id_edit,
+					"username":"",
+					"password":"",
+					"admin":""};
+		//for the next request
+		let args2 = {"session_data":session_data};
+		ajax_authorized_post("./edit_user", build_manage_users, args, args2);
+	}
+
+	//assigns a click listener to the add user btn to handle the correct operation of the collaspsing elements
 	$("#btn-add-user").click(function() {
-		alert("need to write code to add the user");
+		$('#add-user').collapse('show');
+		$('#mod-user').collapse('hide');
 	});
 
-	//assigns a click listener to the delete user
-	$("#user-admin-table tbody tr.click-enable td.del-user").click(function() {
-		let u_id_del = $(this).parent().find("td#u-id").text();
-		//build the target url
-		alert("need to write code to delete the user");
+	//assigns a click listener to the add user submit button
+	$("#add-submit").click(function() {
+		let username_new = $("#add-username").val();
+		let password_new = $("#add-password").val();
+		let admin_new = $("#add-admin").val();
+
+		//validation
+		result = input_validation({"username":{"value":username_new}, "password":{"value":password_new}});
+		if (! result) return;
+
+		//for this request
+		let args = {"session_data":session_data,
+					"u_id":"",
+					"username":username_new,
+					"password":password_new,
+					"admin":admin_new};
+		//for the next request
+		let args2 = {"session_data":session_data};
+		ajax_authorized_post("./edit_user", build_manage_users, args, args2);
 	});
 
-	//assigns a click listener to the edit cells
-	$("#user-admin-table tbody tr.click-enable td.edit-user").click(function() {
-		let u_ud_edit = $(this).parent().find("td#u-id").text();
-		//build the target url
-		alert("need to write code to edit the user");
+	//assigns a click listener to the edit submit button
+	$("#mod-submit").click(function() {
+		let username_new = $("#mod-username").val();
+		let password_new = $("#mod-password").val();
+		let admin_new = $("#mod-admin").val();
+
+		//validation
+		result = input_validation({"username":{"value":username_new}, "password":{"value":password_new}});
+		if (! result) return;
+
+		//for this request
+		let args = {"session_data":session_data,
+					"u_id":$("#mod-uid").val(),
+					"username":username_new,
+					"password":password_new,
+					"admin":admin_new};
+		//for the next request
+		let args2 = {"session_data":session_data};
+		ajax_authorized_post("./edit_user", build_manage_users, args, args2);
 	});
 
 	$("#finish").click(function() {
 		let args = {"session_data":session_data};
 		ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
 	});
+	
+	//runs the datatable plugin on the table to make it sortable etc...
+	//do this last as it meesses up listeners if not
+	$('#user-admin-table').DataTable({
+		"paging":true,
+		"ordering":true,
+		columnDefs: [{"orderable": false,"targets":[0,1]}],"order": [] 
+	});
 } //end of the build_manage_users function
+
+
+
+
+
+//does a token authorized post request
+function ajax_authorized_post(target, target_fn, req_args, target_fn_args) {
+	//get the list of get params to send (not the session_data)
+	let post_params = {};
+	for (key in req_args) {
+		if (! ["session_data"].includes(key)) 
+			post_params[key] = req_args[key];
+	}
+
+	$.ajax({
+		type: 'POST',
+		url: target,
+		data: JSON.stringify(post_params),
+		headers: {'Authorization':req_args["session_data"]["token"]},
+		contentType: "application/json",
+		data_type: "json",
+		cache: false,
+		processData: false,
+		async: true,
+		success: function(data) {
+			if (data["status"] == "ok") {
+				//alert(data["msg"]);
+				//reload page
+				ajax_authorized_get(data["target"], target_fn, target_fn_args);
+			} else {
+				alert(data["msg"]);
+			}
+		},
+	});
+}
+
+
+
+//validate
