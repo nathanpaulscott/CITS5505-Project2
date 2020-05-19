@@ -291,13 +291,6 @@ function build_admin_summary(args) {
 	//append to the DOM
 	$("#p-quiz-admin-table").append(html_text);
 
-	//runs the datatable plugin on the table to make it sortable etc...
-	$('#quiz-admin-table').DataTable({
-		"paging":true,
-		"ordering":true,
-		columnDefs: [{"orderable": false,"targets":[0,1]}],"order": [] 
-	});
-
 	//assigns a click listener to the mark cells for marking and review
 	$("#quiz-admin-table tbody tr.click-enable td.mark-quiz").click(function() {
 		let qs_id = $(this).parent().find("td#qs-id").text();
@@ -350,6 +343,14 @@ function build_admin_summary(args) {
 	$("#btn-export").on("click", function() {
 		$('#import-config').collapse('hide');
 		$('#delete-config').collapse('hide');
+	});
+
+
+	//###############################
+	//Handles the refresh button
+	//#################################################################################
+	$("#btn-refresh").on("click", function() {
+		ajax_authorized_get('/admin_summary.html', build_admin_summary, {"session_data":session_data});
 	});
 
 
@@ -475,8 +476,6 @@ function build_admin_summary(args) {
 			},
 		});
 	});
-	
-
 
 
 	//###############################
@@ -683,6 +682,13 @@ function build_admin_summary(args) {
 			}
 		}
 	});
+
+	//runs the datatable plugin on the table to make it sortable etc...
+	$('#quiz-admin-table').DataTable({
+		"paging":true,
+		"ordering":true,
+		columnDefs: [{"orderable": false,"targets":[0,1]}],"order": [] 
+	});
 } //end of the build_admin_summary function
 
 
@@ -735,9 +741,6 @@ function build_student_summary(args) {
 	//append to the DOM
 	$("#p-quiz-selection-table").append(html_text);
 
-	//runs the datatable plugin on the table to make it sortable etc...
-	$('#quiz-selection-table').DataTable();
-
 	//assigns a click listener to the student-stats link
 	$("#student-stats").click(function() {
 		let args = {"session_data":session_data} 
@@ -766,6 +769,9 @@ function build_student_summary(args) {
 			ajax_authorized_get("./take_quiz.html", build_take_quiz, args);
 		}
 	});
+
+	//runs the datatable plugin on the table to make it sortable etc...
+	$('#quiz-selection-table').DataTable();
 }//end of the build_student_summary function
 
 
