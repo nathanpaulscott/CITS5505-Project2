@@ -95,6 +95,7 @@
 
 
 
+
 //this has all the registration and login validation code
 function input_validation(form) {
 	username = form.username.value;
@@ -160,6 +161,9 @@ function input_validation(form) {
 		dataType: 'json',
 		success: function (data) {
 			if (data['status'] == "ok"){
+				if (data["msg"] != "") {
+					alert(data["msg"]);
+				}
 				//load new base template page
 				load_new_html(target, data["html"]);
 				//add data to args
@@ -178,6 +182,9 @@ function input_validation(form) {
 					ajax_authorized_get(data['target'], build_admin_summary, args_new);
 				else
 					ajax_authorized_get(data['target'], build_student_summary, args_new);
+			}
+			else if (data["status"] == "pass") {
+				alert(data["msg"]);
 			}
 		}
 	});
@@ -328,7 +335,7 @@ function build_admin_summary(args) {
 	
 	//assigns a click listener to the admin-stats link
 	$("#admin-stats").click(function() {
-		let args = {"session_data":session_data} 
+		let args = {"session_data":session_data, "qs_id":"init"} 
 		ajax_authorized_get("./admin_stats.html", build_admin_stats, args);
 	});
 
@@ -743,7 +750,7 @@ function build_student_summary(args) {
 
 	//assigns a click listener to the student-stats link
 	$("#student-stats").click(function() {
-		let args = {"session_data":session_data} 
+		let args = {"session_data":session_data, "qs_id":"init"} 
 		ajax_authorized_get("./student_stats.html", build_student_stats, args);
 	});
 	
@@ -773,6 +780,8 @@ function build_student_summary(args) {
 	//runs the datatable plugin on the table to make it sortable etc...
 	$('#quiz-selection-table').DataTable();
 }//end of the build_student_summary function
+
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -1229,13 +1238,13 @@ function build_mark_quiz(args) {
 
 	//does the change submitter list
 	//this resets the control
-	
 	document.getElementById("submitters").value = "";
-	
+
 	html_text = "";
 	for (sub of submitters)
 		html_text += '		<option value="' + sub + '"></option>' + '\n';
 	$("#submitters").append(html_text);
+
 
 	//This assigns some listeners on the take_quiz page
 	//####################################################
@@ -1248,7 +1257,6 @@ function build_mark_quiz(args) {
 			}
 		}
 	);
-
 
 	//assigns a click listener to the submit button as well as the finish and submit nav choice
 	$(".save-continue, \
@@ -1966,4 +1974,159 @@ function ajax_authorized_post(target, target_fn, req_args, target_fn_args) {
 
 
 
-//validate
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+function build_student_stats(args) {
+	//this does the html table building				
+	let chart_data = args["data"]["data"];
+	let session_data = args['session_data'];
+	let username = session_data["username"];
+	let u_id = 	session_data["u_id"];
+	let qsets = args["data"]["qsets"];
+	let qs_id = args["data"]["qs_id"];
+	let mark_u_id = args["data"]["mark_u_id"];
+
+	//fix the header
+	fix_header(username);
+	//add the qs_id to the subheaderr
+	$("#title").text("Quiz: " + qs_id + ", your mark: " + mark_u_id);
+	//disable the finish href
+	$("#finish").attr("href","javascript:;"); 
+	//add listener to the finish link
+	$("#finish").click(function() {
+		let args = {"session_data":session_data};
+		ajax_authorized_get("./student_summary.html", build_student_summary, args);
+	});
+
+	//this resets the control
+	document.getElementById("qs").value = "";
+	//writes the list
+	html_text = "";
+	for (qs of qsets)
+		html_text += '		<option value="' + qs + '"></option>' + '\n';
+	$("#qs").append(html_text);
+
+	//sets up the listener for the change qs button
+	$("#btn-load-qs").click(function() {
+		let new_qs_id = $('[name="input-qs"]').val();
+		//get the stats for the new qs_id
+		let args = {"session_data":session_data,
+					"qs_id":new_qs_id};
+		ajax_authorized_get("./student_stats.html", build_student_stats, args);
+	});
+
+	//load the chart data
+	$.ajax({
+		url: "https://www.gstatic.com/charts/loader.js",
+		dataType: "script",
+		success: function() {
+			google.charts.load("current", {packages:["corechart"]});
+			google.charts.setOnLoadCallback(drawChart);
+			function drawChart() {
+			var data = google.visualization.arrayToDataTable(chart_data);
+			var options = {
+				title: 'Results for ' + username + ' vs the rest',
+				legend: { position: 'none' },
+				colors: ['#4285F4'],
+				chartArea: { width: 401 },
+				hAxis: {
+				  //ticks: [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1]
+				},
+				bar: { gap: 0 },
+				histogram: {
+				  bucketSize: 0.02,
+				  maxNumBuckets: 200,
+				  //minValue: -1,
+				  //maxValue: 1
+				}
+			};
+			var chart = new google.visualization.Histogram(document.getElementById('chart'));
+			chart.draw(data, options);
+			}
+		}
+	});
+}
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+function build_admin_stats(args) {
+	//this does the html table building				
+	let chart_data = args["data"]["data"];
+	let session_data = args['session_data'];
+	let username = session_data["username"];
+	let u_id = 	session_data["u_id"];
+	let qsets = args["data"]["qsets"];
+	let qs_id = args["data"]["qs_id"];
+
+	//fix the header
+	fix_header(username);
+	//add the qs_id to the subheaderr
+	$("#title").text("Quiz: " + qs_id);
+	//disable the finish href
+	$("#finish").attr("href","javascript:;"); 
+	//add listener to the finish link
+	$("#finish").click(function() {
+		let args = {"session_data":session_data};
+		ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
+	});
+
+	//this resets the control
+	document.getElementById("qs").value = "";
+	//writes the list
+	html_text = "";
+	for (qs of qsets)
+		html_text += '		<option value="' + qs + '"></option>' + '\n';
+	$("#qs").append(html_text);
+
+	//sets up the listener for the change qs button
+	$("#btn-load-qs").click(function() {
+		let new_qs_id = $('[name="input-qs"]').val();
+		//get the stats for the new qs_id
+		let args = {"session_data":session_data,
+					"qs_id":new_qs_id};
+		ajax_authorized_get("./admin_stats.html", build_admin_stats, args);
+	});
+
+	//load the chart data
+	$.ajax({
+		url: "https://www.gstatic.com/charts/loader.js",
+		dataType: "script",
+		success: function() {
+			google.charts.load("current", {packages:["corechart"]});
+			google.charts.setOnLoadCallback(drawChart);
+			function drawChart() {
+			var data = google.visualization.arrayToDataTable(chart_data);
+			var options = {
+				title: 'Quiz results',
+				legend: { position: 'none' },
+				colors: ['#4285F4'],
+				chartArea: { width: 401 },
+				hAxis: {
+				  //ticks: [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1]
+				},
+				bar: { gap: 0 },
+				histogram: {
+				  bucketSize: 0.02,
+				  maxNumBuckets: 200
+				}
+			};
+			var chart = new google.visualization.Histogram(document.getElementById('chart'));
+			chart.draw(data, options);
+			}
+		}
+	});
+}
+
+

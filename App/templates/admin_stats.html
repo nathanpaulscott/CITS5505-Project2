@@ -76,16 +76,31 @@
 
                     <h2>Statistics</h2>
                     
-                    <h5>
-                        Some subtitle
-                    </h5>
-                    <hr>
                     <p>
-
+                        <button type="button" id="btn-change-qs" class="btn btn-success" data-toggle="collapse" data-target="#qs-config" aria-expanded="false" aria-controls="qs-config">Change Quiz</button>
                     </p>
 
-                    <i class="dev-comments">
-                    </i>
+                    <div class="collapse multicollapse" id="qs-config" >             
+                        <form onsubmit="return false;">
+                        <p>
+                            <p>
+                                Choose from the dropdown or enter a qs_id
+                            </p>
+                            <input list="qs" name="input-qs" style="font-size:0.8em;min-width:200px;">
+                            <datalist id="qs">
+                                <!--filled by JS-->
+                            </datalist>
+                        </p>
+                        <button type="button" id="btn-load-qs" class="btn btn-danger">Load</button>
+                        </form>
+                    </div>                  
+
+                    <hr>
+
+                    <h5 id="title"></h5>
+                    
+                    <div id="chart">
+                    </div>
 
                 </div> 
 
