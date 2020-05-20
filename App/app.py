@@ -280,7 +280,7 @@ def edit_user():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
     
     #these are the admin details
@@ -362,7 +362,7 @@ def get_student_summary():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
     
     u_id = result['data'].u_id
@@ -380,11 +380,9 @@ def get_student_summary():
         qs_id = qset.qs_id
         # get num questions
         qset.tot_qs = len(Question.query.filter_by(qs_id=qs_id).all())
-        qset.mc_qs = len(Question.query.filter_by(  qs_id=qs_id, 
-                                                    a_type='mc').all())
+        qset.mc_qs = len(Question.query.filter_by(qs_id=qs_id, a_type='mc').all())
         # get the student status for the qset
-        result = Submission.query.filter_by(qs_id=qs_id, 
-                                            u_id=u_id).first()
+        result = Submission.query.filter_by(qs_id=qs_id, u_id=u_id).first()
         if result is None:
             qset.status = 'Not Attempted'
         else:
@@ -393,8 +391,7 @@ def get_student_summary():
         result = Question.query.filter_by(qs_id=qs_id).all()
         qset.marks_avail = sum([x.q_marks for x in result])
         #get the marks given
-        result = Submission_Answer.query.filter_by( qs_id=qs_id,
-                                                    u_id=u_id).all()
+        result = Submission_Answer.query.filter_by(qs_id=qs_id, u_id=u_id).all()
         qset.marks = 0
         if len(result) > 0:
             qset.marks = sum([x.mark for x in result])
@@ -436,7 +433,7 @@ def get_admin_summary():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -457,14 +454,11 @@ def get_admin_summary():
         qset.mc_qs = len(Question.query.filter_by(qs_id=qs_id, a_type='mc').all())
         
         # get the status numbers for the qset
-        result = Submission.query.filter_by(qs_id=qs_id, 
-                                            status="Completed").all()
+        result = Submission.query.filter_by(qs_id=qs_id, status="Completed").all()
         qset.completed = len(result)
-        result = Submission.query.filter_by(qs_id=qs_id, 
-                                            status="Marked").all()
+        result = Submission.query.filter_by(qs_id=qs_id, status="Marked").all()
         qset.marked = len(result)
-        result = Submission.query.filter_by(qs_id=qs_id, 
-                                            status="Attempted").all()
+        result = Submission.query.filter_by(qs_id=qs_id, status="Attempted").all()
         qset.attempted = len(result)
         
         #get the marks available
@@ -541,7 +535,7 @@ def get_edit_quiz():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -551,12 +545,7 @@ def get_edit_quiz():
     include_submission = request.args['include_submission']
     include_submitters = request.args['include_submitters']
     
-    result = load_qset_json(u_id, 
-                            username, 
-                            qs_id, 
-                            s_u_id, 
-                            include_submission, 
-                            include_submitters)
+    result = load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_submitters)
     if not result['status'] == 'ok':
         return jsonify (result)
 
@@ -573,7 +562,7 @@ def get_manage_users():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -603,7 +592,7 @@ def get_take_quiz():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -614,12 +603,8 @@ def get_take_quiz():
     include_submission = request.args['include_submission']
     include_submitters = request.args['include_submitters']
     
-    result = load_qset_json(u_id, 
-                            username, 
-                            qs_id, 
-                            s_u_id, 
-                            include_submission, 
-                            include_submitters)
+    #run the load_qset_json function
+    result = load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_submitters)
     if not result['status'] == 'ok':
         return jsonify (result)
     
@@ -643,7 +628,7 @@ def get_review_quiz():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
     
     u_id = result['data'].u_id
@@ -653,12 +638,7 @@ def get_review_quiz():
     include_submission = request.args['include_submission']
     include_submitters = request.args['include_submitters']
 
-    result = load_qset_json(u_id, 
-                            username, 
-                            qs_id, 
-                            s_u_id, 
-                            include_submission, 
-                            include_submitters)
+    result = load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_submitters)
     if not result['status'] == 'ok':
         return jsonify (result)
     
@@ -678,7 +658,7 @@ def get_mark_quiz():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
   
     u_id = result['data'].u_id
@@ -688,12 +668,7 @@ def get_mark_quiz():
     include_submission = request.args['include_submission']
     include_submitters = request.args['include_submitters']
 
-    result = load_qset_json(u_id, 
-                            username, 
-                            qs_id, 
-                            s_u_id, 
-                            include_submission, 
-                            include_submitters)
+    result = load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_submitters)
     if not result['status'] == 'ok':
         return jsonify (result)
 
@@ -712,7 +687,7 @@ def get_admin_stats():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -742,7 +717,7 @@ def get_admin_stats():
         data.append([mark])
 
     #this is fake data, if there was enough data in the system you would just query Submission_Answers and sum all marks for each submission and put into a list here
-    #data = [['result'],[84.4257772852282],[89.4693179302548],[49.5593304581194],[79.345133048903],[51.9096961003536],[98.8033358634526],[89.2828277401471],[53.0921280077312],[73.2753440911822],[49.5950135456858],[55.1764143323547],[48.8999096236483],[99.2552867665214],[48.9303513422541],[45.782851122722],[92.1920379976026],[41.9355188343786],[46.7441399423919],[48.9945880849947],[82.0079215955978],[54.9083127810454],[56.1145506453414],[70.2565384603848],[57.9578139587877],[76.3454364082939],[43.776269018809],[96.988814784362],[54.0242374950292],[60.1726117266932],[89.4981499923428],[50.5551352133415],[45.1569142732216],[45.473861009385],[86.5871984611095],[40.0018683934542],[66.561912811091],[78.8706073542424],[52.1706364882529],[78.6028946967799],[91.5449675589667],[58.2346991109606],[54.3347270448909],[94.4711003804518],[68.770516989694],[49.2444127004075],[97.7086693617995],[80.0252590068608],[96.29442738469],[71.7321550374989],[52.0638658819387],[80.9021983716369],[69.4072003434748],[51.6500219577238],[54.9970026129783],[64.5083054732161],[69.8292137875009],[59.9974456329616],[59.5738293588547],[94.8330426365692],[42.8566898052862],[43.4401424519009],[71.0143019218858],[90.7729817712481],[57.6084731481772],[44.1709607509413],[55.2321837004732],[41.1531787070256],[66.4494993820611],[95.5851093177609],[79.6228936564239],[49.3368335968584],[50.1894356822269],[63.8987502955756],[43.9732873583358],[58.808630755764],[41.5441643393859],[76.4846763928035],[90.7653234367312],[85.9850281678165],[77.8416671555094],[61.9002397252503],[87.0108068328847],[65.0032802427099],[65.31389489352],[60.2233717347607],[83.6047102979214],[93.1433768040218],[55.6893235892971],[63.0299378939421],[50.5303403035409],[81.2348501911943],[98.5229244503118],[44.4411954666087],[43.3798964069613],[60.0509862558667],[80.6589299568999],[66.2367581805563],[89.9179762089854],[41.2440618185382],[40.9704350442741],[61.0821885614607],[47.283201646352],[94.6449182945026],[60.7643400730902],[65.0863400433449],[62.0244983429791],[79.7114002917038],[87.8615265825256],[52.0954521730295],[87.8177412466257],[42.2639524988504],[85.8963406012161],[63.516843591485],[92.8217412036546],[61.2100411621562],[74.2916363688685],[60.4948573697237],[94.4670773890678],[77.6880498160307],[67.7482312521744],[57.8829392537742],[57.5303424061006],[70.5844329626594],[78.1065757681086],[48.6298698194049],[98.4472597731454],[81.6002009507819],[52.7470204029164],[69.5675227931534],[70.6377583648163],[92.5534851190146],[42.6306569154924],[80.018645587894],[97.1303619972043],[98.1753697159191],[65.74119811827],[81.546906106995],[50.994187625315],[89.3443977936425],[79.4024584071307],[76.9307421077986],[78.5953861040503]]
+    data = [['result'],[84.4257772852282],[89.4693179302548],[49.5593304581194],[79.345133048903],[51.9096961003536],[98.8033358634526],[89.2828277401471],[53.0921280077312],[73.2753440911822],[49.5950135456858],[55.1764143323547],[48.8999096236483],[99.2552867665214],[48.9303513422541],[45.782851122722],[92.1920379976026],[41.9355188343786],[46.7441399423919],[48.9945880849947],[82.0079215955978],[54.9083127810454],[56.1145506453414],[70.2565384603848],[57.9578139587877],[76.3454364082939],[43.776269018809],[96.988814784362],[54.0242374950292],[60.1726117266932],[89.4981499923428],[50.5551352133415],[45.1569142732216],[45.473861009385],[86.5871984611095],[40.0018683934542],[66.561912811091],[78.8706073542424],[52.1706364882529],[78.6028946967799],[91.5449675589667],[58.2346991109606],[54.3347270448909],[94.4711003804518],[68.770516989694],[49.2444127004075],[97.7086693617995],[80.0252590068608],[96.29442738469],[71.7321550374989],[52.0638658819387],[80.9021983716369],[69.4072003434748],[51.6500219577238],[54.9970026129783],[64.5083054732161],[69.8292137875009],[59.9974456329616],[59.5738293588547],[94.8330426365692],[42.8566898052862],[43.4401424519009],[71.0143019218858],[90.7729817712481],[57.6084731481772],[44.1709607509413],[55.2321837004732],[41.1531787070256],[66.4494993820611],[95.5851093177609],[79.6228936564239],[49.3368335968584],[50.1894356822269],[63.8987502955756],[43.9732873583358],[58.808630755764],[41.5441643393859],[76.4846763928035],[90.7653234367312],[85.9850281678165],[77.8416671555094],[61.9002397252503],[87.0108068328847],[65.0032802427099],[65.31389489352],[60.2233717347607],[83.6047102979214],[93.1433768040218],[55.6893235892971],[63.0299378939421],[50.5303403035409],[81.2348501911943],[98.5229244503118],[44.4411954666087],[43.3798964069613],[60.0509862558667],[80.6589299568999],[66.2367581805563],[89.9179762089854],[41.2440618185382],[40.9704350442741],[61.0821885614607],[47.283201646352],[94.6449182945026],[60.7643400730902],[65.0863400433449],[62.0244983429791],[79.7114002917038],[87.8615265825256],[52.0954521730295],[87.8177412466257],[42.2639524988504],[85.8963406012161],[63.516843591485],[92.8217412036546],[61.2100411621562],[74.2916363688685],[60.4948573697237],[94.4670773890678],[77.6880498160307],[67.7482312521744],[57.8829392537742],[57.5303424061006],[70.5844329626594],[78.1065757681086],[48.6298698194049],[98.4472597731454],[81.6002009507819],[52.7470204029164],[69.5675227931534],[70.6377583648163],[92.5534851190146],[42.6306569154924],[80.018645587894],[97.1303619972043],[98.1753697159191],[65.74119811827],[81.546906106995],[50.994187625315],[89.3443977936425],[79.4024584071307],[76.9307421077986],[78.5953861040503]]
 
     write_log(u_id,15,'admin stats success')
     return jsonify ({'status' : 'ok',
@@ -759,7 +734,7 @@ def get_student_stats():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -792,7 +767,7 @@ def get_student_stats():
         data.append([mark])
 
     #this is fake data, if there was enough data in the system you would just query Submission_Answers and sum all marks for each submission and put into a list here
-    #data = [['result'],[84.4257772852282],[89.4693179302548],[49.5593304581194],[79.345133048903],[51.9096961003536],[98.8033358634526],[89.2828277401471],[53.0921280077312],[73.2753440911822],[49.5950135456858],[55.1764143323547],[48.8999096236483],[99.2552867665214],[48.9303513422541],[45.782851122722],[92.1920379976026],[41.9355188343786],[46.7441399423919],[48.9945880849947],[82.0079215955978],[54.9083127810454],[56.1145506453414],[70.2565384603848],[57.9578139587877],[76.3454364082939],[43.776269018809],[96.988814784362],[54.0242374950292],[60.1726117266932],[89.4981499923428],[50.5551352133415],[45.1569142732216],[45.473861009385],[86.5871984611095],[40.0018683934542],[66.561912811091],[78.8706073542424],[52.1706364882529],[78.6028946967799],[91.5449675589667],[58.2346991109606],[54.3347270448909],[94.4711003804518],[68.770516989694],[49.2444127004075],[97.7086693617995],[80.0252590068608],[96.29442738469],[71.7321550374989],[52.0638658819387],[80.9021983716369],[69.4072003434748],[51.6500219577238],[54.9970026129783],[64.5083054732161],[69.8292137875009],[59.9974456329616],[59.5738293588547],[94.8330426365692],[42.8566898052862],[43.4401424519009],[71.0143019218858],[90.7729817712481],[57.6084731481772],[44.1709607509413],[55.2321837004732],[41.1531787070256],[66.4494993820611],[95.5851093177609],[79.6228936564239],[49.3368335968584],[50.1894356822269],[63.8987502955756],[43.9732873583358],[58.808630755764],[41.5441643393859],[76.4846763928035],[90.7653234367312],[85.9850281678165],[77.8416671555094],[61.9002397252503],[87.0108068328847],[65.0032802427099],[65.31389489352],[60.2233717347607],[83.6047102979214],[93.1433768040218],[55.6893235892971],[63.0299378939421],[50.5303403035409],[81.2348501911943],[98.5229244503118],[44.4411954666087],[43.3798964069613],[60.0509862558667],[80.6589299568999],[66.2367581805563],[89.9179762089854],[41.2440618185382],[40.9704350442741],[61.0821885614607],[47.283201646352],[94.6449182945026],[60.7643400730902],[65.0863400433449],[62.0244983429791],[79.7114002917038],[87.8615265825256],[52.0954521730295],[87.8177412466257],[42.2639524988504],[85.8963406012161],[63.516843591485],[92.8217412036546],[61.2100411621562],[74.2916363688685],[60.4948573697237],[94.4670773890678],[77.6880498160307],[67.7482312521744],[57.8829392537742],[57.5303424061006],[70.5844329626594],[78.1065757681086],[48.6298698194049],[98.4472597731454],[81.6002009507819],[52.7470204029164],[69.5675227931534],[70.6377583648163],[92.5534851190146],[42.6306569154924],[80.018645587894],[97.1303619972043],[98.1753697159191],[65.74119811827],[81.546906106995],[50.994187625315],[89.3443977936425],[79.4024584071307],[76.9307421077986],[78.5953861040503]]
+    data = [['result'],[84.4257772852282],[89.4693179302548],[49.5593304581194],[79.345133048903],[51.9096961003536],[98.8033358634526],[89.2828277401471],[53.0921280077312],[73.2753440911822],[49.5950135456858],[55.1764143323547],[48.8999096236483],[99.2552867665214],[48.9303513422541],[45.782851122722],[92.1920379976026],[41.9355188343786],[46.7441399423919],[48.9945880849947],[82.0079215955978],[54.9083127810454],[56.1145506453414],[70.2565384603848],[57.9578139587877],[76.3454364082939],[43.776269018809],[96.988814784362],[54.0242374950292],[60.1726117266932],[89.4981499923428],[50.5551352133415],[45.1569142732216],[45.473861009385],[86.5871984611095],[40.0018683934542],[66.561912811091],[78.8706073542424],[52.1706364882529],[78.6028946967799],[91.5449675589667],[58.2346991109606],[54.3347270448909],[94.4711003804518],[68.770516989694],[49.2444127004075],[97.7086693617995],[80.0252590068608],[96.29442738469],[71.7321550374989],[52.0638658819387],[80.9021983716369],[69.4072003434748],[51.6500219577238],[54.9970026129783],[64.5083054732161],[69.8292137875009],[59.9974456329616],[59.5738293588547],[94.8330426365692],[42.8566898052862],[43.4401424519009],[71.0143019218858],[90.7729817712481],[57.6084731481772],[44.1709607509413],[55.2321837004732],[41.1531787070256],[66.4494993820611],[95.5851093177609],[79.6228936564239],[49.3368335968584],[50.1894356822269],[63.8987502955756],[43.9732873583358],[58.808630755764],[41.5441643393859],[76.4846763928035],[90.7653234367312],[85.9850281678165],[77.8416671555094],[61.9002397252503],[87.0108068328847],[65.0032802427099],[65.31389489352],[60.2233717347607],[83.6047102979214],[93.1433768040218],[55.6893235892971],[63.0299378939421],[50.5303403035409],[81.2348501911943],[98.5229244503118],[44.4411954666087],[43.3798964069613],[60.0509862558667],[80.6589299568999],[66.2367581805563],[89.9179762089854],[41.2440618185382],[40.9704350442741],[61.0821885614607],[47.283201646352],[94.6449182945026],[60.7643400730902],[65.0863400433449],[62.0244983429791],[79.7114002917038],[87.8615265825256],[52.0954521730295],[87.8177412466257],[42.2639524988504],[85.8963406012161],[63.516843591485],[92.8217412036546],[61.2100411621562],[74.2916363688685],[60.4948573697237],[94.4670773890678],[77.6880498160307],[67.7482312521744],[57.8829392537742],[57.5303424061006],[70.5844329626594],[78.1065757681086],[48.6298698194049],[98.4472597731454],[81.6002009507819],[52.7470204029164],[69.5675227931534],[70.6377583648163],[92.5534851190146],[42.6306569154924],[80.018645587894],[97.1303619972043],[98.1753697159191],[65.74119811827],[81.546906106995],[50.994187625315],[89.3443977936425],[79.4024584071307],[76.9307421077986],[78.5953861040503]]
 
     write_log(u_id,15,'student stats success')
     return jsonify ({'status' : 'ok',
@@ -808,7 +783,6 @@ def get_student_stats():
 #############################################################################
 #POST route functions, receiving, processing, possibly returning data
 #############################################################################
-
 #accept answer submission and save to DB
 @app.route('/submit_answers_json', methods=['POST'])
 def submit_answers_json():
@@ -816,7 +790,7 @@ def submit_answers_json():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -829,18 +803,15 @@ def submit_answers_json():
         status = 'Completed'
 
     #check that the submission is legal
-    result = Submission.query.filter_by(qs_id=qs_id,
-                                        u_id=u_id).all()
+    result = Submission.query.filter_by(qs_id=qs_id, u_id=u_id).all()
     if  len(result) > 0 and result[0].status in ['Completed','Marked']:
         write_log(u_id,26,'submit answers failure: quiz status is already complete or marked')
         return jsonify ({'status':'error',
                          'msg':'no further submissions possible'})
 
     #remove any existing submissions
-    Submission.query.filter_by( qs_id=qs_id,
-                                u_id=u_id).delete()
-    Submission_Answer.query.filter_by(  qs_id=qs_id,
-                                        u_id=u_id).delete()
+    Submission.query.filter_by( qs_id=qs_id, u_id=u_id).delete()
+    Submission_Answer.query.filter_by(  qs_id=qs_id, u_id=u_id).delete()
 
     #add submissions to the DB
     new_sub = Submission(qs_id,u_id,status)
@@ -874,7 +845,7 @@ def submit_marks_json():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -884,15 +855,12 @@ def submit_marks_json():
     s_u_id = data[0]["s_u_id"]
 
     #update marks in the DB
-    result = Submission.query.filter_by(qs_id=qs_id,
-                                        u_id=s_u_id).first()
+    result = Submission.query.filter_by(qs_id=qs_id, u_id=s_u_id).first()
     if result is not None:
         result.status = 'Marked'
         db.session.commit()
         for i in range(1,len(data)):
-            result = Submission_Answer.query.filter_by( qs_id=qs_id,
-                                                        q_id=i,
-                                                        u_id=s_u_id).first()
+            result = Submission_Answer.query.filter_by(qs_id=qs_id, q_id=i, u_id=s_u_id).first()
             if result is not None:
                 result.mark = float(data[i]["mark"])
                 result.comment = data[i]["comment"]
@@ -911,7 +879,7 @@ def upload_quiz():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
     
     u_id = result['data'].u_id
@@ -919,98 +887,16 @@ def upload_quiz():
     upload_data = request.get_json()["upload_data"]
     import_flag = request.get_json()["import_flag"]
 
-    #go through the qset data that is not blank
-    qs_id_req = []
-    for qset_data in [x for x in upload_data if x != []]:
-        #if we are just updating quiz edits, we know the qs_id
-        if not import_flag:
-            qs_id = qset_data[0]["qs_id"]
-        else:
-            #get the qs_id
-            if "qs_id" in qset_data[0]:
-                qs_id = qset_data[0]["qs_id"]
-            else:
-                #determines the next unused qs_id from database
-                #this is not a real world soluton, but works for the project
-                qs_id = 1
-                result = db.engine.execute('SELECT MAX(qs_id) FROM question_set;').fetchone()[0]
-                if result is not None:
-                    qs_id = result + 1
-                    #add it to the DB to minimise contention overwrites from other concurrent users
-                    new_qs = Question_Set(qs_id=qs_id,
-                                        u_id=u_id,
-                                        enabled=False,
-                                        topic='',
-                                        time=-1)
-                    db.session.add(new_qs)
-                    db.session.commit()
-
-        #get the topic
-        topic = "Unspecified"
-        if "topic" in qset_data[0]:
-            topic = qset_data[0]["topic"]
-
-        #get the time
-        time = -1
-        if 'time' in qset_data[0]:
-            time = qset_data[0]["time"]
-
-        #get enabled
-        enabled = False
-        if 'enabled' in qset_data[0]:
-            enabled = qset_data[0]["enabled"]
-
-        #update the DB
-        #----------------------------------------
-        #remove any conflicting data from the DB first
-        Question_Set.query.filter_by(qs_id=qs_id).delete()
-        Question.query.filter_by(qs_id=qs_id).delete()
-
-        #add qsets to the DB, ignores the u_id field in the data and uses the uploader u_id
-        new_qs = Question_Set(qs_id,
-                            u_id,
-                            enabled,
-                            topic,
-                            time)
-        db.session.add(new_qs)
-
-        # commit changes
-        db.session.commit()
-
-        #add questions to the DB, not reading the qs_id field, just assigning it sequentially 
-        q_id = 1
-        for q in qset_data[1:]:
-            q_marks = 0
-            if 'marks' in q["question"][0]:
-                q_marks = q["question"][0]["marks"]
-            q_data = json.dumps(q["question"][1:])
-            a_type = q["answer"]["type"]
-            a_correct = q["answer"]["correct"]
-            a_data = ""
-            if a_type == "mc":
-                a_data = json.dumps(q["answer"]["data"])
-            #add to the DB
-            new_q = Question(qs_id=qs_id,
-                            q_id=q_id,
-                            q_marks=q_marks,
-                            q_data=q_data,
-                            a_type=a_type,
-                            a_data=a_data,
-                            a_correct=a_correct)
-            db.session.add(new_q)
-            q_id += 1
-
-        # commit changes
-        db.session.commit()
-        qs_id_req.append(qs_id)
+    #import the qset data into the DB
+    qs_id_req = import_quiz_data(u_id, upload_data, import_flag)
 
     if import_flag:
         write_log(u_id,16,'quiz data import success, qs_id: ' + str(qs_id_req))
     else:
         write_log(u_id,17,'quiz data edits upload success, qs_id: ' + str(qs_id_req))
-
     return jsonify ({'status':'ok',
                      'msg':'quiz data upload success, qs_id: ' + str(qs_id_req)})
+
 
 
 #this is for the import image function in the admin_summary page
@@ -1020,25 +906,25 @@ def upload_image():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
 
     if 'file' not in request.files:
         write_log(0,18,'image upload fail: bad form format')
-        return jsonify ({ 'status':'error', 
-                        'msg':'bad form format'})
+        return jsonify ({'status':'error', 'msg':'bad form format'})
+    
     file = request.files['file']
     if file.filename == '':
         write_log(0,19,'image upload fail: no file selected')
-        return jsonify ({ 'status':'error', 
-                        'msg':'no file selected'})
+        return jsonify ({'status':'error', 'msg':'no file selected'})
+    
     file = request.files['file']
     filename = secure_filename(file.filename)
     file.save(app.config['BASE_PATH'] + '/' + app.config['IMAGE_FOLDER'] + '/' + filename)
 
     write_log(0,20,'image upload success: ' + filename)
-    return jsonify ({'status':'ok', 
-                     'msg':'Server recieved: ' + filename})
+    return jsonify ({'status':'ok', 'msg':'Server recieved: ' + filename})
+
 
 
 #this is for the export quiz function in the admin_summary page
@@ -1048,7 +934,7 @@ def download_quiz():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
     
     u_id = result['data'].u_id
@@ -1057,30 +943,13 @@ def download_quiz():
 
     #get the standard qset_json format for each requested qs_id and put in a list to send back to the user
     #so qset_data will be a list of qset jsons, each of which are a list of questions
-    qset_data = []
-    qsets = query2list_of_dict(Question_Set.query.all())
-    #filter out only the ones requested, too hard to do with sqlalchemy
-    qsets = [x for x in qsets if str(x['qs_id']) in qs_id_req]
-    for qset in qsets:
-        data = [qset]
-        questions = Question.query.filter_by(qs_id=qset['qs_id']).all()
-        for question in questions:
-            temp = {'question':[], 'answer':{}}
-            temp['question'].append({'q_id':question.q_id, 'marks':question.q_marks})
-            temp['question'].extend(json.loads(question.q_data))
-            temp['answer']['type'] = question.a_type
-            temp['answer']['correct'] = question.a_correct
-            if question.a_type == "mc":
-                temp['answer']['data'] = json.loads(question.a_data)
-            #add to the qset list
-            data.append(temp)
-        #add the qset list to the output list
-        qset_data.append(data)
+    qset_data = extract_quiz_data(qs_id_req)
 
     write_log(u_id,21,'export quiz success, qs_id: ' + str(qs_id_req))
     return jsonify ({'status':'ok',
                      'msg':qs_id_req,
                      'data':qset_data})
+
 
 
 #this is for the delete quiz function in the admin_summary page
@@ -1090,7 +959,7 @@ def delete_quiz_request():
     result = verify_token()
     if not result['status'] == 'ok':
         if result['msg'] == 'no token': 
-            return redirect(result['target'])
+            return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
 
     u_id = result['data'].u_id
@@ -1102,17 +971,6 @@ def delete_quiz_request():
     write_log(u_id,22,'delete quiz success, qs_ids: ' + str(qs_ids))
     return jsonify ({'status':'ok',
                      'msg':qs_ids})
-
-def delete_quiz(qs_ids):
-    # deletes the requested qsets and questions from the DB
-    for qs_id in qs_ids:
-        Question_Set.query.filter_by(qs_id=qs_id).delete()
-        Question.query.filter_by(qs_id=qs_id).delete()
-        Submission.query.filter_by(qs_id=qs_id).delete()
-        Submission_Answer.query.filter_by(qs_id=qs_id).delete()
-
-    # commit changes
-    db.session.commit()
 
 
 #########################################################
@@ -1159,10 +1017,11 @@ def verify_token():
                                     'expired':False})
         db.session.commit()
     
-    #set the token length from login, it uses the value set by app for all cases except
-    #for the take quiz answer submission, where we allow submissions up to the 
-    #allotted quiz time since the loading of the take_quiz.html page
+    #set the token length from login
     max_time_s = app.config['LOGIN_MAX_TIME_S']
+    #for the submit answers (end of the take quiz page), we use the stored take quiz load time
+    #as the test start time to determine whether to accept the submission
+    #we just modify the max_time_s variable basically
     if request.path == '/submit_answers_json': 
         #extract the qs_id form the request => was a post request, so use get_json() not args
         qs_id = request.get_json()['qs_id']
@@ -1174,10 +1033,12 @@ def verify_token():
             max_time_s = result.time*60 + int(test_start_time) - int(data['login_time'])
             #give a 2 minute buffer
             max_time_s = max_time_s + 120
-        
+
+    #do the actual test for an expired request   
     if time_now() - int(data['login_time']) > max_time_s:
-        #save the last .html get requested page (not the post *_json pages)
+        #we have an expired request
         if re.search("\.html$", request.path):
+            #save the last .html get requested page
             user.last_req = json.dumps({'path':request.path, 
                                         'args':request.args,
                                         'time':time_now(),
@@ -1193,6 +1054,7 @@ def verify_token():
             'data':user}
 #########################################################
 
+
 #this is to load a qset questions via json
 #this is used by all the pages that need to load the question set data
 def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_submitters):
@@ -1206,12 +1068,12 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
         cancel_target = '/admin_summary.html'
     error_target = '/login.html'
 
+    ######################################
     def get_user_by_status(qs_id, get_one):
         submitters = []
         statuses = ['Completed','Marked','Attempted']
         for status in statuses:
-            subs = Submission.query.filter_by(qs_id=qs_id,
-                                            status=status).all()
+            subs = Submission.query.filter_by(qs_id=qs_id, status=status).all()
             for sub in subs:
                 user = User.query.filter_by(u_id=sub.u_id).first()
                 if user is not None:
@@ -1221,7 +1083,7 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
         if get_one:
             return None
         return submitters
-                    
+    #######################################                
 
     #get the data from the DB
     if include_submitters == "1":
@@ -1241,8 +1103,7 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
                         'target':cancel_target}
 
         #get the status
-        result = Submission.query.filter_by(qs_id=qs_id,
-                                            u_id=s_u_id).first()
+        result = Submission.query.filter_by(qs_id=qs_id, u_id=s_u_id).first()
         if result is not None:
             submission_status = result.status
         else:
@@ -1288,9 +1149,7 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
                 temp['answer']['data'] = json.loads(question.a_data)
 
             #get the submission_answer data
-            result = Submission_Answer.query.filter_by( qs_id=qs_id,
-                                                        q_id=question.q_id,
-                                                        u_id=s_u_id).all()
+            result = Submission_Answer.query.filter_by(qs_id=qs_id, q_id=question.q_id, u_id=s_u_id).all()
             answer = ''
             mark = 0
             comment = ''
@@ -1342,6 +1201,118 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
             "data":qset_data, 
             "submitters":submitters, 
             "submission_status":submission_status}
+
+
+
+#imports quiz data, overwrites if qs_id already exists, used for the import quiz function 
+#and the edit quiz function
+def import_quiz_data(u_id, upload_data, import_flag):
+    #go through the qset data that is not blank
+    qs_id_req = []
+    for qset_data in [x for x in upload_data if x != []]:
+        if not import_flag:
+            #if we are just updating quiz edits, we know the qs_id
+            qs_id = qset_data[0]["qs_id"]
+        else:
+            #we are importing, so try to read the qs_id from the data
+            if "qs_id" in qset_data[0]:
+                qs_id = qset_data[0]["qs_id"]
+            else:
+                #here there was no qs_id supplied, so we have to find one
+                #determines the next unused qs_id from database
+                #this is not a real world soluton, but works for the project
+                qs_id = 1
+                result = db.engine.execute('SELECT MAX(qs_id) FROM question_set;').fetchone()[0]
+                if result is not None:
+                    qs_id = result + 1
+                    #add it to the DB to minimise contention overwrites from other concurrent users
+                    new_qs = Question_Set(qs_id=qs_id, u_id=u_id, enabled=False, topic='', time=-1)
+                    db.session.add(new_qs)
+                    db.session.commit()
+
+        #get the topic
+        topic = "Unspecified"
+        if "topic" in qset_data[0]: topic = qset_data[0]["topic"]
+        #get the time
+        time = -1
+        if 'time' in qset_data[0]: time = qset_data[0]["time"]
+        #get enabled
+        enabled = False
+        if 'enabled' in qset_data[0]: enabled = qset_data[0]["enabled"]
+
+        #update the DB for question sets
+        #----------------------------------------
+        #remove any conflicting data from the DB first
+        Question_Set.query.filter_by(qs_id=qs_id).delete()
+        Question.query.filter_by(qs_id=qs_id).delete()
+        #add qsets to the DB, ignores the u_id field in the data and uses the uploader u_id
+        new_qs = Question_Set(qs_id, u_id, enabled, topic, time)
+        db.session.add(new_qs)
+        db.session.commit()
+
+        #add questions to the DB, not reading the qs_id field, just assigning it sequentially 
+        #----------------------------------------
+        q_id = 1
+        for q in qset_data[1:]:
+            q_marks = 0
+            if 'marks' in q["question"][0]:
+                q_marks = q["question"][0]["marks"]
+            q_data = json.dumps(q["question"][1:])
+            a_type = q["answer"]["type"]
+            a_correct = q["answer"]["correct"]
+            a_data = ""
+            if a_type == "mc":
+                a_data = json.dumps(q["answer"]["data"])
+            #add to the DB
+            new_q = Question(qs_id=qs_id, q_id=q_id, q_marks=q_marks, q_data=q_data, a_type=a_type, a_data=a_data, a_correct=a_correct)
+            db.session.add(new_q)
+            q_id += 1
+
+        # commit changes
+        db.session.commit()
+        qs_id_req.append(qs_id)
+
+    #success
+    return qs_id_req
+
+
+
+#extract quiz data for download
+def extract_quiz_data(qs_id_req):
+    qset_data = []
+    qsets = query2list_of_dict(Question_Set.query.all())
+    #filter out only the ones requested, too hard to do with sqlalchemy
+    qsets = [x for x in qsets if str(x['qs_id']) in qs_id_req]
+    for qset in qsets:
+        data = [qset]
+        questions = Question.query.filter_by(qs_id=qset['qs_id']).all()
+        for question in questions:
+            temp = {'question':[], 'answer':{}}
+            temp['question'].append({'q_id':question.q_id, 'marks':question.q_marks})
+            temp['question'].extend(json.loads(question.q_data))
+            temp['answer']['type'] = question.a_type
+            temp['answer']['correct'] = question.a_correct
+            if question.a_type == "mc":
+                temp['answer']['data'] = json.loads(question.a_data)
+            #add to the qset list
+            data.append(temp)
+        #add the qset list to the output list
+        qset_data.append(data)
+    #success
+    return qset_data
+
+
+def delete_quiz(qs_ids):
+    # deletes the requested qsets and questions from the DB
+    for qs_id in qs_ids:
+        Question_Set.query.filter_by(qs_id=qs_id).delete()
+        Question.query.filter_by(qs_id=qs_id).delete()
+        Submission.query.filter_by(qs_id=qs_id).delete()
+        Submission_Answer.query.filter_by(qs_id=qs_id).delete()
+
+    # commit changes
+    db.session.commit()
+
 
 
 def write_log(u_id,action_id,action):

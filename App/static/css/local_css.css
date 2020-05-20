@@ -163,6 +163,16 @@ div.header_main {
 	white-space:nowrap;
 }
 
+div.header_main #countdown {
+	text-align:center;
+	font-weight:500;
+	font-size:0.5em;
+	color:red;
+	background-color:rgb(60,60,60);
+	z-index:1;
+	white-space:nowrap;
+}
+
 div.header_left {
 	text-align:center;	
 	color:grey;
@@ -182,12 +192,10 @@ div.header_right, div.header_right i {
 	z-index:1;
 }
 
-div.header_right i:hover {
-	font-size:1em;
+div.header_main:hover, div.header_right i:hover {
 	color:rgb(255,128,0);
 	background-color:rgb(60,60,60);
 	text-align:center;
-	padding-top:2px;
 	transition-timing-function:ease-in-out;
 	transition-delay:0s;
 	transition-duration:0.2s;

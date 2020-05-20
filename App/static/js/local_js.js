@@ -1,5 +1,114 @@
+/////////////////////////////////////////////////////////////////////////////////
+ //this runs a token protected ajax get request, used for each page request
  /////////////////////////////////////////////////////////////////////////////////
- //this runs specific code on the login page load, this basically starts off the app
+ function ajax_authorized_get(target, target_fn, args) {
+	//this does a jwt authorized get for the given target
+	// and passes control to the html building function (target_fn)
+
+	//note on args
+	//args["sesssion_data"] has the token and some other info
+	//args also contains parameters to send in the get request(any key that is not session_data or data)
+	//args["data"] is added with the json from the get request
+
+	//this changes the address in the address bar of the browser, it is purely cosmetic
+	//if the user presses reload, they will get an error as no token is sent
+	//comment out to just show the login address (the real address) the whole time
+	window.history.replaceState({}, "", target);
+
+	//the response here is to call the calling function with args if status==ok
+	//goes back to login.html if status == error
+	//goes to student_summary or admin summary if the status is cancel
+
+	//get the list of get params to send (not the session_data)
+	let get_params = {};
+	for (key in args) {
+		if (! ["session_data"].includes(key)) {
+			get_params[key] = args[key];
+		}
+	}
+
+	//this does the ajax get request
+	$.ajax({
+		type: 'GET',
+		url: target,
+		data: get_params,
+		headers: {'Authorization':args["session_data"]["token"]},
+		contentType: 'application/json',
+		dataType: 'json',
+		success: function (data) {
+			if (data["status"] == "ok"){
+				if (data["msg"] != "") {
+					alert(data["msg"]);
+				}
+				//load new base template page
+				load_new_html(target, data["html"]);
+				//add data to args
+				args["data"] = data["data"];
+				//pass to the target_fn to build the page
+				target_fn(args);
+			}
+			else if (data["status"] == "error") {
+				alert(data["msg"]);
+				if ('target' in data) {
+					window.location = data['target'];
+				}
+			}
+			else if (data["status"] == "cancel") {
+				alert(data["msg"]);
+				let args_new = {};args_new["session_data"] = args["session_data"];
+				if (data["target"] == '/admin_summary.html')
+					ajax_authorized_get(data['target'], build_admin_summary, args_new);
+				else
+					ajax_authorized_get(data['target'], build_student_summary, args_new);
+			}
+			else if (data["status"] == "pass") {
+				alert(data["msg"]);
+			}
+		}
+	});
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////
+ //this runs a token protected ajax post request, used to typically send data
+ /////////////////////////////////////////////////////////////////////////////////
+function ajax_authorized_post(target, target_fn, req_args, target_fn_args) {
+	//get the list of get params to send (not the session_data)
+	let post_params = {};
+	for (key in req_args) {
+		if (! ["session_data"].includes(key)) 
+			post_params[key] = req_args[key];
+	}
+
+	$.ajax({
+		type: 'POST',
+		url: target,
+		data: JSON.stringify(post_params),
+		headers: {'Authorization':req_args["session_data"]["token"]},
+		contentType: "application/json",
+		data_type: "json",
+		cache: false,
+		processData: false,
+		async: true,
+		success: function(data) {
+			if (data["status"] == "ok") {
+				//alert(data["msg"]);
+				//reload page
+				ajax_authorized_get(data["target"], target_fn, target_fn_args);
+			} else {
+				alert(data["msg"]);
+				if ('target' in data) {
+					window.location = data['target'];
+				}
+			}
+		},
+	});
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////////
+ //this runs specific code on the login/register page load, this basically starts off the app
  /////////////////////////////////////////////////////////////////////////////////
  $(document).ready(function() {
 
@@ -122,73 +231,79 @@ function input_validation(form) {
 }
 
 
-/////////////////////////////////////////////////////////////////////////////////
- //this runs a token protected ajax get request, used for each page request
- /////////////////////////////////////////////////////////////////////////////////
- function ajax_authorized_get(target, target_fn, args) {
-	//this does a jwt authorized get for the given target
-	// and passes control to the html building function (target_fn)
+//validation for the quiz import
+function validate_import(qset_data, name) {
+	if (! Array.isArray(qset_data)) 
+		return {"status":"error","msg":"!!! outer object should be an array '" + name + "', not uploading....<br/>"};
 
-	//note on args
-	//args["sesssion_data"] has the token and some other info
-	//args also contains parameters to send in the get request(any key that is not session_data or data)
-	//args["data"] is added with the json from the get request
+	let keys = ["enabled","qs_id","time","topic","u_id"]
+	for (key of keys){
+		if (! key in qset_data[0])
+			return {"status":"error","msg":key + " doesn't exist in the first element of the array: '" + name + "', not uploading....<br/>"};
+	}
+	
+	for (q of qset_data.slice(1,)){
+		if (! "question" in q)
+			return {"status":"error","msg":"A question key needs to be in each array element except first one: '" + name + "', not uploading....<br/>"};
 
-	//this changes the address in the address bar of the browser, it is purely cosmetic
-	//if the user presses reload, they will get an error as no token is sent
-	//comment out to just show the login address (the real address) the whole time
-	window.history.replaceState({}, "", target);
+		if (! "answer" in q)
+			return {"status":"error","msg":"An answer key needs to be in each array element except first one: '" + name + "', not uploading....<br/>"};
 
-	//the response here is to call the calling function with args if status==ok
-	//goes back to login.html if status == error
-	//goes to student_summary or admin summary if the status is cancel
+		if (! "correct" in q["answer"])
+			return {"status":"error","msg":"The answer object needs to have a key: 'correct' with the correct answer: '" + name + "', not uploading....<br/>"};
 
-	//get the list of get params to send (not the session_data)
-	let get_params = {};
-	for (key in args) {
-		if (! ["session_data"].includes(key)) {
-			get_params[key] = args[key];
+		if (! "type" in q["answer"])
+			return {"status":"error","msg":"The answer object needs to have a key: 'type' with the answer type ('mc' or 'text'): '" + name + "', not uploading....<br/>"};
+
+		if (! ["text","mc"].includes(q["answer"]["type"]))
+			return {"status":"error","msg":"The answer object type element needs to be either 'text' or 'mc': '" + name + "', not uploading....<br/>"};
+
+		if (q["answer"]["type"] == "mc" && 
+			! "data" in q["answer"])
+			return {"status":"error","msg":"The answer object needs to have a data element with a list of multi choice options if the answer type is 'mc': '" + name + "', not uploading....<br/>"};
+
+		if (q["answer"]["type"] == "mc" && 
+			! q["answer"]["data"].includes(q["answer"]["correct"]))
+			return {"status":"error","msg":"The mc correct answer needs to be one of the given options: '" + name + "', not uploading....<br/>"};
+
+		/*
+		//this is when we specify mc correct as the index (,2,3,4,5 etc)
+		if (q["answer"]["type"] == "mc" && 
+			Number.isNaN(parseInt(q["answer"]["correct"])))
+			return {"status":"error","msg":"As the answer is multi-choice, the correct element needs to parse to an integer: '" + name + "', not uploading....<br/>"};
+
+		if (q["answer"]["type"] == "mc" && 
+			parseInt(q["answer"]["correct"]) >= 1 && 
+			parseInt(q["answer"]["correct"]) <= q["answer"]["data"].length )
+			return {"status":"error","msg":"As the answer is multi-choice, the correct element needs to be a relevant integer mapping to a given option: '" + name + "', not uploading....<br/>"};
+		*/
+		
+		if (q["answer"]["type"] == "text" && 
+			String(q["answer"]["correct"]).length == 0)
+			return {"status":"error","msg":"The answer object needs to have a correct answer in the correct element, not just blank: '" + name + "', not uploading....<br/>"};
+
+		if (! Array.isArray(q["question"])) 
+			return {"status":"error","msg":"!!! the question element needs to contain an array [header, part1...partn]: '" + name + "', not uploading....<br/>"};
+
+		if (! "marks" in q["question"][0])
+			return {"status":"error","msg":"The question needs to have a marks element with the available marks for the question: '" + name + "', not uploading....<br/>"};
+
+		//if (! "q_id" in q["question"][0])
+		//	return {"status":"error","msg":"The question needs to have a q_id element: '" + name + "', not uploading....<br/>"};
+
+		for (q_part of q["question"].slice(1,)){
+			if (! "type" in q_part || 
+				! ["text","image"].includes(q_part["type"]))
+				return {"status":"error","msg":"Each question part of a question needs to have a type element valued 'text' or 'image' depending on the part type: '" + name + "', not uploading....<br/>"};
+
+			if (! "data" in q_part ||
+				q_part["data"].length == 0)
+				return {"status":"error","msg":"Each question part of a question needs to have a data element with the text data or the image filename and it can not be blank: '" + name + "', not uploading....<br/>"};
 		}
 	}
-
-	//this does the ajax get request
-	$.ajax({
-		type: 'GET',
-		url: target,
-		data: get_params,
-		headers: {'Authorization':args["session_data"]["token"]},
-		contentType: 'application/json',
-		dataType: 'json',
-		success: function (data) {
-			if (data['status'] == "ok"){
-				if (data["msg"] != "") {
-					alert(data["msg"]);
-				}
-				//load new base template page
-				load_new_html(target, data["html"]);
-				//add data to args
-				args["data"] = data["data"];
-				//pass to the target_fn to build the page
-				target_fn(args);
-			}
-			else if (data["status"] == "error") {
-				alert(data["msg"]);
-				window.location = data['target'];
-			}
-			else if (data["status"] == "cancel") {
-				alert(data["msg"]);
-				let args_new = {};args_new["session_data"] = args["session_data"];
-				if (data["target"] == '/admin_summary.html')
-					ajax_authorized_get(data['target'], build_admin_summary, args_new);
-				else
-					ajax_authorized_get(data['target'], build_student_summary, args_new);
-			}
-			else if (data["status"] == "pass") {
-				alert(data["msg"]);
-			}
-		}
-	});
+	return {"status":"ok"}
 }
+
 
 /////////////////////////////////////////////////////////////////////////////////
 //utility functions
@@ -219,7 +334,7 @@ function fix_header(username){
 function load_new_html(url, html) {
 	//this loads a new html document from an html string
 	//you have 2 options 
-	//1) reload the js, it wipes the document, loose local vars, some say its bad
+	//1) reload the js, it wipes the document, loose local lets, some say its bad
 	//all I know is that chrome and edge give a bunch of warnings
 	//document.open();
 	//document.write(html);
@@ -227,7 +342,7 @@ function load_new_html(url, html) {
 	
 	//2) this doesn't load js after the login page, just replaces the document structure
 	//doesn't give warnings, works fine
-	var newdoc = document.implementation.createHTMLDocument();   //or this
+	let newdoc = document.implementation.createHTMLDocument();   //or this
 	newdoc.documentElement.innerHTML = html;
 	document.replaceChild(newdoc.documentElement, document.documentElement);
 }
@@ -240,15 +355,15 @@ function load_new_html(url, html) {
 //all the functions after this point are used to build the dynamic content of each page
 //the most complex being the admin_summary due to the various buttons and add-on functions
 ///////////////////////////////////////////////////////////////////////////////////
-//admin_summary
-//student_summary
-//take_quiz
-//review_quiz
-//mark_quiz
-//edit_quiz
-//student_stats
-//admin_stats
-//manage_users
+//admin_summary => longest and most complex
+//student_summary => medium length
+//take_quiz => medium length
+//review_quiz => short
+//mark_quiz => medium length
+//edit_quiz => quite long and complex
+//manage_users => short
+//student_stats => short
+//admin_stats => short
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
@@ -403,12 +518,14 @@ function build_admin_summary(args) {
 			processData: false,
 			async: true,
 			success: function(data) {
-				if (data['status'] == 'ok') {
+				if (data["status"] == 'ok') {
 					$("#span-delete-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
 				}
 				else {
 					alert(data["msg"]);
-					window.location = data['target'];	
+					if ('target' in data) {
+						window.location = data['target'];
+					}
 				}
 			},
 		});
@@ -460,7 +577,7 @@ function build_admin_summary(args) {
 			processData: false,
 			async: true,
 			success: function(data) {
-				if (data['status'] == 'ok') {
+				if (data["status"] == 'ok') {
 					//give a status msg
 					$("#span-export-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
 					//write this to the DOM and trigger the download, then delete from the DOM
@@ -478,7 +595,9 @@ function build_admin_summary(args) {
 				}
 				else {
 					alert(data["msg"]);
-					window.location = data['target'];	
+					if ('target' in data) {
+						window.location = data['target'];
+					}
 				}
 			},
 		});
@@ -501,86 +620,12 @@ function build_admin_summary(args) {
 		document.getElementById('input-import').click();
 	});
 
-
-	function validate_import(qset_data, name) {
-		if (! Array.isArray(qset_data)) 
-			return {"status":"error","msg":"!!! outer object should be an array '" + name + "', not uploading....<br/>"};
-
-		let keys = ["enabled","qs_id","time","topic","u_id"]
-		for (key of keys){
-			if (! key in qset_data[0])
-				return {"status":"error","msg":key + " doesn't exist in the first element of the array: '" + name + "', not uploading....<br/>"};
-		}
-		
-		for (q of qset_data.slice(1,)){
-			if (! "question" in q)
-				return {"status":"error","msg":"A question key needs to be in each array element except first one: '" + name + "', not uploading....<br/>"};
-
-			if (! "answer" in q)
-				return {"status":"error","msg":"An answer key needs to be in each array element except first one: '" + name + "', not uploading....<br/>"};
-
-			if (! "correct" in q["answer"])
-				return {"status":"error","msg":"The answer object needs to have a key: 'correct' with the correct answer: '" + name + "', not uploading....<br/>"};
-
-			if (! "type" in q["answer"])
-				return {"status":"error","msg":"The answer object needs to have a key: 'type' with the answer type ('mc' or 'text'): '" + name + "', not uploading....<br/>"};
-
-			if (! ["text","mc"].includes(q["answer"]["type"]))
-				return {"status":"error","msg":"The answer object type element needs to be either 'text' or 'mc': '" + name + "', not uploading....<br/>"};
-
-			if (q["answer"]["type"] == "mc" && 
-				! "data" in q["answer"])
-				return {"status":"error","msg":"The answer object needs to have a data element with a list of multi choice options if the answer type is 'mc': '" + name + "', not uploading....<br/>"};
-
-			if (q["answer"]["type"] == "mc" && 
-				! q["answer"]["data"].includes(q["answer"]["correct"]))
-				return {"status":"error","msg":"The mc correct answer needs to be one of the given options: '" + name + "', not uploading....<br/>"};
-
-			/*
-			//this is when we specify mc correct as the index (,2,3,4,5 etc)
-			if (q["answer"]["type"] == "mc" && 
-				Number.isNaN(parseInt(q["answer"]["correct"])))
-				return {"status":"error","msg":"As the answer is multi-choice, the correct element needs to parse to an integer: '" + name + "', not uploading....<br/>"};
-
-			if (q["answer"]["type"] == "mc" && 
-				parseInt(q["answer"]["correct"]) >= 1 && 
-				parseInt(q["answer"]["correct"]) <= q["answer"]["data"].length )
-				return {"status":"error","msg":"As the answer is multi-choice, the correct element needs to be a relevant integer mapping to a given option: '" + name + "', not uploading....<br/>"};
-			*/
-			
-			if (q["answer"]["type"] == "text" && 
-				String(q["answer"]["correct"]).length == 0)
-				return {"status":"error","msg":"The answer object needs to have a correct answer in the correct element, not just blank: '" + name + "', not uploading....<br/>"};
-
-			if (! Array.isArray(q["question"])) 
-				return {"status":"error","msg":"!!! the question element needs to contain an array [header, part1...partn]: '" + name + "', not uploading....<br/>"};
-
-			if (! "marks" in q["question"][0])
-				return {"status":"error","msg":"The question needs to have a marks element with the available marks for the question: '" + name + "', not uploading....<br/>"};
-
-			//if (! "q_id" in q["question"][0])
-			//	return {"status":"error","msg":"The question needs to have a q_id element: '" + name + "', not uploading....<br/>"};
-
-			for (q_part of q["question"].slice(1,)){
-				if (! "type" in q_part || 
-					! ["text","image"].includes(q_part["type"]))
-					return {"status":"error","msg":"Each question part of a question needs to have a type element valued 'text' or 'image' depending on the part type: '" + name + "', not uploading....<br/>"};
-	
-				if (! "data" in q_part ||
-					q_part["data"].length == 0)
-					return {"status":"error","msg":"Each question part of a question needs to have a data element with the text data or the image filename and it can not be blank: '" + name + "', not uploading....<br/>"};
-			}
-
-		}
-		return {"status":"ok"}
-	}
-
 	//this is the onchange evenet handler for the hidden input file selection dialog
 	$("#input-import").on("change", function() {
 		//this code accepts multiple files, the quiz files should be .quiz and just be a text file of a json object with the correct format specifying the quiz text, answer types and images.  So we validate these files.  Any non .quiz files, are assumed to be associated image files and are just uploaded to the server, there is no crosschecking done locally, that can be done server-side later.  The quizes will still work with no image files, the images just will not render
 		
 		let files = this.files;
-		var upload_data = [];
+		let upload_data = [];
 		let cancel_upload = true;
 		let cnt = 0;
 		for (f of files) 
@@ -588,9 +633,8 @@ function build_admin_summary(args) {
 				cnt = cnt + 1;
 
 		for (f of files){
-			//alert('you selected: ' + f["name"]);
 			if (f["name"].search(/\.quiz/i) == -1) {
-				//this is for images, upload them 
+				//this is for images
 
 				//do some validation here if you want t avoid non-image files etc...
 				let img_allowed = ['image/gif', 'image/jpeg', 'image/png'];
@@ -616,16 +660,17 @@ function build_admin_summary(args) {
 					cache: false,
 					processData: false,
 					success: function(data) {
-						if (data['result'] == 'ok') {
+						if (data["status"] == 'ok') {
 							$("#import-config").append(data["msg"] + "<br/>");
 						}
 						else {
 							alert(data["msg"]);
-							window.location = data['target'];	
+							if ('target' in data) {
+								window.location = data['target'];
+							}
 						}
 					}
 				});
-
 			}
 			else {
 				//this is for the .quiz files
@@ -665,7 +710,7 @@ function build_admin_summary(args) {
 								type: 'POST',
 								url: '/upload_quiz',
 								data: JSON.stringify({"upload_data":upload_data,
-													"import_flag":true}),
+													  "import_flag":true}),
 								headers: {'Authorization':session_data["token"]},
 								contentType: "application/json",
 								data_type: "json",
@@ -673,12 +718,14 @@ function build_admin_summary(args) {
 								processData: false,
 								async: true,
 								success: function(data) {
-									if (data['status'] == 'ok') {
+									if (data["status"] == 'ok') {
 										$("#import-config").append(data["msg"] + "<br/>");
 									}
 									else {
 										alert(data["msg"]);
-										window.location = data['target'];	
+										if ('target' in data) {
+											window.location = data['target'];
+										}
 									}
 								},
 							});
@@ -797,7 +844,7 @@ function build_take_quiz(args) {
 	let username = session_data["username"];
 	let u_id = 	session_data["u_id"];
 	let preview_flag = args["preview_flag"];
-	//let qs_id = args["qs_id"];     ///this was not used previously
+	let quiz_time = qset_data[0]["time"]
 
 	let qs_id = qset_data[0]["qs_id"];
 	let s_username = qset_data[0]["s_username"];
@@ -906,6 +953,23 @@ function build_take_quiz(args) {
 	}
 	
 
+	//this adds the countdown timer for the quiz, the server will actually determine the end time by the way
+	$('#countdown').collapse("show")
+	let t_start = new Date().getTime();
+	let t_end = t_start + quiz_time*60*1000;
+	let x = setInterval(function() {
+		let t_remain = t_end - new Date().getTime();
+		let h = Math.floor((t_remain % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2,"0");
+		let m = Math.floor((t_remain % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2,"0");
+		let s = Math.floor((t_remain % (1000 * 60)) / 1000).toString().padStart(2,"0");
+		$("#countdown").text("Time remaining => " + h + ":" + m + ":" + s);
+		if (t_remain < 0) {
+			clearInterval(x);
+			$("#countdown").text("Times Up  ");
+		}
+	}, 1000);
+		
+		
 	//This assigns some listeners on the take_quiz page
 	//####################################################
 	//assigns a click listener to the question selection links so they hide on question selection when in smalll screen mode
@@ -963,7 +1027,9 @@ function build_take_quiz(args) {
 				} 
 				else {
 					alert(data["msg"]);
-					window.location = data['target'];	
+					if ('target' in data) {
+						window.location = data['target'];
+					}
 				}
 			},
 		});
@@ -1300,7 +1366,7 @@ function build_mark_quiz(args) {
 			processData: false,
 			async: true,
 			success: function(data) {
-				if (data['status'] == 'ok') {
+				if (data["status"] == 'ok') {
 					alert("Your marks were submitted with status: " + data["status"]);
 					if (final_flag) {
 						let args = {"session_data":session_data};
@@ -1322,7 +1388,9 @@ function build_mark_quiz(args) {
 				}
 				else {
 					alert(data["msg"]);
-					window.location = data['target'];	
+					if ('target' in data) {
+						window.location = data['target'];
+					}
 				}
 			},
 		});
@@ -1705,7 +1773,9 @@ function build_edit_quiz(args) {
 				}
 				else {
 					alert(data["msg"]);
-					window.location = data['target'];	
+					if ('target' in data) {
+						window.location = data['target'];
+					}
 				}
 			},
 		});
@@ -1725,12 +1795,14 @@ function build_edit_quiz(args) {
 				cache: false,
 				processData: false,
 				success: function(data) {
-					if (data['status'] == 'ok') {
+					if (data["status"] == 'ok') {
 						console.log(JSON.stringify(data,null,2));
 					}
 					else {
 						alert(data["msg"]);
-						window.location = data['target'];	
+						if ('target' in data) {
+							window.location = data['target'];
+						}
 					}
 				}
 			});
@@ -1941,39 +2013,6 @@ function build_manage_users(args) {
 
 
 
-//does a token authorized post request
-function ajax_authorized_post(target, target_fn, req_args, target_fn_args) {
-	//get the list of get params to send (not the session_data)
-	let post_params = {};
-	for (key in req_args) {
-		if (! ["session_data"].includes(key)) 
-			post_params[key] = req_args[key];
-	}
-
-	$.ajax({
-		type: 'POST',
-		url: target,
-		data: JSON.stringify(post_params),
-		headers: {'Authorization':req_args["session_data"]["token"]},
-		contentType: "application/json",
-		data_type: "json",
-		cache: false,
-		processData: false,
-		async: true,
-		success: function(data) {
-			if (data["status"] == "ok") {
-				//alert(data["msg"]);
-				//reload page
-				ajax_authorized_get(data["target"], target_fn, target_fn_args);
-			} else {
-				alert(data["msg"]);
-			}
-		},
-	});
-}
-
-
-
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -2002,53 +2041,59 @@ function build_student_stats(args) {
 		ajax_authorized_get("./student_summary.html", build_student_summary, args);
 	});
 
-	//this resets the control
+	//code for the change qs_id selection
+	//this resets the control change qs_id list control
 	document.getElementById("qs").value = "";
 	//writes the list
 	html_text = "";
 	for (qs of qsets)
 		html_text += '		<option value="' + qs + '"></option>' + '\n';
 	$("#qs").append(html_text);
-
-	//sets up the listener for the change qs button
+	//sets up the listener for the change qs_id button
 	$("#btn-load-qs").click(function() {
 		let new_qs_id = $('[name="input-qs"]').val();
-		//get the stats for the new qs_id
+		//load the stats page with the new qs_id
 		let args = {"session_data":session_data,
 					"qs_id":new_qs_id};
 		ajax_authorized_get("./student_stats.html", build_student_stats, args);
 	});
 
-	//load the chart data
-	$.ajax({
-		url: "https://www.gstatic.com/charts/loader.js",
-		dataType: "script",
-		success: function() {
-			google.charts.load("current", {packages:["corechart"]});
-			google.charts.setOnLoadCallback(drawChart);
-			function drawChart() {
-			var data = google.visualization.arrayToDataTable(chart_data);
-			var options = {
-				title: 'Results for ' + username + ' vs the rest',
-				legend: { position: 'none' },
-				colors: ['#4285F4'],
-				chartArea: { width: 401 },
-				hAxis: {
-				  //ticks: [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1]
-				},
-				bar: { gap: 0 },
-				histogram: {
-				  bucketSize: 0.02,
-				  maxNumBuckets: 200,
-				  //minValue: -1,
-				  //maxValue: 1
+	//draw the chart
+	if (chart_data.length < 3) {
+		//there is only 1 data point, so the histogram is meaningless, so do not draw it, google charts will throw also
+		$("#chart").text("There is only one datapoint, so charting is meaningless, wait for more people to do the quiz and get marked...");
+	} else {
+		//load the chart data
+		$.ajax({
+			url: "https://www.gstatic.com/charts/loader.js",
+			dataType: "script",
+			success: function() {
+				google.charts.load("current", {packages:["corechart"]});
+				google.charts.setOnLoadCallback(drawChart);
+				function drawChart() {
+				let data = google.visualization.arrayToDataTable(chart_data);
+				let options = {
+					title: 'Results for ' + username + ' vs the rest',
+					legend: { position: 'none' },
+					colors: ['#4285F4'],
+					chartArea: { width: 401 },
+					hAxis: {
+					//ticks: [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1]
+					},
+					bar: { gap: 0 },
+					histogram: {
+					bucketSize: 1,
+					maxNumBuckets: 50,
+					//minValue: -1,
+					//maxValue: 1
+					}
+				};
+				let chart = new google.visualization.Histogram(document.getElementById('chart'));
+				chart.draw(data, options);
 				}
-			};
-			var chart = new google.visualization.Histogram(document.getElementById('chart'));
-			chart.draw(data, options);
 			}
-		}
-	});
+		});
+	}
 }
 
 
@@ -2082,14 +2127,14 @@ function build_admin_stats(args) {
 		ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
 	});
 
-	//this resets the control
+	//code for the change qs_id selection
+	//this resets the control for the change as_id selector list
 	document.getElementById("qs").value = "";
 	//writes the list
 	html_text = "";
 	for (qs of qsets)
 		html_text += '		<option value="' + qs + '"></option>' + '\n';
 	$("#qs").append(html_text);
-
 	//sets up the listener for the change qs button
 	$("#btn-load-qs").click(function() {
 		let new_qs_id = $('[name="input-qs"]').val();
@@ -2099,34 +2144,39 @@ function build_admin_stats(args) {
 		ajax_authorized_get("./admin_stats.html", build_admin_stats, args);
 	});
 
-	//load the chart data
-	$.ajax({
-		url: "https://www.gstatic.com/charts/loader.js",
-		dataType: "script",
-		success: function() {
-			google.charts.load("current", {packages:["corechart"]});
-			google.charts.setOnLoadCallback(drawChart);
-			function drawChart() {
-			var data = google.visualization.arrayToDataTable(chart_data);
-			var options = {
-				title: 'Quiz results',
-				legend: { position: 'none' },
-				colors: ['#4285F4'],
-				chartArea: { width: 401 },
-				hAxis: {
-				  //ticks: [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1]
-				},
-				bar: { gap: 0 },
-				histogram: {
-				  bucketSize: 0.02,
-				  maxNumBuckets: 200
+	//draw the chart
+	if (chart_data.length < 3) {
+		//there is only 1 data point, so the histogram is meaningless, so do not draw it, google charts will throw also
+		$("#chart").text("There is only one datapoint, so charting is meaningless, wait for more people to do the quiz and get marked...");
+	} else {
+		$.ajax({
+			url: "https://www.gstatic.com/charts/loader.js",
+			dataType: "script",
+			success: function() {
+				google.charts.load("current", {packages:["corechart"]});
+				google.charts.setOnLoadCallback(drawChart);
+				function drawChart() {
+				let data = google.visualization.arrayToDataTable(chart_data);
+				let options = {
+					title: 'Quiz results',
+					legend: { position: 'none' },
+					colors: ['#4285F4'],
+					chartArea: { width: 401 },
+					hAxis: {
+					//ticks: [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1]
+					},
+					bar: { gap: 0 },
+					histogram: {
+					bucketSize: 1,
+					maxNumBuckets: 50
+					}
+				};
+				let chart = new google.visualization.Histogram(document.getElementById('chart'));
+				chart.draw(data, options);
 				}
-			};
-			var chart = new google.visualization.Histogram(document.getElementById('chart'));
-			chart.draw(data, options);
 			}
-		}
-	});
+		});
+	}
 }
 
 
