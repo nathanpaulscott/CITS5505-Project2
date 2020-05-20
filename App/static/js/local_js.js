@@ -957,17 +957,25 @@ function build_take_quiz(args) {
 	$('#countdown').collapse("show")
 	let t_start = new Date().getTime();
 	let t_end = t_start + quiz_time*60*1000;
-	let x = setInterval(function() {
+	$("#countdown").text("Time remaining => " + s2hms(quiz_time*60*1000));
+	let quiz_timer = setInterval(timer, 1000);
+	function timer() {
 		let t_remain = t_end - new Date().getTime();
-		let h = Math.floor((t_remain % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2,"0");
-		let m = Math.floor((t_remain % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2,"0");
-		let s = Math.floor((t_remain % (1000 * 60)) / 1000).toString().padStart(2,"0");
-		$("#countdown").text("Time remaining => " + h + ":" + m + ":" + s);
+		let t_string = s2hms(t_remain);
 		if (t_remain < 0) {
 			clearInterval(x);
 			$("#countdown").text("Times Up  ");
+		} else {
+			$("#countdown").text("Time remaining => " + t_string);
 		}
-	}, 1000);
+	}
+	function s2hms(t){
+		console.log("S");
+		let h = Math.floor((t % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2,"0");
+		let m = Math.floor((t % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2,"0");
+		let s = Math.floor((t % (1000 * 60)) / 1000).toString().padStart(2,"0");
+		return h + ":" + m + ":" + s
+	}
 		
 		
 	//This assigns some listeners on the take_quiz page
@@ -1020,6 +1028,8 @@ function build_take_quiz(args) {
 				if (data["status"] == "ok") {
 					alert("Your answers were submitted with status: ok");
 					if (final_flag || cancel_flag) {
+						//cancel timer
+						clearInterval(quiz_timer);
 						//go back to the student_summary page
 						let args = {"session_data":session_data};
 						ajax_authorized_get("./student_summary.html", build_student_summary, args);
