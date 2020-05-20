@@ -970,7 +970,6 @@ function build_take_quiz(args) {
 		}
 	}
 	function s2hms(t){
-		console.log("S");
 		let h = Math.floor((t % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2,"0");
 		let m = Math.floor((t % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2,"0");
 		let s = Math.floor((t % (1000 * 60)) / 1000).toString().padStart(2,"0");
