@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////////
- //this runs a token protected ajax get request, used for each page request
+ //this runs a token protected ajax get request, used to request data
  /////////////////////////////////////////////////////////////////////////////////
  function ajax_authorized_get(target, target_fn, args) {
 	//this does a jwt authorized get for the given target
@@ -70,7 +70,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////////
- //this runs a token protected ajax post request, used to typically send data
+ //this runs a token protected ajax post request, used to send data
  /////////////////////////////////////////////////////////////////////////////////
 function ajax_authorized_post(target, target_fn, args) {
 	//get the list of get params to send (not the session_data)
@@ -103,7 +103,6 @@ function ajax_authorized_post(target, target_fn, args) {
 		}
 	});
 }
-
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -200,7 +199,6 @@ function ajax_authorized_post(target, target_fn, args) {
 		}); 
 	}
 }); //end of the on_load section
-
 
 
 
@@ -776,7 +774,6 @@ function build_student_summary(args) {
 	//runs the datatable plugin on the table to make it sortable etc...
 	$('#quiz-selection-table').DataTable();
 }//end of the build_student_summary function
-
 
 
 
@@ -1833,6 +1830,12 @@ function build_manage_users(args) {
 	//assigns a click listener to the delete user cell of the table
 	$(".del-user").click(function (e) {handle_delete_user(e)});
 
+	function mod_user_response(data){
+		//callback funtion after dealing with an add/edit/delete user request
+		let args = {"session_data":session_data};
+		ajax_authorized_get("/manage_users.html", build_manage_users, args);
+	}
+
 	function handle_edit_user(e) {
 		$('#add-user').collapse('hide');
 		$('#mod-user').collapse('show');
@@ -1849,17 +1852,14 @@ function build_manage_users(args) {
 		$('#add-user').collapse('hide');
 		$('#mod-user').collapse('hide');
 
+		//sends the delete user request
 		let u_id_edit = $(e.target).parent().find(".tab-uid").text();
 		let args = {"session_data":session_data,
 					"u_id":u_id_edit,
 					"username":"",
 					"password":"",
 					"admin":""};
-		ajax_authorized_post("./edit_user", delete_user_response, args);
-		function delete_user_response(data){
-			let args = {"session_data":session_data};
-			ajax_authorized_get("/manage_users.html", build_manage_users, args);
-		}
+		ajax_authorized_post("./edit_user", mod_user_response, args);
 	}
 
 	//assigns a click listener to the add user btn to handle the correct operation of the collaspsing elements
@@ -1878,16 +1878,13 @@ function build_manage_users(args) {
 		result = input_validation({"username":{"value":username_new}, "password":{"value":password_new}});
 		if (! result) return;
 
+		//sends the add user request
 		let args = {"session_data":session_data,
 					"u_id":"",
 					"username":username_new,
 					"password":password_new,
 					"admin":admin_new};
-		ajax_authorized_post("./edit_user", add_user_response, args);
-		function add_user_response(data){
-			let args = {"session_data":session_data};
-			ajax_authorized_get("/manage_users.html", build_manage_users, args);
-		}
+		ajax_authorized_post("./edit_user", mod_user_response, args);
 	});
 
 	//assigns a click listener to the edit submit button
@@ -1900,19 +1897,17 @@ function build_manage_users(args) {
 		result = input_validation({"username":{"value":username_new}, "password":{"value":password_new}});
 		if (! result) return;
 
+		//sends the edit user request
 		let args = {"session_data":session_data,
 					"u_id":$("#mod-uid").val(),
 					"username":username_new,
 					"password":password_new,
 					"admin":admin_new};
-		ajax_authorized_post("./edit_user", edit_user_response, args);
-		function edit_user_response(data){
-			let args = {"session_data":session_data};
-			ajax_authorized_get("/manage_users.html", build_manage_users, args);
-		}
+		ajax_authorized_post("./edit_user", mod_user_response, args);
 	});
 
 	$("#finish").click(function() {
+		//exit and go back to the admin summary page
 		let args = {"session_data":session_data};
 		ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
 	});
