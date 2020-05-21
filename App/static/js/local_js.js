@@ -322,10 +322,6 @@ function encodeQueryData(data) {
 function fix_header(username){
 	//update the username in the header
 	$("#username").text(username);
-
-	//change the home link because of fontawsome screwup
-	//$("#home i").removeAttr("class"); 
-	//$("#home i").text("exit");
 }
 
 function load_new_html(url, html) {
@@ -372,12 +368,8 @@ function build_admin_summary(args) {
 	let username = session_data["username"];
 	let u_id = 	session_data["u_id"];
 
-	//fix the header
+	//add username to header
 	fix_header(username);
-	//disable the manage users href
-	$("#manage-users").attr("href","javascript:;"); 
-	//disable the admin stats href
-	$("#admin-stats").attr("href","javascript:;"); 
 
 	//does the table header
 	let html_text = ""; 
@@ -706,10 +698,8 @@ function build_student_summary(args) {
 	let username = session_data["username"];
 	let u_id = 	session_data["u_id"];
 
-	//fix the header
+	//add username to header
 	fix_header(username);
-	//disable the admin stats href
-	$("#student-stats").attr("href","javascript:;"); 
 
 	//does the table header
 	let html_text = ""; 
@@ -796,12 +786,8 @@ function build_take_quiz(args) {
 	let s_username = qset_data[0]["s_username"];
 	let s_u_id = qset_data[0]["s_u_id"];
 
-	//fix the header
+	//add username to header
 	fix_header(username);
-	//disable the final save href
-	$("#final-save").attr("href","javascript:;"); 
-	//disable the cancel-test href
-	$("#cancel-test").attr("href","javascript:;"); 
 
 	//do the title
 	html_text = qset_data[0]["topic"] + " (" + String(qs_id) + ")";
@@ -997,10 +983,8 @@ function build_review_quiz(args) {
 	let s_username = qset_data[0]["s_username"];
 	let s_u_id = qset_data[0]["s_u_id"];
 
-	//fix the header
+	//add username to header
 	fix_header(username);
-	//disable the final save href
-	$("#final-save").attr("href","javascript:;"); 
 
 	//do the title
 	html_text = qset_data[0]["topic"] + " (" + String(qs_id) + ")" + '<br/> <span class="submitter">username: ' + s_username + '<br/>user_id: ' + s_u_id + '<br/>status: ' + submission_status + '</span>';
@@ -1132,10 +1116,8 @@ function build_mark_quiz(args) {
 	let s_u_id = qset_data[0]["s_u_id"];
 	let s_username = qset_data[0]["s_username"];
 
-	//fix the header
+	//add username to header
 	fix_header(username);
-	//disable the final-save link
-	$("#final-save").attr("href","javascript:;"); 
 
 	//do the title
 	html_text = qset_data[0]["topic"] + " (" + String(qs_id) + ")" + '<br/> <span class="submitter">username: ' + s_username + '<br/>user_id: ' + qset_data[0]["s_u_id"] + '<br/>status: ' + submission_status + '</span>';
@@ -1341,12 +1323,8 @@ function build_edit_quiz(args) {
 	//this does the html building				
 	let qs_id = qset_data[0]["qs_id"];
 
-	//fix the header
+	//add username to header
 	fix_header(username);
-	//disable the preview link
-	$("#preview").attr("href","javascript:;"); 
-	//disable the final save href
-	$("#final-save").attr("href","javascript:;"); 
 
 	//do the title
 	html_text = qset_data[0]["topic"] + " (" + String(qs_id) + ")";
@@ -1722,59 +1700,6 @@ function build_edit_quiz(args) {
 }
 
 
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
-function build_student_stats(args) {
-	//this does the html table building				
-	let stats_data = args["data"]["data"];
-	let session_data = args['session_data'];
-	let username = session_data["username"];
-	let u_id = 	session_data["u_id"];
-
-	//fix the header
-	fix_header(username);
-	//disable the finish href
-	$("#finish").attr("href","javascript:;"); 
-
-	//to be done
-
-	$("#finish").click(function() {
-		let args = {"session_data":session_data};
-		ajax_authorized_get("./student_summary.html", build_student_summary, args);
-	});
-}//end of the build_student_stats function
-
-
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
-function build_admin_stats(args) {
-	//this does the html table building				
-	let stats_data = args["data"]["data"];
-	let session_data = args['session_data'];
-	let username = session_data["username"];
-	let u_id = 	session_data["u_id"];
-
-	//fix the header
-	fix_header(username);
-	//disable the finish href
-	$("#finish").attr("href","javascript:;"); 
-
-	//to be done
-
-	$("#finish").click(function() {
-		let args = {"session_data":session_data};
-		ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
-	});
-}//end of the build_admin_stats function
-
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -1789,10 +1714,8 @@ function build_manage_users(args) {
 	let username = session_data["username"];
 	let u_id = 	session_data["u_id"];
 
-	//fix the header
+	//add username to header
 	fix_header(username);
-	//disable the finish href
-	$("#finish").attr("href","javascript:;"); 
 
 	//does the table header
 	let html_text = ""; 
@@ -1941,12 +1864,10 @@ function build_student_stats(args) {
 	let qs_id = args["data"]["qs_id"];
 	let mark_u_id = args["data"]["mark_u_id"];
 
-	//fix the header
+	//add username to header
 	fix_header(username);
 	//add the qs_id to the subheaderr
 	$("#title").text("Quiz: " + qs_id + ", your mark: " + mark_u_id);
-	//disable the finish href
-	$("#finish").attr("href","javascript:;"); 
 	//add listener to the finish link
 	$("#finish").click(function() {
 		let args = {"session_data":session_data};
@@ -2027,12 +1948,10 @@ function build_admin_stats(args) {
 	let qsets = args["data"]["qsets"];
 	let qs_id = args["data"]["qs_id"];
 
-	//fix the header
+	//add username to header
 	fix_header(username);
 	//add the qs_id to the subheaderr
 	$("#title").text("Quiz: " + qs_id);
-	//disable the finish href
-	$("#finish").attr("href","javascript:;"); 
 	//add listener to the finish link
 	$("#finish").click(function() {
 		let args = {"session_data":session_data};

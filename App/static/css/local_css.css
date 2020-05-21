@@ -264,24 +264,6 @@ div.footer {
 }
 
 
-/*global expand/collapse buttons (top right of content)
-###########################################################*/
-button.exp-col, button.exp-col i {
-	color: grey;
-	float: right;
-	border:none;
-	margin-left:2px;
-	margin-right:2px;
-	opacity:0.6;
-}
-
-button.exp-col i:hover {
-	color: rgb(255,128,0);
-	border:none;
-	opacity:1;
-	cursor: pointer;
-}
-
 
 /*image settings
 ###########################################################*/
@@ -316,29 +298,6 @@ img.inline-float {
 }
 
 
-/*for transparent background image ... unused
-###################################################3*/
-.background-trans:before {
-    content: ' ';
-    display: block;
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 0;
-    opacity: 0.2;
-    background-image: url('./NAT_4199x.jpg');
-    background-repeat: no-repeat;
-    background-position: 50% 0;
-    -ms-background-size: cover;
-    -o-background-size: cover;
-    -moz-background-size: cover;
-    -webkit-background-size: cover;
-    background-size: cover;
-}
-
-
 /*image title text
 ###########################################################*/
 .fig-title {
@@ -347,70 +306,6 @@ img.inline-float {
 	display: block;
 	font-weight:700;
 	margin-bottom: 3px;
-}
-
-/*image carousel
-###########################################################*/
-carousel-item, .carousel-item img{
-	width:auto;
-	height:auto;
-} 
-
-#carouselExampleIndicators {
-	width:50%;
-    margin:auto;
-} 
-
-
-/*in-line code examples
-###########################################################*/
-.eg {
-	text-align:left;
-	background-color: rgb(240,240,240);
-	color: green;  /*black*/
-	font-weight:700;
-	padding-left:5px;
-	padding-right:5px;
-	border-radius:5px;
-}
-
-
-/*block code snippets
-###########################################################*/
-div.snippet {
-	background-color: rgb(240,240,240);
-	text-align:left;
-	color: green;  /*black*/
-	font-weight:700;
-	margin-left:10px;
-	margin-bottom:5px;
-	padding-top:2px;
-	padding-bottom:2px;
-	padding-left:10px;
-	boder-left-style:solid;
-	border-left-color:rgb(200,200,200);
-	border-left-width:10px;
-}
-
-
-/*references
-###########################################################*/
-i.ref {
-	font-size:0.7em;
-	margin-bottom:1px;
-	margin-top:3px;
-}
-
-
-/*ajax example text
-###########################################################*/
-span.ajax_text {
-	color:black;
-	font-weight: 700;
-	font-size:1.5em;
-	background: rgb(240,240,240);
-	border-radius:5px;
-	padding:5px;
 }
 
 
@@ -425,70 +320,6 @@ span.ajax_text {
 	/*background-color:rgb(240,240,240);*/
 	cursor:grab;
 }
-
-/*#sortable li {
-	text-align:left;
-	background-color: rgb(240,240,240);
-	color: darkred;
-	font-weight:700;
-	max-width: 10em;
-	margin-bottom:3px;
-	padding-left:5px;
-	padding-right:5px;
-	border-radius:5px;
-	letter-spacing:2px;
-}*/
-
-/*jquery-ui sortable horizontal list
-###########################################################*/
-/*#list {
-	text-align:left;
-	background-color: rgb(240,240,240);
-	color: darkred;
-	font-weight:700;
-	margin-bottom:3px;
-	padding-left:10px;
-	padding-right:10px;
-	margin-bottom:10px;
-	border-radius:5px;
-	letter-spacing:2px;
-}*/
-
-
-/*hyperlink on the css page to the no css version
-###########################################################*/
-.css_link, .css_link_hot {
-	text-align:center;
-	font-weight:700;
-	margin-top:5px;
-	margin-bottom:5px;
-}
-
-.css_link_hot {
-	color: red;
-}
-
-
-
-/*instructions popover for the js validation example
-###########################################################*/
-.instructions-pop {
-	width:8em;
-	margin-bottom:10px;
-	background-color: red !important;
-	color: white !important;
-	font-weight:700;
-	border:none;
-}
-
-
-.instructions-pop:hover {
-	background-color: darkred !important;
-	color:pink !important;
-}
-
-
-
 
 
 
