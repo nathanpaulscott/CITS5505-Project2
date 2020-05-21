@@ -72,19 +72,19 @@
 /////////////////////////////////////////////////////////////////////////////////
  //this runs a token protected ajax post request, used to typically send data
  /////////////////////////////////////////////////////////////////////////////////
-function ajax_authorized_post(target, target_fn, req_args, target_fn_args) {
+function ajax_authorized_post(target, target_fn, args) {
 	//get the list of get params to send (not the session_data)
 	let post_params = {};
-	for (key in req_args) {
+	for (key in args) {
 		if (! ["session_data"].includes(key)) 
-			post_params[key] = req_args[key];
+			post_params[key] = args[key];
 	}
 
 	$.ajax({
 		type: 'POST',
 		url: target,
 		data: JSON.stringify(post_params),
-		headers: {'Authorization':req_args["session_data"]["token"]},
+		headers: {'Authorization':args["session_data"]["token"]},
 		contentType: "application/json",
 		data_type: "json",
 		cache: false,
@@ -93,15 +93,14 @@ function ajax_authorized_post(target, target_fn, req_args, target_fn_args) {
 		success: function(data) {
 			if (data["status"] == "ok") {
 				//alert(data["msg"]);
-				//reload page
-				ajax_authorized_get(data["target"], target_fn, target_fn_args);
+				target_fn(data);
 			} else {
 				alert(data["msg"]);
 				if ('target' in data) {
 					window.location = data['target'];
 				}
 			}
-		},
+		}
 	});
 }
 
@@ -507,29 +506,12 @@ function build_admin_summary(args) {
 		}
 
 		//Do the Ajax Request here to send the delete list to the server
-		$.ajax({
-			type: 'POST',
-			url: '/delete_quiz',
-			data: JSON.stringify({"qs_id_req":qs_id_req}),
-			headers: {'Authorization':session_data["token"]},
-			contentType: "application/json",
-			data_type: "json",
-			cache: false,
-			processData: false,
-			async: true,
-			success: function(data) {
-				if (data["status"] == 'ok') {
-					$("#span-delete-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
-				}
-				else {
-					alert(data["msg"]);
-					if ('target' in data) {
-						window.location = data['target'];
-					}
-				}
-			},
-		});
-		
+		let args = {"session_data":session_data,
+					"qs_id_req":qs_id_req};
+		ajax_authorized_post("/delete_quiz", delete_response, args);
+		function delete_response(data) {
+			$("#span-delete-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
+		}
 	});
 	
 
@@ -566,41 +548,24 @@ function build_admin_summary(args) {
 		}
 
 		//Do the Ajax Request here to fetch the desired question sets
-		$.ajax({
-			type: 'POST',
-			url: '/download_quiz',
-			data: JSON.stringify({"qs_id_req":qs_id_req}),
-			headers: {'Authorization':session_data["token"]},
-			contentType: "application/json",
-			data_type: "json",
-			cache: false,
-			processData: false,
-			async: true,
-			success: function(data) {
-				if (data["status"] == 'ok') {
-					//give a status msg
-					$("#span-export-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
-					//write this to the DOM and trigger the download, then delete from the DOM
-					for (qset of data["data"]) {
-						let filename = "export_qs_id_" + String(qset[0]["qs_id"]) + ".quiz";
-						let el = document.getElementById('a-export');
-						let href_text = "data:application/xml;charset=utf-8,";
-						href_text += JSON.stringify(qset, null, 2);
-						el.setAttribute("href", href_text);
-						el.setAttribute("download", filename);
-						el.click();
-						el.setAttribute("href", "");
-						el.setAttribute("download", "");
-					}
-				}
-				else {
-					alert(data["msg"]);
-					if ('target' in data) {
-						window.location = data['target'];
-					}
-				}
-			},
-		});
+		let args = {"session_data":session_data,
+					"qs_id_req":qs_id_req};
+		ajax_authorized_post("/download_quiz", export_response, args);
+		function export_response(data) {
+			$("#span-export-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
+			//write this to the DOM and trigger the download, then delete from the DOM
+			for (qset of data["data"]) {
+				let filename = "export_qs_id_" + String(qset[0]["qs_id"]) + ".quiz";
+				let el = document.getElementById('a-export');
+				let href_text = "data:application/xml;charset=utf-8,";
+				href_text += JSON.stringify(qset, null, 2);
+				el.setAttribute("href", href_text);
+				el.setAttribute("download", filename);
+				el.click();
+				el.setAttribute("href", "");
+				el.setAttribute("download", "");
+			}
+		}
 	});
 
 
@@ -706,29 +671,13 @@ function build_admin_summary(args) {
 						//cnt == 0 means we are at the last quiz file
 						if (cnt == 0 && ! cancel_upload){
 							//send to server
-							$.ajax({
-								type: 'POST',
-								url: '/upload_quiz',
-								data: JSON.stringify({"upload_data":upload_data,
-													  "import_flag":true}),
-								headers: {'Authorization':session_data["token"]},
-								contentType: "application/json",
-								data_type: "json",
-								cache: false,
-								processData: false,
-								async: true,
-								success: function(data) {
-									if (data["status"] == 'ok') {
-										$("#import-config").append(data["msg"] + "<br/>");
-									}
-									else {
-										alert(data["msg"]);
-										if ('target' in data) {
-											window.location = data['target'];
-										}
-									}
-								},
-							});
+							let args = {"session_data":session_data,
+										"upload_data":upload_data,
+										"import_flag":true};
+							ajax_authorized_post("/upload_quiz", import_response, args);
+							function import_response(data) {
+								$("#import-config").append(data["msg"] + "<br/>");
+							}
 						}
 					};
 				})(f);
@@ -943,6 +892,8 @@ function build_take_quiz(args) {
 
 		//assigns a click listener to the back to edit link (preview case)
 		$("#back2edit").click(function() {
+			//cancel timer
+			clearInterval(quiz_timer);
 			//go back to the edit quiz page
 			let args = {"session_data":session_data,
 						"qs_id":qs_id,
@@ -963,7 +914,7 @@ function build_take_quiz(args) {
 		let t_remain = t_end - new Date().getTime();
 		let t_string = s2hms(t_remain);
 		if (t_remain < 0) {
-			clearInterval(x);
+			clearInterval(quiz_timer);
 			$("#countdown").text("Times Up  ");
 		} else {
 			$("#countdown").text("Time remaining => " + t_string);
@@ -1011,37 +962,22 @@ function build_take_quiz(args) {
 				a_data.push(text_field);
 		}
 
-		$.ajax({
-			type: 'POST',
-			url: '/submit_answers_json',
-			data: JSON.stringify({"qs_id":qs_id,
-								"final_flag":final_flag,
-								"a_data":a_data}),
-			headers: {'Authorization':session_data["token"]},
-			contentType: "application/json",
-			data_type: "json",
-			cache: false,
-			processData: false,
-			async: true,
-			success: function(data) {
-				if (data["status"] == "ok") {
-					alert("Your answers were submitted with status: ok");
-					if (final_flag || cancel_flag) {
-						//cancel timer
-						clearInterval(quiz_timer);
-						//go back to the student_summary page
-						let args = {"session_data":session_data};
-						ajax_authorized_get("./student_summary.html", build_student_summary, args);
-					}
-				} 
-				else {
-					alert(data["msg"]);
-					if ('target' in data) {
-						window.location = data['target'];
-					}
-				}
-			},
-		});
+		//submit answers
+		let args = {"session_data":session_data,
+					"qs_id":qs_id,
+					"final_flag":final_flag,
+					"a_data":a_data};
+		ajax_authorized_post("/submit_answers_json", submit_answers_response, args);
+		function submit_answers_response(data) {
+			alert("Your answers were submitted with status: ok");
+			if (final_flag || cancel_flag) {
+				//cancel timer
+				clearInterval(quiz_timer);
+				//go back to the student_summary page
+				let args = {"session_data":session_data};
+				ajax_authorized_get("./student_summary.html", build_student_summary, args);
+			}
+		}
 	});  //end of submit answers code
 } //end of the build_take_quiz function
 
@@ -1364,45 +1300,29 @@ function build_mark_quiz(args) {
 			marking_data.push({"mark":mark_text,"comment":comment_text});
 		}
 
-		$.ajax({
-			type: 'POST',
-			url: '/submit_marks_json',
-			data: JSON.stringify({"data":marking_data}),
-			headers: {'Authorization':session_data["token"]},
-			contentType: "application/json",
-			data_type: "json",
-			cache: false,
-			processData: false,
-			async: true,
-			success: function(data) {
-				if (data["status"] == 'ok') {
-					alert("Your marks were submitted with status: " + data["status"]);
-					if (final_flag) {
-						let args = {"session_data":session_data};
-						ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
-					}
-
-					if (change_flag) {
-						//change the s_u_id
-						let new_user = $('[name="input-submitter"]').val();
-						s_u_id = new_user.slice(new_user.search("\\(")+1,new_user.search("\\)")).trim();
-						//go to the chosen user mark page
-						let args = {"session_data":session_data,
-									"qs_id":qs_id,
-									"s_u_id":s_u_id,
-									"include_submission":"1",
-									"include_submitters":"1"};
-						ajax_authorized_get("./mark_quiz.html", build_mark_quiz, args);
-					}
-				}
-				else {
-					alert(data["msg"]);
-					if ('target' in data) {
-						window.location = data['target'];
-					}
-				}
-			},
-		});
+		//submit marks
+		let args = {"session_data":session_data,
+					"data":marking_data};
+		ajax_authorized_post("/submit_marks_json", submit_marks_response, args);
+		function submit_marks_response(data) {
+			alert("Your marks were submitted with status: " + data["status"]);
+			if (final_flag) {
+				let args = {"session_data":session_data};
+				ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
+			}
+			if (change_flag) {
+				//change the s_u_id
+				let new_user = $('[name="input-submitter"]').val();
+				s_u_id = new_user.slice(new_user.search("\\(")+1,new_user.search("\\)")).trim();
+				//go to the chosen user mark page
+				let args = {"session_data":session_data,
+							"qs_id":qs_id,
+							"s_u_id":s_u_id,
+							"include_submission":"1",
+							"include_submitters":"1"};
+				ajax_authorized_get("./mark_quiz.html", build_mark_quiz, args);
+			}
+		}
 	});  //end of submit marks code
 } //end of the build_mark_quiz function
 
@@ -1752,42 +1672,27 @@ function build_edit_quiz(args) {
 			i += 1;
 		}
 		
-		$.ajax({
-			type: 'POST',
-			url: '/upload_quiz',
-			data: JSON.stringify({"upload_data":[qset_data_new],
-								"import_flag":false}),
-			headers: {'Authorization':session_data["token"]},
-			contentType: "application/json",
-			data_type: "json",
-			cache: false,
-			processData: false,
-			async: true,
-			success: function(data) {
-				if (data["status"] == "ok") {
-					alert("Your edits were submitted with status: ok");
-					if (preview_flag) {
-						let args = {"session_data":session_data, 
-									"qs_id":qs_id, 
-									"preview_flag":true,
-									"include_submission":"0",
-									"include_submitters":"0"};
-						ajax_authorized_get("./take_quiz.html", build_take_quiz, args);
-					} 
-					else if (final_flag) {
-						//back to the admin page if there were no issues on final commit
-						let args = {"session_data":session_data};
-						ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
-					}
-				}
-				else {
-					alert(data["msg"]);
-					if ('target' in data) {
-						window.location = data['target'];
-					}
-				}
-			},
-		});
+		//upload quiz edits
+		let args = {"session_data":session_data,
+					"upload_data":[qset_data_new],
+					"import_flag":false};
+		ajax_authorized_post("/upload_quiz", upload_quiz_response, args);
+		function upload_quiz_response(data) {
+			alert("Your edits were submitted with status: ok");
+			if (preview_flag) {
+				let args = {"session_data":session_data, 
+							"qs_id":qs_id, 
+							"preview_flag":true,
+							"include_submission":"0",
+							"include_submitters":"0"};
+				ajax_authorized_get("./take_quiz.html", build_take_quiz, args);
+			} 
+			else if (final_flag) {
+				//back to the admin page if there were no issues on final commit
+				let args = {"session_data":session_data};
+				ajax_authorized_get("./admin_summary.html", build_admin_summary, args);
+			}
+		}
 
 		//upload the new images
 		for (f of newfiles) {
@@ -1945,15 +1850,16 @@ function build_manage_users(args) {
 		$('#mod-user').collapse('hide');
 
 		let u_id_edit = $(e.target).parent().find(".tab-uid").text();
-		//for this request
 		let args = {"session_data":session_data,
 					"u_id":u_id_edit,
 					"username":"",
 					"password":"",
 					"admin":""};
-		//for the next request
-		let args2 = {"session_data":session_data};
-		ajax_authorized_post("./edit_user", build_manage_users, args, args2);
+		ajax_authorized_post("./edit_user", delete_user_response, args);
+		function delete_user_response(data){
+			let args = {"session_data":session_data};
+			ajax_authorized_get("/manage_users.html", build_manage_users, args);
+		}
 	}
 
 	//assigns a click listener to the add user btn to handle the correct operation of the collaspsing elements
@@ -1972,15 +1878,16 @@ function build_manage_users(args) {
 		result = input_validation({"username":{"value":username_new}, "password":{"value":password_new}});
 		if (! result) return;
 
-		//for this request
 		let args = {"session_data":session_data,
 					"u_id":"",
 					"username":username_new,
 					"password":password_new,
 					"admin":admin_new};
-		//for the next request
-		let args2 = {"session_data":session_data};
-		ajax_authorized_post("./edit_user", build_manage_users, args, args2);
+		ajax_authorized_post("./edit_user", add_user_response, args);
+		function add_user_response(data){
+			let args = {"session_data":session_data};
+			ajax_authorized_get("/manage_users.html", build_manage_users, args);
+		}
 	});
 
 	//assigns a click listener to the edit submit button
@@ -1993,15 +1900,16 @@ function build_manage_users(args) {
 		result = input_validation({"username":{"value":username_new}, "password":{"value":password_new}});
 		if (! result) return;
 
-		//for this request
 		let args = {"session_data":session_data,
 					"u_id":$("#mod-uid").val(),
 					"username":username_new,
 					"password":password_new,
 					"admin":admin_new};
-		//for the next request
-		let args2 = {"session_data":session_data};
-		ajax_authorized_post("./edit_user", build_manage_users, args, args2);
+		ajax_authorized_post("./edit_user", edit_user_response, args);
+		function edit_user_response(data){
+			let args = {"session_data":session_data};
+			ajax_authorized_get("/manage_users.html", build_manage_users, args);
+		}
 	});
 
 	$("#finish").click(function() {

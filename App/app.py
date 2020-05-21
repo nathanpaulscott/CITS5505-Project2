@@ -282,8 +282,8 @@ def edit_user():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-    
-    #these are the admin details
+    #extract params
+    #admin id
     u_id = result['data'].u_id
     username = result['data'].username
     #these are the edited user details
@@ -297,6 +297,8 @@ def edit_user():
     #DELETE USER CASE
     elif request.get_json()["admin"] == "":
         User.query.filter_by(u_id=u_id_edit).delete()
+        Submission.query.filter_by(u_id=u_id_edit).delete()
+        Submission_Answer.query.filter_by(u_id=u_id_edit).delete()
         db.session.commit()
         write_log(0,103,'user delete success, u_id = ' + u_id_edit)
         return jsonify ({'status':'ok',
@@ -364,7 +366,7 @@ def get_student_summary():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-    
+    #extract params
     u_id = result['data'].u_id
     username = result['data'].username
 
@@ -435,7 +437,7 @@ def get_admin_summary():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-
+    #extract params
     u_id = result['data'].u_id
     username = result['data'].username
     
@@ -537,7 +539,7 @@ def get_edit_quiz():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-
+    #extract params
     u_id = result['data'].u_id
     username = result['data'].username
     qs_id = request.args['qs_id']
@@ -564,7 +566,7 @@ def get_manage_users():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-
+    #extract params
     u_id = result['data'].u_id
     username = result['data'].username
 
@@ -594,7 +596,7 @@ def get_take_quiz():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-
+    #extract params
     u_id = result['data'].u_id
     username = result['data'].username
     qs_id = request.args['qs_id']
@@ -603,6 +605,21 @@ def get_take_quiz():
     include_submission = request.args['include_submission']
     include_submitters = request.args['include_submitters']
     
+    ################################################################
+    #set the submission status for that user to 'Attempted' immediately 
+    #incase they just look at the questions and exit the tool, if you wanted to be more stringent
+    #you woud set the submission status to 'Completed' here and not even have an 'Attempted' status
+    #basically there will a submission entry, but no submission_answers, 
+    #the rest of the code handles that case though, it just says the answers are blank
+    #if the user then actually gives sme answers later, they are add to the DB
+    status='Attempted'   #'Completed'
+    user_submission = Submission.query.filter_by(qs_id=qs_id, u_id=s_u_id).first()
+    if user_submission is None:
+        user_submission = Submission(qs_id,u_id,status)
+        db.session.add(user_submission)
+        db.session.commit()
+    ################################################################
+
     #run the load_qset_json function
     result = load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_submitters)
     if not result['status'] == 'ok':
@@ -630,7 +647,7 @@ def get_review_quiz():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-    
+    #extract params
     u_id = result['data'].u_id
     username = result['data'].username
     qs_id = request.args['qs_id']
@@ -660,7 +677,7 @@ def get_mark_quiz():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-  
+    #extract params
     u_id = result['data'].u_id
     username = result['data'].username
     qs_id = request.args['qs_id']
@@ -689,7 +706,7 @@ def get_admin_stats():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-
+    #extract params
     u_id = result['data'].u_id
     username = result['data'].username
     qs_id = request.args['qs_id']
@@ -736,7 +753,7 @@ def get_student_stats():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-
+    #extract params
     u_id = result['data'].u_id
     username = result['data'].username
     qs_id = request.args['qs_id']
@@ -792,7 +809,7 @@ def submit_answers_json():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-
+    #extract params
     u_id = result['data'].u_id
     username = result['data'].username
     qs_id = request.get_json()["qs_id"]
@@ -847,7 +864,7 @@ def submit_marks_json():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-
+    #extract params
     u_id = result['data'].u_id
     username = result['data'].username
     data = request.get_json()["data"]
@@ -881,7 +898,7 @@ def upload_quiz():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-    
+    #extract params
     u_id = result['data'].u_id
     username = result['data'].username
     upload_data = request.get_json()["upload_data"]
@@ -936,7 +953,7 @@ def download_quiz():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-    
+    #extract params
     u_id = result['data'].u_id
     username = result['data'].username
     qs_id_req = request.get_json()["qs_id_req"]
@@ -961,7 +978,7 @@ def delete_quiz_request():
         if result['msg'] == 'no token': 
             return redirect(result['target'])   #return html as requester was just a browser
         return jsonify (result)
-
+    #extract params
     u_id = result['data'].u_id
     qs_ids = request.get_json()["qs_id_req"]
 
