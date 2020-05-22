@@ -201,7 +201,9 @@ function ajax_authorized_post(target, target_fn, args) {
 }); //end of the on_load section
 
 
-
+/////////////////////////////////////////////////////////////////////////////////
+//validation functions
+/////////////////////////////////////////////////////////////////////////////////
 //this has all the registration and login validation code
 function input_validation(form) {
 	username = form.username.value;
