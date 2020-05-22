@@ -1103,10 +1103,11 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
     #######################################                
 
     #get the data from the DB
-    if include_submitters == "1":
+    if include_submitters == '1':
         #get the list of submissions for this qs_id along with their status
         submitters = get_user_by_status(qs_id, False)
-    
+        cancel_target = ""
+
     #get the standard qset data json format to send to the user
     if include_submission == '1':
         if s_u_id == 'init':    
@@ -1155,6 +1156,7 @@ def load_qset_json(u_id, username, qs_id, s_u_id, include_submission, include_su
             return {'status' : 'cancel', 
                     'msg' : "no questions in that question set",
                     'target':cancel_target}
+        
         for question in questions:
             #this is the regular question data
             temp = {'question':[], 'answer':{}}
@@ -1262,12 +1264,12 @@ def import_quiz_data(u_id, upload_data, import_flag):
         #remove any conflicting data from the DB first
         Question_Set.query.filter_by(qs_id=qs_id).delete()
         Question.query.filter_by(qs_id=qs_id).delete()
-        #add qsets to the DB, ignores the u_id field in the data and uses the uploader u_id
+        #add qsets to the DB
         new_qs = Question_Set(qs_id, u_id, enabled, topic, time)
         db.session.add(new_qs)
         db.session.commit()
 
-        #add questions to the DB, not reading the qs_id field, just assigning it sequentially 
+        #add questions to the DB, not reading the q_id field, just assigning it sequentially 
         #----------------------------------------
         q_id = 1
         for q in qset_data[1:]:

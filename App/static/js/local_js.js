@@ -49,20 +49,19 @@
 			}
 			else if (data["status"] == "error") {
 				alert(data["msg"]);
-				if ('target' in data) {
-					window.location = data['target'];
+				if ("target" in data && data["target"] != "") {
+					window.location = data["target"];
 				}
 			}
 			else if (data["status"] == "cancel") {
 				alert(data["msg"]);
-				let args_new = {};args_new["session_data"] = args["session_data"];
-				if (data["target"] == '/admin_summary.html')
-					ajax_authorized_get(data['target'], build_admin_summary, args_new);
-				else
-					ajax_authorized_get(data['target'], build_student_summary, args_new);
-			}
-			else if (data["status"] == "pass") {
-				alert(data["msg"]);
+				if (data["target"] != "") {
+					let args_new = {"session_data":args["session_data"]};
+					if (data["target"] == '/admin_summary.html')
+						ajax_authorized_get(data['target'], build_admin_summary, args_new);
+					else
+						ajax_authorized_get(data['target'], build_student_summary, args_new);
+				}
 			}
 		}
 	});
@@ -235,12 +234,25 @@ function validate_import(qset_data, name) {
 	if (! Array.isArray(qset_data)) 
 		return {"status":"error","msg":"!!! outer object should be an array '" + name + "', not uploading....<br/>"};
 
-	let keys = ["enabled","qs_id","time","topic","u_id"]
+	if (qset_data.length < 2) 
+		return {"status":"error","msg":"!!! A question set must have at least one header and one question '" + name + "', not uploading....<br/>"};
+
+	//validate the header element
+	let keys = ["enabled","time","topic"]
 	for (key of keys){
 		if (! key in qset_data[0])
 			return {"status":"error","msg":key + " doesn't exist in the first element of the array: '" + name + "', not uploading....<br/>"};
 	}
-	
+	if (! ["true","false"].includes(String(qset_data[0]["enabled"])))
+		return {"status":"error","msg":"'enabled' can only be true or false without quotes '" + name + "', not uploading....<br/>"};
+	if ("qs_id" in qset_data[0] && String(qset_data[0]["qs_id"]).search(/^[0-9]+$/) == -1)
+		return {"status":"error","msg":"If you include a qs_id, it must be numeric '" + name + "', not uploading....<br/>"};
+	if (String(qset_data[0]["time"]).search(/^[0-9]+$/) == -1) 
+		return {"status":"error","msg":"'time' must be numeric and represents the quiz time in minutes '" + name + "', not uploading....<br/>"};
+	if (String(qset_data[0]["topic"]).search(/^[A-Za-z0-9\._-\s]{0,50}$/) == -1) 
+		return {"status":"error","msg":"'topic' must be an alphanumeric string of max length 50 characters '" + name + "', not uploading....<br/>"};
+
+	//validate the questions
 	for (q of qset_data.slice(1,)){
 		if (! "question" in q)
 			return {"status":"error","msg":"A question key needs to be in each array element except first one: '" + name + "', not uploading....<br/>"};
@@ -647,15 +659,23 @@ function build_admin_summary(args) {
 							//validate data
 							result = validate_import(qset_data, name);
 							if (result["status"] == "ok") {
-								upload_data.push(qset_data);
+								if (qset_data[0]["enabled"] == "true") 
+									qset_data[0]["enabled"] = true;
+								if (qset_data[0]["enabled"] == "false") 
+									qset_data[0]["enabled"] = false;
+ 								upload_data.push(qset_data);
 								cancel_upload = false;   //need just one good quiz to not cancel the upload
-								$("#import-config").append(name + ":  validation success<br/>");
+								let qs_id_import = "";
+								if (qset_data.length > 0 && "qs_id" in qset_data[0]){
+									qs_id_import = " (" + qset_data[0]["qs_id"] + ")";
+								}
+								$("#import-config").append("file: '" + name + "'" + qs_id_import + " ... validation success<br/>");
 							}
 							else 
 								$("#import-config").append(result["msg"]);							
 						}
 						catch(err) {
-							$("#import-config").append("!!! bad json format '" + name + "', not uploading....<br/>");
+							$("#import-config").append("!!! error parsing json '" + name + "', not uploading....<br/>");
 						}
 
 						//check we are done and can do the upload
@@ -1231,12 +1251,10 @@ function build_mark_quiz(args) {
 	//does the change submitter list
 	//this resets the control
 	document.getElementById("submitters").value = "";
-
 	html_text = "";
 	for (sub of submitters)
 		html_text += '		<option value="' + sub + '"></option>' + '\n';
 	$("#submitters").append(html_text);
-
 
 	//This assigns some listeners on the take_quiz page
 	//####################################################
