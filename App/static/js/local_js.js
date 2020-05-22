@@ -1312,14 +1312,18 @@ function build_mark_quiz(args) {
 			if (change_flag) {
 				//change the s_u_id
 				let new_user = $('[name="input-submitter"]').val();
-				s_u_id = new_user.slice(new_user.search("\\(")+1,new_user.search("\\)")).trim();
-				//go to the chosen user mark page
-				let args = {"session_data":session_data,
-							"qs_id":qs_id,
-							"s_u_id":s_u_id,
-							"include_submission":"1",
-							"include_submitters":"1"};
-				ajax_authorized_get("./mark_quiz.html", build_mark_quiz, args);
+				if (new_user.search(/\s\([0-9]+\),\s/) > -1) {
+					s_u_id = new_user.slice(new_user.search(/\s\(/)+2,new_user.search(/\),\s/)).trim();
+					//go to the chosen user mark page
+					let args = {"session_data":session_data,
+								"qs_id":qs_id,
+								"s_u_id":s_u_id,
+								"include_submission":"1",
+								"include_submitters":"1"};
+					ajax_authorized_get("./mark_quiz.html", build_mark_quiz, args);
+				}
+				else
+					alert("you need to select from the dropdown list");
 			}
 		}
 	});  //end of submit marks code
@@ -1905,10 +1909,14 @@ function build_student_stats(args) {
 	//sets up the listener for the change qs_id button
 	$("#btn-load-qs").click(function() {
 		let new_qs_id = $('[name="input-qs"]').val();
-		//load the stats page with the new qs_id
-		let args = {"session_data":session_data,
-					"qs_id":new_qs_id};
-		ajax_authorized_get("./student_stats.html", build_student_stats, args);
+		if (qsets.includes(Number(new_qs_id))){
+			//load the stats page with the new qs_id
+			let args = {"session_data":session_data,
+						"qs_id":new_qs_id};
+			ajax_authorized_get("./student_stats.html", build_student_stats, args);
+		}
+		else
+			alert("quiz_id: " + new_qs_id + " either doesn't exist or doesn't have any results")
 	});
 
 	//draw the chart
@@ -1989,10 +1997,14 @@ function build_admin_stats(args) {
 	//sets up the listener for the change qs button
 	$("#btn-load-qs").click(function() {
 		let new_qs_id = $('[name="input-qs"]').val();
-		//get the stats for the new qs_id
-		let args = {"session_data":session_data,
-					"qs_id":new_qs_id};
-		ajax_authorized_get("./admin_stats.html", build_admin_stats, args);
+		if (qsets.includes(Number(new_qs_id))){
+			//get the stats for the new qs_id
+			let args = {"session_data":session_data,
+						"qs_id":new_qs_id};
+			ajax_authorized_get("./admin_stats.html", build_admin_stats, args);
+		}
+		else
+			alert("quiz_id: " + new_qs_id + " either doesn't exist or doesn't have any results")
 	});
 
 	//draw the chart
