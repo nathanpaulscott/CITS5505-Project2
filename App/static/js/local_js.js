@@ -512,8 +512,8 @@ function build_admin_summary(args) {
 		//Do the Ajax Request here to send the delete list to the server
 		let args = {"session_data":session_data,
 					"qs_id_req":qs_id_req};
-		ajax_authorized_post("/delete_quiz", delete_response, args);
-		function delete_response(data) {
+		ajax_authorized_post("/delete_quiz", delete_callback, args);
+		function delete_callback(data) {
 			$("#span-delete-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
 		}
 	});
@@ -554,8 +554,8 @@ function build_admin_summary(args) {
 		//Do the Ajax Request here to fetch the desired question sets
 		let args = {"session_data":session_data,
 					"qs_id_req":qs_id_req};
-		ajax_authorized_post("/download_quiz", export_response, args);
-		function export_response(data) {
+		ajax_authorized_post("/download_quiz", export_callback, args);
+		function export_callback(data) {
 			$("#span-export-submit").text("Status: " + data["status"] + ", msg: " + data["msg"]);
 			//write this to the DOM and trigger the download, then delete from the DOM
 			for (qset of data["data"]) {
@@ -675,7 +675,7 @@ function build_admin_summary(args) {
 								$("#import-config").append(result["msg"]);							
 						}
 						catch(err) {
-							$("#import-config").append("!!! error parsing json '" + name + "', not uploading....<br/>");
+							$("#import-config").append("!!! JSON parser failed '" + name + "', not uploading....<br/>");
 						}
 
 						//check we are done and can do the upload
@@ -686,8 +686,8 @@ function build_admin_summary(args) {
 							let args = {"session_data":session_data,
 										"upload_data":upload_data,
 										"import_flag":true};
-							ajax_authorized_post("/upload_quiz", import_response, args);
-							function import_response(data) {
+							ajax_authorized_post("/upload_quiz", import_callback, args);
+							function import_callback(data) {
 								$("#import-config").append(data["msg"] + "<br/>");
 							}
 						}
@@ -845,7 +845,7 @@ function build_take_quiz(args) {
 		let question_parts = qset_data[i]["question"].slice(1,);
 		for (q_part of question_parts) {
 			if (q_part["type"] == "text") {
-				html_text += '<p>' + q_part["data"] + '</p>' + '\n';
+				html_text += '<p class="prewrap">' + q_part["data"] + '</p>' + '\n';
 			}
 			else if (q_part["type"] == "image") {
 				html_text += '<p><img class="inline" src="./static/images/' + q_part["data"] + '"/></p>' + '\n';
@@ -972,8 +972,8 @@ function build_take_quiz(args) {
 					"qs_id":qs_id,
 					"final_flag":final_flag,
 					"a_data":a_data};
-		ajax_authorized_post("/submit_answers_json", submit_answers_response, args);
-		function submit_answers_response(data) {
+		ajax_authorized_post("/submit_answers_json", submit_answers_callback, args);
+		function submit_answers_callback(data) {
 			alert("Your answers were submitted with status: ok");
 			if (final_flag || cancel_flag) {
 				//cancel timer
@@ -1046,7 +1046,7 @@ function build_review_quiz(args) {
 		let question_parts = qset_data[i]["question"].slice(1,);
 		for (q_part of question_parts) {
 			if (q_part["type"] == "text") {
-				html_text += '<p>' + q_part["data"] + '</p>' + '\n';
+				html_text += '<p class="prewrap">' + q_part["data"] + '</p>' + '\n';
 			}
 			else if (q_part["type"] == "image") {
 				html_text += '<p><img class="inline" src="./static/images/' + q_part["data"] + '"/></p>' + '\n';
@@ -1175,7 +1175,7 @@ function build_mark_quiz(args) {
 		let question_parts = qset_data[i]["question"].slice(1,);
 		for (q_part of question_parts) {
 			if (q_part["type"] == "text") {
-				html_text += '<p>' + q_part["data"] + '</p>' + '\n';
+				html_text += '<p class="prewrap">' + q_part["data"] + '</p>' + '\n';
 			}
 			else if (q_part["type"] == "image") {
 				html_text += '<p><img class="inline" src="./static/images/' + q_part["data"] + '"/></p>' + '\n';
@@ -1302,8 +1302,8 @@ function build_mark_quiz(args) {
 		//submit marks
 		let args = {"session_data":session_data,
 					"data":marking_data};
-		ajax_authorized_post("/submit_marks_json", submit_marks_response, args);
-		function submit_marks_response(data) {
+		ajax_authorized_post("/submit_marks_json", submit_marks_callback, args);
+		function submit_marks_callback(data) {
 			alert("Your marks were submitted with status: " + data["status"]);
 			if (final_flag) {
 				let args = {"session_data":session_data};
@@ -1600,8 +1600,10 @@ function build_edit_quiz(args) {
 			for (q_part of q_parts) {
 				if ($(q_part).find("textarea").length > 0) {
 					//the item is a textbox
-					text_data = $(q_part).find("textarea").val();
-					q_data["question"].push({"type":"text","data":$.trim(text_data)});
+					text_data = $.trim($(q_part).find("textarea").val());
+					//console.log(JSON.stringify(text_data));
+					q_data["question"].push({"type":"text","data":text_data});
+					//console.log(JSON.stringify({"type":"text","data":text_data}));
 				} 
 				else if ($(q_part).find("img").length > 0) {
 					//the item is an image
@@ -1675,8 +1677,9 @@ function build_edit_quiz(args) {
 		let args = {"session_data":session_data,
 					"upload_data":[qset_data_new],
 					"import_flag":false};
-		ajax_authorized_post("/upload_quiz", upload_quiz_response, args);
-		function upload_quiz_response(data) {
+		ajax_authorized_post("/upload_quiz", upload_quiz_callback, args);
+		//////////////////////////////////
+		function upload_quiz_callback(data) {
 			alert("Your edits were submitted with status: ok");
 			if (preview_flag) {
 				let args = {"session_data":session_data, 
@@ -1777,7 +1780,7 @@ function build_manage_users(args) {
 	//assigns a click listener to the delete user cell of the table
 	$(".del-user").click(function (e) {handle_delete_user(e)});
 
-	function mod_user_response(data){
+	function mod_user_callback(data){
 		//callback funtion after dealing with an add/edit/delete user request
 		let args = {"session_data":session_data};
 		ajax_authorized_get("/manage_users.html", build_manage_users, args);
@@ -1806,7 +1809,7 @@ function build_manage_users(args) {
 					"username":"",
 					"password":"",
 					"admin":""};
-		ajax_authorized_post("./edit_user", mod_user_response, args);
+		ajax_authorized_post("./edit_user", mod_user_callback, args);
 	}
 
 	//assigns a click listener to the add user btn to handle the correct operation of the collaspsing elements
@@ -1831,7 +1834,7 @@ function build_manage_users(args) {
 					"username":username_new,
 					"password":password_new,
 					"admin":admin_new};
-		ajax_authorized_post("./edit_user", mod_user_response, args);
+		ajax_authorized_post("./edit_user", mod_user_callback, args);
 	});
 
 	//assigns a click listener to the edit submit button
@@ -1850,7 +1853,7 @@ function build_manage_users(args) {
 					"username":username_new,
 					"password":password_new,
 					"admin":admin_new};
-		ajax_authorized_post("./edit_user", mod_user_response, args);
+		ajax_authorized_post("./edit_user", mod_user_callback, args);
 	});
 
 	$("#finish").click(function() {

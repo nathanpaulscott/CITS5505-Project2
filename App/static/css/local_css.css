@@ -17,6 +17,11 @@ a:link, a:visited {
 	text-decoration: underline;
 }
 
+.prewrap {
+	white-space:pre-wrap;
+}
+
+
 /*menu bar
 ###########################################################*/
 .navbar  {
@@ -349,15 +354,14 @@ img.inline-float {
 #quiz-selection-table tbody tr.click-enable:hover *,
 #quiz-admin-table tbody tr.click-enable:hover *,
 #user-admin-table tbody tr.click-enable:hover * {
-	color: rgb(255,128,0);
-	background-color: rgb(210,210,210);
+	color: white;
+	background-color: rgb(200,200,200);
 	font-weight:700;
 }
 
 #quiz-selection-table tbody tr.click-enable:active *,
 #quiz-admin-table tbody tr.click-enable:active *,
 #user-admin-table tbody tr.click-enable:active * {
-	color: rgb(255,128,0);
 	background-color: rgb(60,60,60);
 	font-weight:700;
 }
@@ -367,6 +371,8 @@ img.inline-float {
 #quiz-admin-table tbody tr.click-enable td.mark-quiz:hover,
 #user-admin-table tbody tr.click-enable td.edit-user:hover,
 #user-admin-table tbody tr.click-enable td.del-user:hover {
+	color: rgb(255, 128, 0);
+	background-color: rgb(220,220,220);
 	cursor: pointer;
 }
 
