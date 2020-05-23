@@ -255,10 +255,10 @@ function validate_import(qset_data, name) {
 	//validate the questions
 	for (q of qset_data.slice(1,)){
 		if (! "question" in q)
-			return {"status":"error","msg":"A question key needs to be in each array element except first one: '" + name + "', not uploading....<br/>"};
+			return {"status":"error","msg":"A question section needs to be in each array element except first one: '" + name + "', not uploading....<br/>"};
 
 		if (! "answer" in q)
-			return {"status":"error","msg":"An answer key needs to be in each array element except first one: '" + name + "', not uploading....<br/>"};
+			return {"status":"error","msg":"An answer section needs to be in each array element except first one: '" + name + "', not uploading....<br/>"};
 
 		if (! "correct" in q["answer"])
 			return {"status":"error","msg":"The answer object needs to have a key: 'correct' with the correct answer: '" + name + "', not uploading....<br/>"};
@@ -298,7 +298,11 @@ function validate_import(qset_data, name) {
 
 		if (! "marks" in q["question"][0])
 			return {"status":"error","msg":"The question needs to have a marks element with the available marks for the question: '" + name + "', not uploading....<br/>"};
-
+		if (String(q["question"][0]["marks"]).search(/^[0-9]+$/) == -1)
+			return {"status":"error","msg":"Marks must be numeric '" + name + "', not uploading....<br/>"};
+		if (Number(q["question"][0]["marks"]) == 0)
+			return {"status":"error","msg":"Marks must be > than zero '" + name + "', not uploading....<br/>"};
+	
 		//if (! "q_id" in q["question"][0])
 		//	return {"status":"error","msg":"The question needs to have a q_id element: '" + name + "', not uploading....<br/>"};
 
