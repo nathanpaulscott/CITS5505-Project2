@@ -292,10 +292,8 @@ function validate_import(qset_data, name) {
 		if (q["answer"]["type"] == "text" && 
 			String(q["answer"]["correct"]).length == 0)
 			return {"status":"error","msg":"The answer object needs to have a correct answer in the correct element, not just blank: '" + name + "', not uploading....<br/>"};
-
 		if (! Array.isArray(q["question"])) 
 			return {"status":"error","msg":"!!! the question element needs to contain an array [header, part1...partn]: '" + name + "', not uploading....<br/>"};
-
 		if (! "marks" in q["question"][0])
 			return {"status":"error","msg":"The question needs to have a marks element with the available marks for the question: '" + name + "', not uploading....<br/>"};
 		if (String(q["question"][0]["marks"]).search(/^[0-9]+$/) == -1)
@@ -1449,32 +1447,10 @@ function build_edit_quiz(args) {
 		}
 		html_text += 		'<textarea class="form-control" id="' + q_seq + '_AO" rows="3">' + text + '</textarea>' + '\n';
 		html_text += 	'</div>' + '\n';
-
-		/*
-		html_text += 	'<label for="form_group">Answer</label>' + '\n';
-		html_text += 	'<div class="form-group" id="form_group">' + '\n';
-		//add the answer specification
-		if (qset_data[i]["answer"]["type"] == "mc") {
-			text = "mc\n";
-			text += "correct: " + qset_data[i]["answer"]["correct"].trim() + "\n";
-			let mc_options = qset_data[i]["answer"]["data"];
-			//add a blank item at the start of the array to get the indicies correct
-			for (let j=0; j < mc_options.length; j++) 
-				text += mc_options[j].trim() + '\n';
-			text  = text.slice(0,-1);
-		}
-		else {
-			text = "text\n";
-			text += "correct: " + qset_data[i]["answer"]["correct"].trim();
-		}
-		html_text += 		'<textarea class="form-control" id="' + q_seq + '_A" rows="3">' + text + '</textarea>' + '\n';
-		html_text += 	'</div>' + '\n';
-		*/
 		html_text += 	'<button type="button" class="btn btn-success save-continue">Submit</button>' + '\n';
 		html_text += '</form>' + '\n';
 		//#######################################
 		html_text += '</div>';
-
 		//append to the DOM
 		$("#q_data").append(html_text);
 
@@ -1643,25 +1619,27 @@ function build_edit_quiz(args) {
 			//go through each element of the question
 			let q_parts = $(q).children("ul").children("li");
 			for (q_part of q_parts) {
+				//the item is a textbox
 				if ($(q_part).find("textarea").length > 0) {
-					//the item is a textbox
 					text_data = $.trim($(q_part).find("textarea").val());
-					//console.log(JSON.stringify(text_data));
 					q_data["question"].push({"type":"text","data":text_data});
-					//console.log(JSON.stringify({"type":"text","data":text_data}));
 				} 
+
+				//the item is an image
 				else if ($(q_part).find("img").length > 0) {
-					//the item is an image
 					let target = $(q_part).find("img");
+					
+					//target is a new image					
 					if (target.attr("src").slice(0,5) == "blob:") {
-						//target is a new image					
 						text_data = target.text();
 						//extract just the filename
 						text_data = text_data.substring(text_data.lastIndexOf('/')+1);
 						blobs[target.attr("src")] = text_data;
 					} 
+					
+					//target is an old image
 					else {
-						text_data = target.attr("src");    //target is an old image
+						text_data = target.attr("src");
 						//extract just the filename
 						text_data = text_data.substring(text_data.lastIndexOf('/')+1);
 					}
@@ -1673,13 +1651,15 @@ function build_edit_quiz(args) {
 			//reads the data from the answer textbox
 			q_data["answer"] = {};
 			//set marks
-			//note be super careful here, allowing a non-numeric value through to the server seems to cause bad things to happen
+			//NOTE: be super careful here, allowing a non-numeric value through to the server
+			//seems to cause bad things to happen
 			text_data = $.trim($("#" + q_seq + "_AM").val());
 			if (Number.isNaN(Number(text_data)) || Number(text_data) <= 0) {
 				alert("Marks need to be numeric and > 0.  " + q_seq + ".  See instructions for specification, edits not committed =>\nValue entered: " + text_data);
 				return;
 			}
 			q_data["question"][0]["marks"] = Number(text_data);
+			
 			//set answer type
 			text_data = $.trim($("#" + q_seq + "_AT").val());
 			if (! ["text","mc"].includes(text_data)) {
@@ -1687,15 +1667,17 @@ function build_edit_quiz(args) {
 				return;
 			}
 			q_data["answer"]["type"] = text_data;
+			
 			//set correct answer
 			text_data = $.trim($("#" + q_seq + "_AC").val());
 			q_data["answer"]["correct"] = text_data;
+			
 			//set mc options
 			if (q_data["answer"]["type"] == "mc") {
 				text_data = $.trim($("#" + q_seq + "_AO").val());
 				//validate
+				//reject if it doesnt have at least 2 elements
 				items = text_data.split("\n");
-				//#reject if it doesnt have at least 2 elements
 				if (items.length < 2){
 					alert("Multi Choice answers must have at least 2 options on different lines.  " + q_seq + ".  See instructions for specification, edits not committed =>\nValue entered: " + text_data);
 					return;
