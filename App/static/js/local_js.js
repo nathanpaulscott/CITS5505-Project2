@@ -656,6 +656,12 @@ function build_admin_summary(args) {
 						try{
 							//parse data, this can throw
 							qset_data = JSON.parse(file_data);
+						}
+						catch(err) {
+							$("#import-config").append("!!! JSON parser failed, check you json format carefully.  '" + name + "', not uploading....<br/>");
+							qset_data = [];
+						}
+						if (qset_data.length != 0){
 							//validate data
 							result = validate_import(qset_data, name);
 							if (result["status"] == "ok") {
@@ -663,7 +669,7 @@ function build_admin_summary(args) {
 									qset_data[0]["enabled"] = true;
 								if (qset_data[0]["enabled"] == "false") 
 									qset_data[0]["enabled"] = false;
- 								upload_data.push(qset_data);
+								upload_data.push(qset_data);
 								cancel_upload = false;   //need just one good quiz to not cancel the upload
 								let qs_id_import = "";
 								if (qset_data.length > 0 && "qs_id" in qset_data[0]){
@@ -673,9 +679,6 @@ function build_admin_summary(args) {
 							}
 							else 
 								$("#import-config").append(result["msg"]);							
-						}
-						catch(err) {
-							$("#import-config").append("!!! JSON parser failed '" + name + "', not uploading....<br/>");
 						}
 
 						//check we are done and can do the upload
@@ -1184,13 +1187,12 @@ function build_mark_quiz(args) {
 		html_text += '<hr>' + '\n';
 
 		//#######################################
+		//disable inputs
+		let disabled_text = "disabled";
 		//answer data
 		html_text += '<form>' + '\n';
 		html_text += 	'<label for="form_group">Answer:</label>' + '\n';
 		html_text += 	'<div class="form-group" id="form_group">' + '\n';
-
-		//disable inputs
-		let disabled_text = "disabled";
 		//add the mc choices or a textbox
 		if ("answer" in qset_data[i] && qset_data[i]["answer"]["type"] == "mc") {
 			//goes through the mc items
@@ -1212,6 +1214,12 @@ function build_mark_quiz(args) {
 		} else {  //the non-multichoice case
 			html_text += 		'<textarea class="form-control" id="' + q_seq + '_A" rows="3" ' + disabled_text + '>' + qset_data[i]["answer"]["answer"] + '</textarea>' + '\n';
 		}
+		html_text += 	'</div>' + '\n';
+
+		//add correct answer field
+		html_text += 	'<label for="form_group4">Correct Answer:</label>' + '\n';
+		html_text += 	'<div class="form-group" id="form_group4">' + '\n';
+		html_text += 		'<textarea class="form-control" id="' + q_seq + '_AC" rows="3" ' + disabled_text + '>' + qset_data[i]["answer"]["correct"] + '</textarea>' + '\n';
 		html_text += 	'</div>' + '\n';
 
 		//add assessor grade field
@@ -1406,15 +1414,47 @@ function build_edit_quiz(args) {
 		//#######################################
 		//answer data
 		html_text += '<form>' + '\n';
+		//marks
+		let text = String(qset_data[i]["question"][0]["marks"]).trim();
+		html_text += 	'<label for="form_group4">Answer Marks</label>' + '\n';
+		html_text += 	'<div class="form-group" id="form_group4">' + '\n';
+		html_text += 		'<input type="text" class="form-control" id="' + q_seq + '_AM" pattern="^[0-9]+$" value="' + text + '">' + '\n';
+		html_text += 	'</div>' + '\n';
+		//answer type
+		text = qset_data[i]["answer"]["type"].trim();
+		html_text += 	'<label for="form_group1">Answer Type</label>' + '\n';
+		html_text += 	'<div class="form-group" id="form_group1">' + '\n';
+		html_text += 		'<input type="text" class="form-control" id="' + q_seq + '_AT" pattern="^(mc)|(text)$" value="' + text + '">' + '\n';
+		html_text += 	'</div>' + '\n';
+		//correct answer
+		text = qset_data[i]["answer"]["correct"].trim();
+		html_text += 	'<label for="form_group2">Correct Answer</label>' + '\n';
+		html_text += 	'<div class="form-group" id="form_group2">' + '\n';
+		html_text += 		'<textarea class="form-control" id="' + q_seq + '_AC" rows="3">' + text + '</textarea>' + '\n';
+		html_text += 	'</div>' + '\n';
+		//mc answer options
+		html_text += 	'<label for="form_group3">Answer Options (only for multi-choice)</label>' + '\n';
+		html_text += 	'<div class="form-group" id="form_group3">' + '\n';
+		text = "";
+		if (qset_data[i]["answer"]["type"].trim() == "mc") {
+			let mc_options = qset_data[i]["answer"]["data"];
+			//add a blank item at the start of the array to get the indicies correct
+			for (let j=0; j < mc_options.length; j++) 
+				text += mc_options[j].trim() + '\n';
+			text  = text.slice(0,-1);
+		}
+		html_text += 		'<textarea class="form-control" id="' + q_seq + '_AO" rows="3">' + text + '</textarea>' + '\n';
+		html_text += 	'</div>' + '\n';
+
+		/*
 		html_text += 	'<label for="form_group">Answer</label>' + '\n';
 		html_text += 	'<div class="form-group" id="form_group">' + '\n';
 		//add the answer specification
-		let text = "";
 		if (qset_data[i]["answer"]["type"] == "mc") {
 			text = "mc\n";
 			text += "correct: " + qset_data[i]["answer"]["correct"].trim() + "\n";
 			let mc_options = qset_data[i]["answer"]["data"];
-			//add a blacnk item at the start of the array to get the indicies correct
+			//add a blank item at the start of the array to get the indicies correct
 			for (let j=0; j < mc_options.length; j++) 
 				text += mc_options[j].trim() + '\n';
 			text  = text.slice(0,-1);
@@ -1425,6 +1465,7 @@ function build_edit_quiz(args) {
 		}
 		html_text += 		'<textarea class="form-control" id="' + q_seq + '_A" rows="3">' + text + '</textarea>' + '\n';
 		html_text += 	'</div>' + '\n';
+		*/
 		html_text += 	'<button type="button" class="btn btn-success save-continue">Submit</button>' + '\n';
 		html_text += '</form>' + '\n';
 		//#######################################
@@ -1627,48 +1668,41 @@ function build_edit_quiz(args) {
 		
 			//reads the data from the answer textbox
 			q_data["answer"] = {};
-			let header_flag = false;
-			let correct_flag = false;
-			let mc_option_flag = true;
-			text_data = $.trim($("#" + q_seq + "_A").val());
-			items = text_data.split("\n");
-
-			if (items[0].trim() == "mc") {
-				q_data["answer"]["type"] = "mc";
-				q_data["answer"]["data"] = [];
-				//#reject if it doesnt have at least 3 elements
-				if (items.length >= 3)
-					header_flag = true;
-					mc_option_flag = false;
-					for (item of items.slice(1,)) {
-						if (item.trim().slice(0,8) == "correct:") {
-							q_data["answer"]["correct"] = item.trim().slice(8,);
-							correct_flag = true;
-						} else {
-							q_data["answer"]["data"].push(item.trim());
-							mc_option_flag = true;
-						}
-					}
-			} else if (items[0].trim() == "text") {
-				q_data["answer"]["type"] = "text";
+			//set marks
+			//note be super careful here, allowing a non-numeric value through to the server seems to cause bad things to happen
+			text_data = $.trim($("#" + q_seq + "_AM").val());
+			if (Number.isNaN(Number(text_data)) || Number(text_data) <= 0) {
+				alert("Marks need to be numeric and > 0.  " + q_seq + ".  See instructions for specification, edits not committed =>\nValue entered: " + text_data);
+				return;
+			}
+			q_data["question"][0]["marks"] = Number(text_data);
+			//set answer type
+			text_data = $.trim($("#" + q_seq + "_AT").val());
+			if (! ["text","mc"].includes(text_data)) {
+				alert("Answer type must be 'text' or 'mc'.  " + q_seq + ".  See instructions for specification, edits not committed =>\nValue entered: " + text_data);
+				return;
+			}
+			q_data["answer"]["type"] = text_data;
+			//set correct answer
+			text_data = $.trim($("#" + q_seq + "_AC").val());
+			q_data["answer"]["correct"] = text_data;
+			//set mc options
+			if (q_data["answer"]["type"] == "mc") {
+				text_data = $.trim($("#" + q_seq + "_AO").val());
+				//validate
+				items = text_data.split("\n");
 				//#reject if it doesnt have at least 2 elements
-				if (items.length >= 2)
-					header_flag = true;
-					//join the elements in case they have newlines
-					let temp = items.slice(1,).join(' ').trim();
-					if (temp.slice(0,8) == "correct:") {
-						q_data["answer"]["correct"] = temp.slice(8,).trim();
-						correct_flag = true;
+				if (items.length < 2){
+					alert("Multi Choice answers must have at least 2 options on different lines.  " + q_seq + ".  See instructions for specification, edits not committed =>\nValue entered: " + text_data);
+					return;
+				}
+				q_data["answer"]["data"] = [];
+				for (item of items) {
+					q_data["answer"]["data"].push(item.trim());
 				}
 			}
 
-			//check for bad input
-			if (! header_flag || ! correct_flag || ! mc_option_flag) {
-				alert("The answer specification for " + q_seq + " is not acceptable, see instructions for specification, edits not committed =>\n" + text_data);
-				return;
-			}
-
-			//write the question and answer sepcification
+			//write the question and answer specification
 			qset_data_new.push(q_data);
 			i += 1;
 		}
