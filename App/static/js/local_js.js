@@ -1533,7 +1533,7 @@ function build_edit_quiz(args) {
 		//get the selected file object 
 		let f = this.files[0];
 		//############################################
-		//do some validation here if you want t avoid non-image files etc...
+		//do some validation here if you want to avoid non-image files etc...
 		if ( f["size"] > 1000000) {
 			alert("Your file is > 1MB, you should try to reduce it for usability fo the web app.");
 			return;
