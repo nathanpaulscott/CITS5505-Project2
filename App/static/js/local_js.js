@@ -282,11 +282,11 @@ function validate_import(qset_data, name) {
 			parseInt(q["answer"]["correct"]) >= 1 && 
 			parseInt(q["answer"]["correct"]) <= q["answer"]["data"].length )
 			return {"status":"error","msg":"As the answer is multi-choice, the correct element needs to be a relevant integer mapping to a given option: '" + name + "', not uploading....<br/>"};
-		*/
-		
 		if (q["answer"]["type"] == "text" && 
 			String(q["answer"]["correct"]).length == 0)
 			return {"status":"error","msg":"The answer object needs to have a correct answer in the correct element, not just blank: '" + name + "', not uploading....<br/>"};
+		*/
+
 		if (! Array.isArray(q["question"])) 
 			return {"status":"error","msg":"!!! the question element needs to contain an array [header, part1...partn]: '" + name + "', not uploading....<br/>"};
 		if (! "marks" in q["question"][0])
@@ -304,9 +304,11 @@ function validate_import(qset_data, name) {
 				! ["text","image"].includes(q_part["type"]))
 				return {"status":"error","msg":"Each question part of a question needs to have a type element valued 'text' or 'image' depending on the part type: '" + name + "', not uploading....<br/>"};
 
-			if (! "data" in q_part ||
-				q_part["data"].length == 0)
-				return {"status":"error","msg":"Each question part of a question needs to have a data element with the text data or the image filename and it can not be blank: '" + name + "', not uploading....<br/>"};
+			if (! "data" in q_part)
+				return {"status":"error","msg":"Each question part of a question needs to have a data element with the text data or the image filename: '" + name + "', not uploading....<br/>"};
+			
+			//if (q_part["data"].length == 0)
+			//	return {"status":"error","msg":"Each question part of a question needs to have a data element with the text data or the image filename and it can not be blank: '" + name + "', not uploading....<br/>"};
 		}
 	}
 	return {"status":"ok"}
@@ -838,7 +840,7 @@ function build_take_quiz(args) {
 		//question data
 		//#######################################
 		html_text = '<div class="tab-pane fade ' + showactive_text + '" id="' + q_seq + '-data" role="tabpanel" aria-labelledby="' + q_seq + '">' + '\n';
-		html_text += '<h5>' + q_seq + '</h5>' + '\n';
+		html_text += '<h5>' + q_seq + ' (' + qset_data[i]["question"][0]["marks"] + ' marks)</h5>' + '\n';
 		
 		//this goes through the question part list and adds text or image tags as specified
 		//the first index of the list is the q_id, so ignore that
@@ -1348,7 +1350,8 @@ function build_edit_quiz(args) {
 	let u_id = session_data["u_id"];
 
 	let newfiles = [];
-	
+	let html_text = "";
+
 	//this does the html building				
 	let qs_id = qset_data[0]["qs_id"];
 
@@ -1356,8 +1359,7 @@ function build_edit_quiz(args) {
 	fix_header(username);
 
 	//do the title
-	html_text = qset_data[0]["topic"] + " (" + String(qs_id) + ")";
-	//append to the DOM
+	html_text = 'Topic for quiz id ' + String(qs_id) + ': <input type="text" class="form-control" id="topic" value="' + qset_data[0]["topic"] + '">' + '\n';
 	$("h5#title").append(html_text);
 
 	let active_text = "active";
@@ -1366,7 +1368,7 @@ function build_edit_quiz(args) {
 	for (let i=1; i < qset_data.length; i++) {
 		//this is the actual question sequence, i.e. "Q1", "Q2", "Q3" etc... you need to build this list locally, it is basically "Q" + index+1
 		let q_seq = "Q" + String(i); 
-		let html_text = ""; 
+		html_text = ""; 
 		
 		//sets the first question to be selected initially and also the first of any multi-choices to be selected initially
 		if (i > 1) {
@@ -1493,9 +1495,11 @@ function build_edit_quiz(args) {
 	function del_item(e) {
 		//this deletes an element from the question
 		let ul_parent = e.target.parentNode.parentNode.parentNode;
-		let li_parent = e.target.parentNode.parentNode;
-		ul_parent.removeChild(li_parent);
-		$(ul_parent).sortable('refresh');	
+		if ($(ul_parent).children().length > 1) {
+			let li_parent = e.target.parentNode.parentNode;
+			ul_parent.removeChild(li_parent);
+			$(ul_parent).sortable('refresh');	
+		}
 	};
 
 	function add_text(e) {
@@ -1591,6 +1595,8 @@ function build_edit_quiz(args) {
 	$(".save-continue, #final-save, #preview").click(function() {
 		//so basically here you need to build the whole qset_data object to send
 		let qset_data_new = [qset_data[0]];
+		//set the topic to the new value
+		qset_data_new[0]["topic"] = $("#topic").val().trim();
 		let text_data = "";
 		let blobs = {};   // will hold the DOMstrings and filenames for any added images to upload
 
@@ -1616,7 +1622,8 @@ function build_edit_quiz(args) {
 			for (q_part of q_parts) {
 				//the item is a textbox
 				if ($(q_part).find("textarea").length > 0) {
-					text_data = $.trim($(q_part).find("textarea").val());
+					//text_data = $.trim($(q_part).find("textarea").val());
+					text_data = $(q_part).find("textarea").val();
 					q_data["question"].push({"type":"text","data":text_data});
 				} 
 
