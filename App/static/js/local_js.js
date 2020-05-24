@@ -119,8 +119,7 @@ function ajax_authorized_post(target, target_fn, args) {
 			let admin = $("#admin").val();
 
 			//validation
-			result = input_validation({"username":{"value":username}, 
-										"password":{"value":password}});
+			result = input_validation({"username":{"value":username}, "password":{"value":password}});
 			if (! result) return;
 
 			form_data  = new FormData();
@@ -160,10 +159,6 @@ function ajax_authorized_post(target, target_fn, args) {
 		$("#submit").click(function() {
 			let username = $("#username").val();
 			let password = $("#password").val();
-
-			//validation
-			//result = input_validation({"username":{"value":username}, "password":{"value":password}});
-			//if (! result) return;
 
 			form_data  = new FormData();
 			form_data.append("username", username);
