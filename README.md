@@ -1,5 +1,11 @@
 README of project
 ---
+### Requirements:
+- Flask 1.1.2
+- Flask_SQLAlchemy 2.4.1
+- Werkzeug 1.0.1
+- PyJWT 1.7.1
+
 ### Running the application:
 1. Open a terminal.
 2. Navigate to the "app" folder of the application.
