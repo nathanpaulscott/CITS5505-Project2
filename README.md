@@ -3,7 +3,7 @@ README of project
 ### Running the application:
 1. Open a terminal.
 2. Navigate to the "app" folder of the application.
-3. Type "python app.py".
+3. Type `python app.py`.
 4. Click the link in the terminal to open "http://127.0.0.1:5000/".
 
 ### Using the application as an teacher:
@@ -29,6 +29,13 @@ Teacher accounts have permission to change usernames, passwords and roles of oth
 Student accounts have limited privileges allowing them to take quizzes and view results.
 
 ##### Student summary:
-The student summary page shows information about available quizzes including their completion status and awarded mark. Students can click on completed quizzes to view feedback or click on other quizzes to complete them. Students have a limited amount of time to complete a quiz and may submit at any time. If time runs out, the quiz will automatically be submitted with the student's answers. Quizzes may contain multiple choice questions, short answer questions and images.
+The student summary page shows information about available quizzes including their completion status and awarded mark. Students can click on completed quizzes to view feedback or click on other quizzes to complete them. 
 
-*include screenshot of student summary
+##### Taking a quiz: 
+Students have a limited amount of time to complete a quiz and may submit at any time. If time runs out, the quiz will automatically be submitted with the student's answers. The remaining time for a quiz can be seen in the header and may be hidden by clicking. Quizzes may contain multiple choice questions, short answer questions and images. If a student for whatever reason cannot finish the quiz, they can click 'cancel' to abort the quiz. Upon completing the quiz, students can submit their work by clicking 'Finish and Submit Answers'.
+
+##### Viewing feedback:
+Click on a quiz with 'marked' status to view marks and feedback. The numerical mark for each question will be visible directly above the question text. Comments from the assessor are found in a textbox below the answers.
+
+##### Viewing statistics:
+The statistics page displays the results of each quiz the student has taken graphically. Simply provide the quiz ID to change quiz.
