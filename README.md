@@ -1,5 +1,8 @@
 README of project
 ---
+### Description:
+This is a timed quiz application with a geography theme, although any quiz involving multiple-choice or short answer questions can make use of the application. Teachers can upload, download, modify (edit, delete) and mark quizzes (providing a grade and feedback) and also manage users (edit user information, change privileges, delete and create accounts). Students can take quizzes, see assessor feedback and view statistics for their performance.
+
 ### Requirements:
 - Flask 1.1.2
 - Flask_SQLAlchemy 2.4.1
@@ -16,7 +19,7 @@ README of project
 Teachers have various privileges not available to students including managing users, modifying quizzes and marking quizzes.
 
 ##### Quiz Administration:
-On the quiz administration page, teacher accounts may import new quizzes using the .quiz format (a JSON file with a specific format), upload images, export quizzes from the database for local download or delete quizzes using the coloured buttons above the quiz table. Teachers can also edit or mark quizzes by selecting the relevant buttons in the table. 
+On the quiz administration page, teacher accounts may import new quizzes using the .quiz format (a JSON file with a specific format - a sample is located in the app folder), upload images, export quizzes from the database for local download or delete quizzes using the coloured buttons above the quiz table. Teachers can also edit or mark quizzes by selecting the relevant buttons in the table. 
 
 ##### Viewing statistics:
 The statistics page displays the results of each quiz graphically. Simply provide the quiz ID to change quiz.
