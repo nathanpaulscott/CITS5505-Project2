@@ -11,9 +11,14 @@ This is a timed quiz application with a geography theme, although any quiz invol
 
 ### Running the application:
 1. Open a terminal.
-2. Navigate to the "app" folder of the application.
+2. Navigate to the "app" folder
 3. Type `python app.py`.
 4. Click the link in the terminal to open "http://127.0.0.1:5000/".
+
+### Testing the application:
+1. Open a terminal.
+2. Navigate to the "app" folder.
+3. Type `python unit_test.py`.
 
 ### Using the application as an teacher:
 Teachers have various privileges not available to students including managing users, modifying quizzes and marking quizzes.
