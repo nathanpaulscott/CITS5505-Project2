@@ -1359,7 +1359,8 @@ function build_edit_quiz(args) {
 	fix_header(username);
 
 	//do the title
-	html_text = 'Topic for quiz id ' + String(qs_id) + ': <input type="text" class="form-control" id="topic" value="' + qset_data[0]["topic"] + '">' + '\n';
+	html_text = 'Topic for quiz id ' + String(qs_id) + ': <input type="text" class="form-control" id="topic" value="' + qset_data[0]["topic"] + '">' + '<br/>';
+	html_text += 'Time (mins): <input type="number" style="max-width:80px;" class="form-control" id="time" value="' + qset_data[0]["time"] + '" min="1">';
 	$("h5#title").append(html_text);
 
 	let active_text = "active";
@@ -1417,7 +1418,7 @@ function build_edit_quiz(args) {
 		let text = String(qset_data[i]["question"][0]["marks"]).trim();
 		html_text += 	'<label for="form_group4">Answer Marks</label>' + '\n';
 		html_text += 	'<div class="form-group" id="form_group4">' + '\n';
-		html_text += 		'<input type="text" class="form-control" id="' + q_seq + '_AM" pattern="^[0-9]+$" value="' + text + '">' + '\n';
+		html_text += 		'<input type="number" style="max-width:80px;" class="form-control" id="' + q_seq + '_AM" value="' + text + '" min="1">' + '\n';
 		html_text += 	'</div>' + '\n';
 		//answer type
 		text = qset_data[i]["answer"]["type"].trim();
@@ -1597,6 +1598,12 @@ function build_edit_quiz(args) {
 		let qset_data_new = [qset_data[0]];
 		//set the topic to the new value
 		qset_data_new[0]["topic"] = $("#topic").val().trim();
+		//set the time to the new value
+		if ($("#time").val() < 1) {
+			alert("Quiz time needs to be 1 minute or more.  See instructions for specification, edits not committed =>\nValue entered: " + $("#time").val());
+			return;
+		}
+		qset_data_new[0]["time"] = $("#time").val();
 		let text_data = "";
 		let blobs = {};   // will hold the DOMstrings and filenames for any added images to upload
 
@@ -1655,12 +1662,11 @@ function build_edit_quiz(args) {
 			//set marks
 			//NOTE: be super careful here, allowing a non-numeric value through to the server
 			//seems to cause bad things to happen
-			text_data = $.trim($("#" + q_seq + "_AM").val());
-			if (Number.isNaN(Number(text_data)) || Number(text_data) <= 0) {
-				alert("Marks need to be numeric and > 0.  " + q_seq + ".  See instructions for specification, edits not committed =>\nValue entered: " + text_data);
+			if ($("#" + q_seq + "_AM").val() < 1) {
+				alert("Marks need to be > 0.  " + q_seq + ".  See instructions for specification, edits not committed =>\nValue entered: " + $("#" + q_seq + "_AM").val());
 				return;
 			}
-			q_data["question"][0]["marks"] = Number(text_data);
+			q_data["question"][0]["marks"] = $("#" + q_seq + "_AM").val();
 			
 			//set answer type
 			text_data = $.trim($("#" + q_seq + "_AT").val());
